@@ -1,0 +1,263 @@
+/* Desktop workspaces use bounded columns, not full-width mobile cards. */
+.team-order-layout > * {
+  min-width: 0;
+}
+@media (min-width: 1100px) {
+  .team-order-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(340px, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+  .team-order-layout.tab-materials {
+    grid-template-areas: "header header" "upload followup" "materials followup" "files actions";
+  }
+  .team-order-layout.tab-processing {
+    grid-template-areas: "header header" "handoff actions" "upload files";
+  }
+  .team-order-layout.tab-review {
+    grid-template-areas: "header header" "actions upload" "files reviews";
+  }
+  .team-order-layout.tab-history {
+    grid-template-areas: "header header" "history reviews";
+  }
+  .team-order-layout.no-upload.tab-materials {
+    grid-template-areas: "header header" "materials followup" "files actions";
+  }
+  .team-order-layout.no-upload.tab-processing {
+    grid-template-areas: "header header" "handoff files" "handoff actions";
+  }
+  .team-order-layout.no-upload.tab-review {
+    grid-template-areas: "header header" "actions reviews" "files reviews";
+  }
+  .team-order-layout > .delivery-detailHeader {
+    grid-area: header;
+    margin-bottom: 0;
+  }
+  .order-upload {
+    grid-area: upload;
+  }
+  .order-followup {
+    grid-area: followup;
+  }
+  .order-materials {
+    grid-area: materials;
+  }
+  .order-actions {
+    grid-area: actions;
+  }
+  .order-files {
+    grid-area: files;
+  }
+  .order-handoff {
+    grid-area: handoff;
+  }
+  .order-history {
+    grid-area: history;
+  }
+  .order-reviews {
+    grid-area: reviews;
+  }
+  .team-order-layout .panel,
+  .team-order-layout .ops-followups {
+    margin: 0;
+    padding: 18px;
+    border-radius: 12px;
+  }
+  .team-order-layout .panel > header {
+    margin-bottom: 12px;
+  }
+  .team-order-layout .panel h2 {
+    font-size: 17px;
+    margin: 0 0 6px;
+  }
+  .team-order-layout .panel h3 {
+    font-size: 15px;
+  }
+  .delivery-detailHeader > .ghost {
+    margin-bottom: 4px;
+    min-height: 32px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+  .delivery-detailHeader .delivery-heading {
+    margin-bottom: 10px;
+  }
+  .delivery-detailHeader h1 {
+    font-size: 25px;
+    line-height: 1.3;
+    margin: 5px 0;
+  }
+  .delivery-detailMeta {
+    padding-bottom: 12px;
+    gap: 22px;
+  }
+  .delivery-progress {
+    padding: 10px 14px;
+    margin-bottom: 10px;
+  }
+  .delivery-next {
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    gap: 12px;
+  }
+  .delivery-next small {
+    margin-top: 2px;
+  }
+  .delivery-detailTabs {
+    gap: 8px;
+  }
+  .delivery-detailTabs button {
+    padding: 8px 14px;
+    min-height: 36px;
+  }
+  .ops-title {
+    margin-bottom: 12px;
+    gap: 10px;
+  }
+  .ops-title p {
+    font-size: 12px;
+    margin: 5px 0;
+  }
+  .ops-inline {
+    margin: 10px 0;
+    gap: 10px;
+  }
+  .ops-inline > label:first-child {
+    flex: 0 1 190px;
+  }
+  .ops-form {
+    gap: 12px;
+    margin: 14px 0;
+  }
+  .ops-form label {
+    font-size: 13px;
+    gap: 5px;
+  }
+  .ops-form textarea {
+    min-height: 76px;
+  }
+  .ops-picker {
+    padding: 10px;
+  }
+  .ops-run {
+    padding: 16px;
+    margin-top: 14px;
+  }
+  .ops-run .ops-form fieldset {
+    max-height: 250px;
+    overflow: auto;
+  }
+  .ops-missing {
+    padding: 10px 0;
+  }
+  .ops-missing p {
+    font-size: 12px;
+    line-height: 1.65;
+  }
+  .order-followup .ops-form {
+    grid-template-columns: 1fr 1fr;
+  }
+  .order-followup .ops-form > label:first-child {
+    grid-column: 1/-1;
+  }
+  .order-materials .material {
+    padding: 12px 0;
+  }
+  .order-materials .material form {
+    gap: 8px;
+  }
+  .order-files .filelist {
+    max-height: 460px;
+    overflow: auto;
+  }
+  .order-files .filelist > div {
+    padding: 10px 0;
+  }
+  .order-actions .formgrid {
+    grid-template-columns: 1fr;
+  }
+  .ops-team {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  .ops-team-layout {
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 20px;
+  }
+  .ops-team .agency-heading {
+    margin-bottom: 16px;
+  }
+  .ops-team .agency-heading h1 {
+    font-size: 26px;
+  }
+  .ops-team .agency-heading p {
+    margin: 6px 0;
+  }
+  .ops-team .ops-inline {
+    flex-wrap: nowrap;
+  }
+  .ops-team .ops-inline > input {
+    width: 180px;
+    min-width: 0;
+  }
+  .ops-team .ops-inline > select {
+    width: 125px;
+    min-width: 0;
+  }
+  .ops-person {
+    padding: 12px;
+    min-height: 80px;
+  }
+  .ops-person small {
+    font-size: 12px;
+  }
+  .ops-staff-detail {
+    padding: 20px;
+  }
+  .ops-staff-detail > h2 {
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
+  .ops-staff-detail > p {
+    font-size: 12px;
+    margin-bottom: 18px;
+  }
+  .ops-staff-detail > label {
+    max-width: 430px;
+  }
+  .ops-staff-detail .ops-form {
+    max-width: 680px;
+  }
+  .ops-new-person {
+    padding: 16px 20px;
+  }
+  .ops-new-person .ops-form {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .agency-workspace {
+    padding: 6px 0;
+  }
+  .agency-stats {
+    max-width: 960px;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .agency-stats button {
+    padding: 14px 18px;
+    gap: 6px;
+  }
+  .agency-review-tabs {
+    max-width: none;
+  }
+  .agency-review-tabs button {
+    padding: 12px 16px;
+  }
+  .agency-stats strong {
+    font-size: 25px;
+  }
+  .agency-client-list article {
+    padding: 14px 0;
+    gap: 14px;
+  }
+}

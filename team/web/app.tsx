@@ -291,6 +291,12 @@ function App() {
     const gen = ++generation.current;
     const d = await api("/orders/" + id);
     if (gen === generation.current) {
+      if (d.period !== period) {
+        pendingOpen.current = id;
+        setViewRequest({ id: Date.now(), view: "team:" + page });
+        setPeriod(d.period);
+        return;
+      }
       if (detail?.id !== d.id || detail?.status !== d.status)
         setDetailTab(
           ["collecting", "checking"].includes(d.status)
@@ -301,8 +307,10 @@ function App() {
         );
       setDetail(d);
       const next = [id, ...recent.filter((x) => x !== id)].slice(0, 10);
-      setRecent(next);
-      writeFinanceStore("recentOrders", next);
+      if (next.join() !== recent.join()) {
+        setRecent(next);
+        writeFinanceStore("recentOrders", next);
+      }
     }
   }
   async function orderAction(action: string, extra: any = {}) {
@@ -662,7 +670,9 @@ function App() {
         </>
       )}
       {["orders", "review"].includes(page) && detail && (
-        <>
+        <div
+          className={`team-order-layout tab-${detailTab} ${!write || detail.status === "archived" ? "no-upload" : ""}`}
+        >
           <DeliveryDetailHeader
             order={detail}
             backLabel={page === "review" ? "返回审核队列" : "返回工作清单"}
@@ -673,7 +683,12 @@ function App() {
               void run(refresh, "");
             }}
           />
-          <div className="delivery-section" hidden={detailTab === "history"}>
+          <div
+            className="delivery-section order-upload"
+            hidden={
+              detailTab === "history" || !write || detail.status === "archived"
+            }
+          >
             {write && detail.status !== "archived" && (
               <Panel title="资料上传">
                 {" "}
@@ -694,6 +709,11 @@ function App() {
                 )}
               </Panel>
             )}
+          </div>
+          <div
+            className="delivery-section order-followup"
+            hidden={detailTab !== "materials"}
+          >
             {detailTab === "materials" && (
               <Followups
                 key={"follow-" + detail.id}
@@ -704,7 +724,10 @@ function App() {
               />
             )}
           </div>
-          <div className="delivery-section" hidden={detailTab !== "materials"}>
+          <div
+            className="delivery-section order-materials"
+            hidden={detailTab !== "materials"}
+          >
             <Panel
               title="资料清单"
               note="原件必须与本公司、本期间关联。缺件豁免需要独立复核人员说明理由。"
@@ -848,7 +871,7 @@ function App() {
             </Panel>
           </div>
           <div
-            className="delivery-section"
+            className="delivery-section order-actions"
             hidden={
               detailTab !==
               (["collecting", "checking"].includes(detail.status)
@@ -1093,7 +1116,10 @@ function App() {
               )}
             </Panel>
           </div>
-          <div className="delivery-section" hidden={detailTab === "history"}>
+          <div
+            className="delivery-section order-files"
+            hidden={detailTab === "history"}
+          >
             <Panel
               title="资料与成果文件"
               note="上传同名文件会形成新版本。复核后更换成果将退回处理阶段，必须重新复核。"
@@ -1130,7 +1156,10 @@ function App() {
               </div>
             </Panel>
           </div>
-          <div className="delivery-section" hidden={detailTab !== "processing"}>
+          <div
+            className="delivery-section order-handoff"
+            hidden={detailTab !== "processing"}
+          >
             <Panel title="外部处理与成果回传">
               <WorkBuddyHandoff
                 key={detail.id}
@@ -1142,7 +1171,10 @@ function App() {
               />
             </Panel>
           </div>
-          <div className="delivery-section" hidden={detailTab !== "history"}>
+          <div
+            className="delivery-section order-history"
+            hidden={detailTab !== "history"}
+          >
             {reviewer && detail.status !== "archived" && (
               <Panel title="分工与截止日期">
                 <form
@@ -1198,7 +1230,7 @@ function App() {
             </Panel>
           </div>
           <div
-            className="delivery-section"
+            className="delivery-section order-reviews"
             hidden={!["history", "review"].includes(detailTab)}
           >
             <Panel title="历次复核记录">
@@ -1223,7 +1255,7 @@ function App() {
               )}
             </Panel>
           </div>
-        </>
+        </div>
       )}
       {page === "companies" && (
         <ClientWorkspace
@@ -1829,8 +1861,12 @@ function App() {
             backup: owner ? "team:health" : "team:account",
           },
           onViewChange: (v: string) => {
+            const nextPage = v.startsWith("team:") ? v.slice(5) : "finance";
+            // Restoring the same view after a company/period refresh must not
+            // cancel an in-flight request to open that month's work order.
+            if (nextPage === page) return;
             generation.current++;
-            setPage(v.startsWith("team:") ? v.slice(5) : "finance");
+            setPage(nextPage);
             setOffset(0);
             setDetail(null);
             setPreview(null);

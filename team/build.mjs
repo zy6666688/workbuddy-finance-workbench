@@ -53,6 +53,7 @@ await writeFile(
     (await readFile("web/delivery.css", "utf8")) +
     (await readFile("web/agency.css", "utf8")) +
     (await readFile("web/operations.css", "utf8")) +
+    (await readFile("web/desktop.css", "utf8")) +
     "\n}\n" +
     (await readFile("web/auth.css", "utf8")),
 );
