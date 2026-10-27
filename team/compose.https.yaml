@@ -1,0 +1,18 @@
+services:
+  app:
+    environment:
+      APP_ORIGIN: https://${PUBLIC_HOST:?Set PUBLIC_HOST}
+      COOKIE_SECURE: 'true'
+  gateway:
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?Set PUBLIC_HOST}
+    ports: !override
+      - '80:80'
+      - '443:443'
+    volumes: !override
+      - ./ops/Caddyfile.https:/etc/caddy/Caddyfile:ro
+      - certificates:/data
+      - caddy_config:/config
+volumes:
+  certificates:
+  caddy_config:

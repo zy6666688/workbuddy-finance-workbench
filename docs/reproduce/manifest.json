@@ -19,6 +19,10 @@
       "sha256": "d3f6358fc1716dfe4c8cce3a9a14b20c32fa6e6b814bb56cda7791f67e42d39f"
     },
     {
+      "path": ".github/workflows/team.yml",
+      "sha256": "ba11f7bea963fad6ee39c32413607d3c074dc1e533ef15591879a2f97f786ead"
+    },
+    {
       "path": ".gitignore",
       "sha256": "afe72bf33f41ad5979aad4274502e3c6d08b7ef0dc4811d9c674383f5ae249ca"
     },
@@ -44,7 +48,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "e63b759011d6d0b6d85ea8d0004a96b4f07a8b963d3ab465e0fe670e10852151"
+      "sha256": "742877c594495f4156858d5a46a84bc5b3c46292606e9332736bba23a3bae20e"
     },
     {
       "path": "SECURITY.md",
@@ -292,7 +296,7 @@
     },
     {
       "path": "scripts/security-scan.mjs",
-      "sha256": "e7fa000d89920020be49c639d1b536d5cf010b5fbbfb5b8cef34b67714fe0a94"
+      "sha256": "5b839b68be012578e560abf115611f6e4242bb2edc2076ee2e882cc093a0abeb"
     },
     {
       "path": "scripts/sync-version.mjs",
@@ -340,7 +344,7 @@
     },
     {
       "path": "src/finance-dashboard.jsx",
-      "sha256": "07ec50035d0e4aefcd54978b819b846ce6d3845e228f4cf64fa5e5565e95281a"
+      "sha256": "0c49ce55e8c9cde7e537ffd10b0051e1f78eed193d069de0f2d02d141a9858ef"
     },
     {
       "path": "src/finance-data.js",

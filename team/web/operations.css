@@ -1,0 +1,269 @@
+.ops-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.ops-title h3 {
+  margin: 0 0 6px;
+}
+.ops-title p,
+.ops-team p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+.ops-title small,
+.ops-upload-row small,
+.ops-person small,
+.ops-history small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+}
+.ops-inline {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+.ops-inline > label {
+  flex: 1;
+  min-width: 160px;
+}
+.ops-picker {
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--fin-soft);
+}
+.ops-upload,
+.ops-followups,
+.ops-handoff {
+  padding: 8px 0;
+}
+.ops-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ops-upload-row > div:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ops-upload-row > label {
+  max-width: 230px;
+}
+.ops-state {
+  display: inline-block;
+  background: var(--fin-accent-soft);
+  color: var(--fin-accent-strong);
+  border-radius: 99px;
+  padding: 5px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ops-state.success,
+.ops-good {
+  color: var(--team-success);
+}
+.ops-state.failed,
+.ops-error {
+  color: var(--team-danger) !important;
+}
+.ops-notice {
+  color: var(--team-warning);
+  background: var(--team-warning-bg);
+  border: 1px solid var(--team-warning);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+.ops-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 18px 0;
+}
+.ops-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.ops-form .check {
+  flex-direction: row;
+  align-items: center;
+}
+.ops-form button {
+  justify-self: start;
+}
+.ops-wide {
+  grid-column: 1/-1;
+}
+.ops-missing,
+.ops-history {
+  border-bottom: 1px solid var(--line);
+  padding: 14px 0;
+}
+.ops-missing p,
+.ops-history p {
+  margin: 7px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ops-run {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  margin-top: 18px;
+  background: var(--panel);
+}
+.ops-return {
+  border-top: 1px solid var(--line);
+  margin-top: 16px;
+  padding-top: 16px;
+}
+.ops-receipt {
+  background: var(--fin-soft);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
+  overflow-wrap: anywhere;
+}
+.ops-receipt p {
+  white-space: pre-wrap;
+}
+.ops-link {
+  display: inline-flex;
+  background: var(--fin-accent);
+  color: var(--team-on-accent) !important;
+  border-radius: 9px;
+  padding: 10px 16px;
+  text-decoration: none;
+}
+.ops-team-layout {
+  display: grid;
+  grid-template-columns: minmax(270px, 1fr) minmax(400px, 1.7fr);
+  gap: 24px;
+}
+.ops-team-layout > section {
+  min-width: 0;
+}
+.ops-people {
+  display: grid;
+  gap: 10px;
+}
+.ops-person {
+  justify-content: flex-start;
+  display: flex;
+  text-align: left;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  padding: 16px;
+  border-radius: 12px;
+  width: 100%;
+  box-shadow: none;
+}
+.ops-person.selected {
+  border-color: var(--fin-accent);
+  background: var(--fin-accent-soft);
+}
+.ops-avatar {
+  background: var(--fin-accent-soft);
+  color: var(--fin-accent-strong);
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  min-width: 42px;
+  height: 42px;
+  font-weight: 700;
+}
+.ops-staff-detail {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+  background: var(--panel);
+  align-self: start;
+}
+.ops-new-person {
+  margin-top: 24px;
+  background: var(--panel);
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.ops-team summary,
+.ops-handoff summary,
+.ops-followups summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 8px 0;
+}
+.ops-form fieldset {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+}
+.ops-upload input[type="file"] {
+  max-width: 100%;
+}
+@media (max-width: 780px) {
+  .ops-team-layout {
+    grid-template-columns: 1fr;
+  }
+  .ops-form {
+    grid-template-columns: 1fr;
+  }
+  .ops-upload-row {
+    flex-wrap: wrap;
+  }
+  .ops-upload-row > div:first-child {
+    flex-basis: 100%;
+  }
+  .ops-upload-row > label {
+    max-width: none;
+    flex: 1;
+  }
+  .ops-title {
+    flex-wrap: wrap;
+  }
+  .ops-run,
+  .ops-staff-detail {
+    padding: 15px;
+  }
+  .ops-person {
+    justify-content: flex-start;
+    padding: 12px;
+  }
+  .ops-inline > input {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+.ops-followups {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.ops-staff-detail {
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 781px) {
+  .ops-people {
+    max-height: 680px;
+    overflow: auto;
+    padding-right: 4px;
+  }
+}

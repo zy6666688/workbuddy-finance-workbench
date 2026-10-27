@@ -4,6 +4,8 @@
 
 # ZY 财务工作台
 
+**新增代账团队版**：保留完整个人版业务界面，新增浏览器登录、公司与期间隔离、服务端持久化、月度交付、独立复核和 WorkBuddy 任务包。[团队版部署与操作说明](team/README.md)。原插件仍可独立使用。
+
 **把收入、往来、报销、资金、核算、税务、报表和经营分析，整理成可执行、可复核、可留痕的标准流程。界面采用现代雾光背景、清晰信息层级和克制卡片体系，提供 4 套专业主题；正文、表单和按钮按长时间办公重新放大，适合财务人员持续录入与复核，兼顾使用财务自动化的新手。**
 
 [![CI](https://github.com/zy6666688/workbuddy-finance-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/zy6666688/workbuddy-finance-workbench/actions/workflows/ci.yml)

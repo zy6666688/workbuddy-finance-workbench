@@ -1,0 +1,400 @@
+/* Deliberately outside management @scope: this also styles the authentication root. */
+.zyAuth {
+  --auth-ink: #172744;
+  --auth-muted: #647189;
+  --auth-primary: #4859d4;
+  box-sizing: border-box;
+  min-height: 100svh;
+  width: 100%;
+  padding: 36px max(24px, calc((100vw - 1120px) / 2)) 24px;
+  color: var(--auth-ink);
+  background:
+    radial-gradient(ellipse at 15% 0%, #e7ebfc, transparent 55%), #f5f7fb;
+  font:
+    16px/1.6 "Segoe UI",
+    "Microsoft YaHei",
+    sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+}
+body:has(.zyAuth) {
+  margin: 0;
+}
+.zyAuth *,
+.zyAuth *::before,
+.zyAuth *::after {
+  box-sizing: border-box;
+}
+.zyAuth h1,
+.zyAuth h2,
+.zyAuth p {
+  margin: 0;
+}
+.zyAuth-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.zyAuth-mark {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  color: white;
+  background: var(--auth-primary);
+  font-size: 19px;
+  font-weight: 750;
+  letter-spacing: -1px;
+  box-shadow: 0 5px 12px #4859d423;
+}
+.zyAuth-brand strong {
+  display: block;
+  font-size: 18px;
+  letter-spacing: 0.3px;
+}
+.zyAuth-brand div > span {
+  display: block;
+  font-size: 12px;
+  color: var(--auth-muted);
+  letter-spacing: 1.5px;
+}
+.zyAuth-layout {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1.08fr 1fr;
+  background: white;
+  border: 1px solid #e0e6f0;
+  border-radius: 26px;
+  overflow: hidden;
+  box-shadow: 0 20px 65px #2437600c;
+}
+.zyAuth-story {
+  background:
+    radial-gradient(ellipse at 100% 0%, #364b85, transparent 75%), #1c2e52;
+  color: #fff;
+  padding: 44px 48px 36px;
+}
+.zyAuth-kicker {
+  color: #bdcaf7;
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  font-weight: 650;
+}
+.zyAuth-story h1 {
+  margin: 18px 0 18px;
+  font-size: clamp(30px, 2.8vw, 39px);
+  line-height: 1.45;
+  letter-spacing: -0.7px;
+  font-weight: 650;
+}
+.zyAuth-story > p {
+  color: #c4cfe3;
+  font-size: 14px;
+  line-height: 1.9;
+}
+.zyAuth-flow {
+  margin-top: 34px;
+  padding: 22px 24px;
+  border: 1px solid #ffffff21;
+  border-radius: 16px;
+  background: #ffffff07;
+}
+.zyAuth-flowTitle {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: #c4cfe3;
+}
+.zyAuth-flowTitle span:last-child {
+  font-size: 11px;
+  color: #bdcaf7;
+}
+.zyAuth-step {
+  display: flex;
+  gap: 15px;
+  position: relative;
+  padding-bottom: 20px;
+}
+.zyAuth-step:last-child {
+  padding-bottom: 0;
+}
+.zyAuth-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 33px;
+  bottom: 3px;
+  width: 1px;
+  background: #ffffff28;
+}
+.zyAuth-step > span {
+  display: grid;
+  place-items: center;
+  border: 1px solid #8396c1;
+  background: #31456c;
+  border-radius: 10px;
+  height: 32px;
+  width: 32px;
+  flex: none;
+  color: #dee6fc;
+  font-size: 11px;
+}
+.zyAuth-step strong {
+  display: block;
+  font-weight: 550;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.zyAuth-step small {
+  display: block;
+  color: #c4cfe3;
+  font-size: 12px;
+  margin-top: 3px;
+}
+.zyAuth-principles {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 26px;
+  font-size: 11px;
+  color: #c4cfe3;
+}
+.zyAuth-principles i {
+  height: 3px;
+  width: 3px;
+  border-radius: 100%;
+  background: #a4b2d0;
+}
+.zyAuth-entry {
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  padding: 52px 54px;
+}
+.zyAuth-entryTag {
+  font-size: 12px;
+  color: var(--auth-primary);
+  font-weight: 650;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+.zyAuth-entry h2 {
+  font-size: 29px;
+  letter-spacing: -0.5px;
+  line-height: 1.4;
+  font-weight: 650;
+}
+.zyAuth-entry > p {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--auth-muted);
+}
+.zyAuth form {
+  display: grid;
+  gap: 22px;
+  margin-top: 34px;
+}
+.zyAuth-field {
+  display: grid;
+  gap: 9px;
+}
+.zyAuth label {
+  font-size: 14px;
+  font-weight: 550;
+  color: #33445e;
+}
+.zyAuth input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 50px;
+  border: 1px solid #aab6cb;
+  background: #fcfdff;
+  border-radius: 10px;
+  padding: 12px 15px;
+  font: inherit;
+  color: var(--auth-ink);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.zyAuth input::placeholder {
+  color: #758198;
+  font-size: 14px;
+}
+.zyAuth input:focus {
+  border-color: var(--auth-primary);
+  box-shadow: 0 0 0 3px #4859d414;
+  outline: none;
+}
+.zyAuth-password {
+  position: relative;
+}
+.zyAuth-password input {
+  padding-right: 52px;
+}
+.zyAuth button {
+  cursor: pointer;
+  font: inherit;
+}
+.zyAuth-password button {
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: #5e6b83;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.zyAuth-password button:hover {
+  background: #eef1fa;
+}
+.zyAuth-submit {
+  min-height: 50px;
+  border-radius: 10px;
+  border: 1px solid var(--auth-primary);
+  background: var(--auth-primary);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 6px;
+  box-shadow: 0 5px 12px #4859d420;
+}
+.zyAuth-submit:hover {
+  background: #394abb;
+}
+.zyAuth-submit:active {
+  background: #303fa7;
+}
+.zyAuth-submit:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.zyAuth button:focus-visible {
+  outline: 3px solid #8293ed;
+  outline-offset: 3px;
+}
+.zyAuth-entry .zyAuth-help {
+  margin-top: 22px;
+  font-size: 12px;
+  color: var(--auth-muted);
+  text-align: center;
+}
+.zyAuth-entry .zyAuth-notice {
+  padding: 12px 14px;
+  border-radius: 9px;
+  background: #fff5ec;
+  border: 1px solid #efd2b5;
+  color: #85420c;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  margin-top: 18px;
+}
+.zyAuth-entry .zyAuth-accountNote {
+  border-top: 1px solid #e7ebf3;
+  margin-top: 32px;
+  padding-top: 22px;
+  font-size: 12px;
+  color: var(--auth-muted);
+  line-height: 1.8;
+}
+.zyAuth-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  color: var(--auth-muted);
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+@media (max-width: 900px) {
+  .zyAuth-story {
+    padding: 34px 30px;
+  }
+  .zyAuth-entry {
+    padding: 36px 32px;
+  }
+  .zyAuth-principles {
+    gap: 8px;
+  }
+}
+@media (max-width: 700px) {
+  .zyAuth {
+    padding: 24px 20px;
+    gap: 24px;
+    justify-content: flex-start;
+  }
+  .zyAuth-layout {
+    display: block;
+    border-radius: 20px;
+  }
+  .zyAuth-story {
+    padding: 26px 28px;
+  }
+  .zyAuth-kicker {
+    font-size: 10px;
+  }
+  .zyAuth-story h1 {
+    font-size: 25px;
+    margin: 12px 0 8px;
+  }
+  .zyAuth-story h1 br {
+    display: initial;
+  }
+  .zyAuth-story > p {
+    font-size: 12px;
+  }
+  .zyAuth-story > p br {
+    display: none;
+  }
+  .zyAuth-flow,
+  .zyAuth-principles {
+    display: none;
+  }
+  .zyAuth-entry {
+    padding: 30px 26px;
+  }
+  .zyAuth-entry h2 {
+    font-size: 25px;
+  }
+  .zyAuth form {
+    margin-top: 26px;
+    gap: 20px;
+  }
+  .zyAuth-entry .zyAuth-accountNote {
+    margin-top: 24px;
+    padding-top: 18px;
+  }
+  .zyAuth-footer {
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    gap: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zyAuth input {
+    transition: none;
+  }
+}
+.zyAuth-back {
+  margin-top: 18px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--auth-primary);
+}
+.zyAuth-back:hover {
+  background: #f0f3fc;
+}
