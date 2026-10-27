@@ -1,0 +1,156 @@
+.team-host {
+  height: 100vh;
+  width: 100%;
+  container: finance-workbench/inline-size;
+}
+.team-host .fdDesk_root {
+  height: 100%;
+  min-height: 0;
+  font-family: var(--dsw-font-family);
+}
+.team-host .fdDesk_content {
+  max-width: none;
+  margin: 0;
+  width: 100%;
+}
+.team-host .fdDesk_main {
+  grid-template-rows: auto auto auto minmax(0, 1fr) !important;
+  min-height: 0;
+}
+.team-host .fdDesk_sidebar {
+  height: 100%;
+  position: relative;
+  top: auto;
+}
+.team-host .fdDesk_sidebar footer {
+  padding: 14px 12px;
+}
+.team-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--fin-line);
+  background: var(--fin-panel);
+}
+.team-context > div:first-child {
+  min-width: 120px;
+}
+.team-context strong,
+.team-context .eyebrow {
+  display: block;
+}
+.team-context .topfilters {
+  display: flex;
+  margin: 0;
+  gap: 12px;
+}
+.team-context label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--fin-muted);
+}
+.team-context input,
+.team-context select {
+  min-height: 38px;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 10px;
+  color: var(--fin-ink);
+  background: var(--fin-panel);
+  border: 1px solid var(--fin-line);
+  border-radius: 8px;
+  max-width: 220px;
+}
+.team-context .eyebrow {
+  color: var(--fin-muted);
+  font-size: 10px;
+}
+.team-panels {
+  --panel: var(--fin-panel);
+  --line: var(--fin-line);
+  --ink: var(--fin-ink);
+  --muted: var(--fin-muted);
+  --bg: var(--fin-bg);
+  color: var(--fin-ink);
+}
+.team-panels .hero {
+  background: linear-gradient(120deg, var(--fin-panel), var(--fin-soft));
+  border-radius: 20px;
+}
+.team-panels .panel {
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 5px 18px #1c2d4610;
+}
+.team-panels button,
+.team-panels .button {
+  background: var(--fin-accent);
+  border-radius: 10px;
+}
+.team-panels button.secondary,
+.team-panels button.ghost {
+  background: var(--fin-panel);
+  color: var(--fin-accent-strong);
+}
+.team-panels .ordercard {
+  background: var(--fin-panel);
+  color: var(--fin-ink);
+  padding: 24px;
+}
+.team-panels pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.team-panels .run small,
+.team-panels .record small {
+  overflow-wrap: anywhere;
+}
+.team-panels fieldset {
+  min-width: 0;
+  border: 1px solid var(--fin-line);
+  border-radius: 12px;
+  padding: 14px;
+}
+@media (max-width: 700px) {
+  .team-context {
+    display: block;
+    padding: 10px 14px;
+  }
+  .team-context > div:first-child {
+    display: none;
+  }
+  .team-context .topfilters {
+    grid-template-columns: 1fr 1fr;
+    display: grid;
+  }
+  .team-context .topfilters label:first-child {
+    display: none;
+  }
+  .team-host .fdDesk_sidebar {
+    position: absolute;
+  }
+  .team-panels .panel {
+    padding: 18px;
+  }
+  .team-host .fdDesk_topbar {
+    flex-wrap: wrap;
+  }
+  .team-host .fdDesk_overviewHero h1 {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
+  }
+  .team-host .fdDesk_return {
+    font-size: 12px !important;
+  }
+  .team-host .fdDesk_return::after {
+    display: none !important;
+  }
+  .team-host .fdDesk_status button {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}

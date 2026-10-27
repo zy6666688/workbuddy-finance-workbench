@@ -1,0 +1,26 @@
+name: Team workbench
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: team
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: team/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck && npm test && npm run build && npm audit --omit=dev
+      - run: node ops/setup.mjs
+      - run: docker compose build
+      - run: docker compose -p zy-finance-test -f compose.yaml -f compose.test.yaml up -d db migrate app worker gateway
+      - run: docker compose -p zy-finance-test -f compose.yaml -f compose.test.yaml run --rm acceptance
+      - run: node ops/test-worker.mjs
+      - run: node ops/test-recovery.mjs

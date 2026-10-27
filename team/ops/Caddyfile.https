@@ -1,0 +1,6 @@
+{$PUBLIC_HOST} {
+    request_body {
+        max_size 52MB
+    }
+    reverse_proxy app:3000
+}

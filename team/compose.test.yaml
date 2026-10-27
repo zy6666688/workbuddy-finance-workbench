@@ -1,0 +1,41 @@
+# Use only with an isolated project: docker compose -p zy-finance-test -f compose.yaml -f compose.test.yaml ...
+services:
+  gateway:
+    ports: !override
+      - '127.0.0.1:8081:80'
+  app:
+    environment:
+      APP_ORIGIN: http://localhost:8081
+  backup:
+    volumes: !override
+      - files:/files:ro
+      - ./.test/backups:/backups
+      - ./ops/backup.sh:/backup.sh:ro
+  acceptance:
+    image: zy-finance-team:3.0.0
+    user: node
+    environment:
+      DATABASE_URL: postgresql://zy_app:${APP_DB_PASSWORD}@db:5432/zy
+      ADMIN_DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@db:5432/zy
+      FILES_DIR: /data/files
+      WEB_DIR: /app/team/dist/web
+      LOG_LEVEL: silent
+      TEAM_TEST_ACCEPT: '1'
+    volumes:
+      - files:/data/files
+      - ./src:/app/team/src:ro
+      - ../src:/app/src:ro
+      - ./test:/app/team/test:ro
+      - ./.test/results:/results
+    command: [sh, -c, 'node --import tsx --test --test-concurrency=1 test/*.test.ts']
+    depends_on:
+      test-prepare: {condition: service_completed_successfully}
+    profiles: [test]
+  test-prepare:
+    image: zy-finance-team:3.0.0
+    user: root
+    volumes:
+      - files:/data/files
+      - ./.test/results:/results
+    command: [sh, -c, 'chown -R 1000:1000 /results /data/files']
+    profiles: [test]
