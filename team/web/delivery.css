@@ -79,10 +79,10 @@
   color: var(--muted);
 }
 .delivery-metric.is-danger strong {
-  color: #b44835;
+  color: var(--team-danger);
 }
 .delivery-metric.is-success strong {
-  color: #25765f;
+  color: var(--team-success);
 }
 .delivery-surface {
   border: 1px solid var(--line);
@@ -116,8 +116,8 @@
 }
 .delivery-segments .is-active,
 .delivery-viewSwitch .is-active {
-  background: #edf0fc;
-  color: #3b4eb9;
+  background: var(--fin-accent-soft);
+  color: var(--fin-accent-strong);
   font-weight: 650;
 }
 .delivery-viewSwitch {
@@ -145,8 +145,8 @@
   gap: 7px;
 }
 .delivery-stageFilters [aria-pressed="true"] {
-  color: #4155c5;
-  border-bottom-color: #4155c5;
+  color: var(--fin-accent-strong);
+  border-bottom-color: var(--fin-accent-strong);
 }
 .delivery-stageFilters span {
   background: var(--bg);
@@ -244,7 +244,7 @@
   overflow-wrap: anywhere;
 }
 .delivery-open {
-  color: #4054bc;
+  color: var(--fin-accent-strong);
   font-size: 12px;
   white-space: nowrap;
 }
@@ -253,8 +253,8 @@
   align-items: center;
   gap: 7px;
   padding: 4px 9px;
-  color: #5d6f8d;
-  background: #f0f3f8;
+  color: var(--muted);
+  background: var(--fin-soft);
   border-radius: 6px;
   font-size: 12px;
   white-space: nowrap;
@@ -266,27 +266,27 @@
   border-radius: 50%;
 }
 .delivery-status.is-collecting {
-  color: #94631b;
-  background: #fff5df;
+  color: var(--team-warning);
+  background: var(--team-warning-bg);
 }
 .delivery-status.is-processing,
 .delivery-status.is-review {
-  color: #4857b6;
-  background: #eff0ff;
+  color: var(--fin-accent-strong);
+  background: var(--fin-accent-soft);
 }
 .delivery-status.is-delivery {
-  color: #19726d;
-  background: #e7f6f1;
+  color: var(--team-success);
+  background: var(--team-success-bg);
 }
 .delivery-status.is-archived {
-  color: #547268;
-  background: #eef4ef;
+  color: var(--team-success);
+  background: var(--team-success-bg);
 }
 .delivery-materialCount .is-warning {
-  color: #a36a17;
+  color: var(--team-warning);
 }
 .delivery-overdue {
-  color: #b54432;
+  color: var(--team-danger);
 }
 .delivery-empty {
   text-align: center;
@@ -299,8 +299,8 @@
   width: 46px;
   border-radius: 14px;
   font-size: 16px;
-  background: #eef1fb;
-  color: #4b5db8;
+  background: var(--fin-accent-soft);
+  color: var(--fin-accent-strong);
   margin-bottom: 14px;
 }
 .delivery-empty h2 {
@@ -395,7 +395,7 @@
 }
 .delivery-create {
   margin: 0 auto 24px;
-  border: 1px solid #b6c1ed;
+  border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--panel);
   padding: 22px;
@@ -478,20 +478,20 @@
   font-size: 11px;
 }
 .delivery-progress .is-done {
-  color: #4054bc;
+  color: var(--fin-accent-strong);
 }
 .delivery-progress .is-done > span {
-  border-color: #bdc7ec;
-  background: #edf0ff;
+  border-color: var(--line);
+  background: var(--fin-accent-soft);
 }
 .delivery-next {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 18px;
-  background: #eef2ff;
-  border: 1px solid #d7dff7;
-  color: #23365f;
+  background: var(--fin-accent-soft);
+  border: 1px solid var(--line);
+  color: var(--ink);
   padding: 16px 20px;
   border-radius: 10px;
   margin-bottom: 20px;
@@ -502,7 +502,7 @@
 .delivery-next small {
   display: block;
   font-size: 12px;
-  color: #596986;
+  color: var(--muted);
   margin-top: 4px;
 }
 .delivery-next button {
@@ -520,8 +520,8 @@
   border-bottom: 2px solid transparent;
 }
 .delivery-detailTabs .is-active {
-  color: #4054bc;
-  border-bottom-color: #4054bc;
+  color: var(--fin-accent-strong);
+  border-bottom-color: var(--fin-accent-strong);
   font-weight: 650;
 }
 .delivery-section[hidden] {
@@ -560,7 +560,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #8a9bca;
+  background: var(--fin-accent);
   margin-top: 8px;
   flex: none;
 }

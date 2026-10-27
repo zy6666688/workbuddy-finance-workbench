@@ -10,7 +10,7 @@
 }
 .ops-title p,
 .ops-team p {
-  color: var(--muted, #62748b);
+  color: var(--muted);
   line-height: 1.7;
 }
 .ops-title small,
@@ -19,7 +19,7 @@
 .ops-history small {
   display: block;
   margin-top: 5px;
-  color: #62748b;
+  color: var(--muted);
 }
 .ops-inline {
   display: flex;
@@ -33,10 +33,10 @@
   min-width: 160px;
 }
 .ops-picker {
-  border: 1px dashed #bbc8df;
+  border: 1px dashed var(--line);
   border-radius: 12px;
   padding: 12px;
-  background: #f8faff;
+  background: var(--fin-soft);
 }
 .ops-upload,
 .ops-followups,
@@ -48,7 +48,7 @@
   align-items: center;
   gap: 14px;
   padding: 14px 0;
-  border-bottom: 1px solid #e4eaf4;
+  border-bottom: 1px solid var(--line);
 }
 .ops-upload-row > div:first-child {
   flex: 1;
@@ -60,8 +60,8 @@
 }
 .ops-state {
   display: inline-block;
-  background: #eef2ff;
-  color: #4354ba;
+  background: var(--fin-accent-soft);
+  color: var(--fin-accent-strong);
   border-radius: 99px;
   padding: 5px 10px;
   font-size: 12px;
@@ -69,15 +69,16 @@
 }
 .ops-state.success,
 .ops-good {
-  color: #13795b;
+  color: var(--team-success);
 }
 .ops-state.failed,
 .ops-error {
-  color: #b43b32 !important;
+  color: var(--team-danger) !important;
 }
 .ops-notice {
-  background: #fff6e9;
-  border: 1px solid #f2d5a8;
+  color: var(--team-warning);
+  background: var(--team-warning-bg);
+  border: 1px solid var(--team-warning);
   border-radius: 10px;
   padding: 12px 16px;
   margin: 12px 0;
@@ -106,7 +107,7 @@
 }
 .ops-missing,
 .ops-history {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--line);
   padding: 14px 0;
 }
 .ops-missing p,
@@ -117,18 +118,18 @@
 }
 .ops-run {
   padding: 20px;
-  border: 1px solid #dce3f0;
+  border: 1px solid var(--line);
   border-radius: 14px;
   margin-top: 18px;
-  background: #fff;
+  background: var(--panel);
 }
 .ops-return {
-  border-top: 1px solid #e3e9f3;
+  border-top: 1px solid var(--line);
   margin-top: 16px;
   padding-top: 16px;
 }
 .ops-receipt {
-  background: #f3f7fc;
+  background: var(--fin-soft);
   border-radius: 12px;
   padding: 16px;
   margin: 16px 0;
@@ -139,8 +140,8 @@
 }
 .ops-link {
   display: inline-flex;
-  background: #4655d5;
-  color: white !important;
+  background: var(--fin-accent);
+  color: var(--team-on-accent) !important;
   border-radius: 9px;
   padding: 10px 16px;
   text-decoration: none;
@@ -163,21 +164,21 @@
   text-align: left;
   align-items: center;
   gap: 12px;
-  background: white;
-  color: #1f304b;
-  border: 1px solid #dfe6f2;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
   padding: 16px;
   border-radius: 12px;
   width: 100%;
   box-shadow: none;
 }
 .ops-person.selected {
-  border-color: #4d5cdb;
-  background: #f0f3ff;
+  border-color: var(--fin-accent);
+  background: var(--fin-accent-soft);
 }
 .ops-avatar {
-  background: #e9edff;
-  color: #485bc1;
+  background: var(--fin-accent-soft);
+  color: var(--fin-accent-strong);
   display: grid;
   place-items: center;
   border-radius: 12px;
@@ -186,17 +187,17 @@
   font-weight: 700;
 }
 .ops-staff-detail {
-  border: 1px solid #dfe6f2;
+  border: 1px solid var(--line);
   border-radius: 16px;
   padding: 24px;
-  background: white;
+  background: var(--panel);
   align-self: start;
 }
 .ops-new-person {
   margin-top: 24px;
-  background: white;
+  background: var(--panel);
   padding: 20px;
-  border: 1px solid #dfe6f2;
+  border: 1px solid var(--line);
   border-radius: 14px;
 }
 .ops-team summary,
@@ -207,7 +208,7 @@
   padding: 8px 0;
 }
 .ops-form fieldset {
-  border: 1px solid #dfe6f2;
+  border: 1px solid var(--line);
   border-radius: 10px;
   padding: 14px;
 }
@@ -249,8 +250,8 @@
 }
 
 .ops-followups {
-  background: #fff;
-  border: 1px solid #dfe6f2;
+  background: var(--panel);
+  border: 1px solid var(--line);
   border-radius: 14px;
   padding: 20px;
   margin-bottom: 20px;

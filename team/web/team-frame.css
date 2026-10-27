@@ -70,11 +70,42 @@
 }
 .team-panels {
   --panel: var(--fin-panel);
+  --surface: var(--fin-panel);
+  --border: var(--fin-line);
   --line: var(--fin-line);
   --ink: var(--fin-ink);
   --muted: var(--fin-muted);
   --bg: var(--fin-bg);
+  --team-success: #23694b;
+  --team-success-bg: #eaf5ef;
+  --team-danger: #913b25;
+  --team-danger-bg: #fff2ee;
+  --team-warning: #875310;
+  --team-warning-bg: #fff0d6;
+  --team-on-accent: #fff;
   color: var(--fin-ink);
+}
+.team-host [data-theme="night"] .team-panels {
+  --team-success: #91ddbd;
+  --team-success-bg: #173c34;
+  --team-danger: #ffb6a8;
+  --team-danger-bg: #462c35;
+  --team-warning: #f0ce8c;
+  --team-warning-bg: #403827;
+  --team-on-accent: #101827;
+}
+.team-panels a {
+  color: var(--fin-accent-strong);
+}
+.team-panels :where(input, textarea)::placeholder {
+  color: var(--fin-muted);
+  opacity: 1;
+}
+.team-panels input::file-selector-button {
+  background: var(--fin-soft);
+  color: var(--fin-ink);
+  border: 1px solid var(--fin-line);
+  border-radius: 5px;
 }
 .team-panels .hero {
   background: linear-gradient(120deg, var(--fin-panel), var(--fin-soft));
@@ -87,6 +118,7 @@
 }
 .team-panels :where(button, .button) {
   background: var(--fin-accent);
+  color: var(--team-on-accent);
   border-radius: 10px;
 }
 .team-panels button.secondary,
