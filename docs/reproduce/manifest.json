@@ -340,15 +340,19 @@
     },
     {
       "path": "src/finance-dashboard-styles.js",
-      "sha256": "f45cb95b7571fcab5e434bfe1372bbfe58656e17f160e3560ce253c49c09d5ad"
+      "sha256": "e580daef31419d83910e406141810368f3924c983a140eab1f42232fd519a312"
     },
     {
       "path": "src/finance-dashboard.jsx",
-      "sha256": "0c49ce55e8c9cde7e537ffd10b0051e1f78eed193d069de0f2d02d141a9858ef"
+      "sha256": "2c89adb86a931bec1e6b83881fa935a01772013f432cf0200ef643a5d905571b"
     },
     {
       "path": "src/finance-data.js",
       "sha256": "810d43dd0c7d1551af9090444f494299ab470c23d3d7aa832328a827f58041f1"
+    },
+    {
+      "path": "src/finance-files.jsx",
+      "sha256": "4b9d02396e6fb567846d78482bf01727d0f57134c2c28e55a5f8d030e127d88e"
     },
     {
       "path": "src/finance-storage.js",

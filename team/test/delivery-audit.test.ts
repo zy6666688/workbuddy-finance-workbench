@@ -115,12 +115,15 @@ test(
       filename: string,
       body: string,
       materialIndex?: number,
+      runId?: string,
     ) {
       const boundary = "AuditBoundary",
         d = await detail();
       const r = await app.inject({
         method: "POST",
-        url: `/api/v1/orders/${oid}/files?kind=${kind}&version=${d.version}${materialIndex === undefined ? "" : "&materialIndex=" + materialIndex}`,
+        url: runId
+          ? `/api/v1/runs/${runId}/files?version=${d.runs.find((x: any) => x.id === runId).version}&key=${randomUUID()}`
+          : `/api/v1/orders/${oid}/files?kind=${kind}&origin=manual&version=${d.version}${materialIndex === undefined ? "" : "&materialIndex=" + materialIndex}`,
         headers: {
           cookie: users.op.cookie,
           "x-csrf-token": users.op.csrf,
@@ -142,17 +145,26 @@ test(
     await action("op", "finish_collection");
     await action("op", "start_processing");
     const workflowId = (await req("op", "/workflows"))[0].id;
-    async function startRun() {
-      const created = await req("op", `/orders/${oid}/runs`, {
-        version: (await detail()).version,
-        workflowId,
-        fileIds: [source],
-      });
+    async function startRun(previous?: any) {
+      const d = await detail();
+      const created = previous
+        ? await req("op", `/runs/${previous.id}/revise`, {
+            version: d.runs.find((r: any) => r.id === previous.id).version,
+            reason: "修订成果",
+            key: randomUUID(),
+            fileIds: [source],
+          })
+        : await req("op", `/orders/${oid}/runs`, {
+            version: (await detail()).version,
+            workflowId,
+            fileIds: [source],
+          });
       return (await detail()).runs.find((r: any) => r.id === created.id);
     }
-    function receipt(run: any, resultId: string) {
+    async function receipt(run: any, resultId: string) {
       return {
-        version: run.version,
+        version: (await detail()).runs.find((r: any) => r.id === run.id)
+          .version,
         resultFileIds: [resultId],
         inputHashes: Object.fromEntries(
           run.input_files.map((f: any) => [f.id, f.sha256]),
@@ -161,11 +173,17 @@ test(
       };
     }
     const firstRun = await startRun();
-    const oldResult = await upload("result", "result.txt", "first round");
+    const oldResult = await upload(
+      "result",
+      "result.txt",
+      "first round",
+      undefined,
+      firstRun.id,
+    );
     await req(
       "op",
       `/runs/${firstRun.id}/return`,
-      receipt(firstRun, oldResult),
+      await receipt(firstRun, oldResult),
     );
     const checks = {
       passed: true,
@@ -174,13 +192,13 @@ test(
     };
     await action("op", "submit", { checks });
     await action("review", "reject", { reason: "请补充逐笔核对说明" });
-    const freshRun = await startRun();
+    const freshRun = await startRun(firstRun);
     // Previous implementation accepted this latest-by-name file even though it
     // belongs to the rejected round and predates the new execution record.
     await req(
       "op",
       `/runs/${freshRun.id}/return`,
-      receipt(freshRun, oldResult),
+      await receipt(freshRun, oldResult),
       400,
     );
     const before = await detail();
@@ -192,11 +210,13 @@ test(
       "result",
       "result.txt",
       "second round: itemized checks",
+      undefined,
+      freshRun.id,
     );
     await req(
       "op",
       `/runs/${freshRun.id}/return`,
-      receipt(freshRun, freshResult),
+      await receipt(freshRun, freshResult),
     );
     await action("op", "submit", { checks });
     await action("op", "approve", { reason: "不得自审" }, 403);
@@ -247,11 +267,11 @@ test(
     await action("op", "request_reopen", { reason: "虚构更正" });
     await action("op", "reopen", { reason: "不允许自行审批" }, 403);
     await action("review", "reopen", { reason: "准予更正并重新复核" });
-    const reopenedRun = await startRun();
+    const reopenedRun = await startRun(freshRun);
     await req(
       "op",
       `/runs/${reopenedRun.id}/return`,
-      receipt(reopenedRun, freshResult),
+      await receipt(reopenedRun, freshResult),
       400,
     );
     assert.equal((await detail()).status, "processing");
@@ -259,11 +279,13 @@ test(
       "result",
       "result.txt",
       "third round: approved correction",
+      undefined,
+      reopenedRun.id,
     );
     await req(
       "op",
       `/runs/${reopenedRun.id}/return`,
-      receipt(reopenedRun, thirdResult),
+      await receipt(reopenedRun, thirdResult),
     );
     await action("op", "submit", { checks });
     await action("review", "approve", { reason: "更正后的成果独立复核通过" });

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import { FilePicker, FileSnapshotList } from "./file-picker.js";
 const roles: any = {
   owner: "负责人",
   reviewer: "主管 / 复核",
@@ -13,14 +14,6 @@ const stages: any = {
   delivery: "待交付",
 };
 const when = (v: any) => (v ? new Date(v).toLocaleString("zh-CN") : "—");
-const latest = (files: any[], kind: string) =>
-  files.filter(
-    (f) =>
-      f.kind === kind &&
-      !files.some(
-        (n) => n.kind === kind && n.name === f.name && n.version > f.version,
-      ),
-  );
 function Notice({ text }: any) {
   return text ? (
     <div className="ops-notice" role="status">
@@ -54,9 +47,10 @@ export function BatchUpload({
   api,
   onRefresh,
   defaultKind = "source",
+  run,
 }: any) {
   const [queue, setQueue] = useState<any[]>([]),
-    [kind, setKind] = useState(defaultKind),
+    [kind, setKind] = useState(run ? "result" : defaultKind),
     [busy, setBusy] = useState(false),
     [note, setNote] = useState("");
   const alive = useRef(true);
@@ -67,14 +61,14 @@ export function BatchUpload({
     [],
   );
   useEffect(() => {
-    if (!queue.length) setKind(defaultKind);
+    if (!queue.length) setKind(run ? "result" : defaultKind);
   }, [defaultKind]);
   const patch = (key: string, data: any) =>
     setQueue((q) => q.map((x) => (x.key === key ? { ...x, ...data } : x)));
   async function upload() {
     setBusy(true);
     setNote("");
-    let version = detail.version;
+    let version = run ? run.version : detail.version;
     for (const item of queue.filter((q) => q.status !== "success")) {
       if (!alive.current) break;
       patch(item.key, { status: "uploading", error: "" });
@@ -82,10 +76,12 @@ export function BatchUpload({
         const data = new FormData();
         data.set("file", item.file);
         const result = await api(
-          `/orders/${detail.id}/files?kind=${item.kind}&category=${encodeURIComponent(item.index === "" ? "其他" : detail.checklist[Number(item.index)].name)}&version=${version}&key=${item.key}${item.index === "" ? "" : `&materialIndex=${item.index}`}`,
+          run
+            ? `/runs/${run.id}/files?version=${version}&key=${item.key}&category=任务成果`
+            : `/orders/${detail.id}/files?kind=${item.kind}${item.kind === "result" ? "&origin=manual" : ""}&category=${encodeURIComponent(item.index === "" ? "其他" : detail.checklist[Number(item.index)].name)}&version=${version}&key=${item.key}${item.index === "" ? "" : `&materialIndex=${item.index}`}`,
           data,
         );
-        version = result.orderVersion;
+        version = run ? result.runVersion : result.orderVersion;
         patch(item.key, { status: "success", id: result.id });
       } catch (e: any) {
         patch(item.key, { status: "failed", error: e.message });
@@ -110,7 +106,7 @@ export function BatchUpload({
     <section className="ops-upload">
       <div className="ops-title">
         <div>
-          <h3>批量上传</h3>
+          <h3>{run ? "上传此任务的成果" : "批量上传"}</h3>
           <p>每批最多 30 个、合计 200 MB；单个 50 MB。同名保留版本。</p>
         </div>
         <span>
@@ -123,11 +119,13 @@ export function BatchUpload({
           文件用途
           <select
             value={kind}
-            disabled={busy}
+            disabled={busy || !!run}
             onChange={(e) => setKind(e.currentTarget.value)}
           >
             <option value="source">原始资料</option>
-            <option value="result">处理成果</option>
+            <option value="result">
+              {run ? "当前任务成果" : "人工处理成果"}
+            </option>
             <option value="evidence">交付证据</option>
           </select>
         </label>
@@ -253,6 +251,12 @@ export function BatchUpload({
           </button>
         </div>
       )}
+      {!run && kind === "result" && (
+        <p className="ops-notice">
+          这里只登记人工处理成果。WorkBuddy
+          成果请在对应任务中上传，避免混入其他任务。
+        </p>
+      )}
       <small>
         上传成功的资料已保存到服务器；尚未上传的本地队列在离开页面后不会保留。重试不会重复保存同一项。
       </small>
@@ -377,10 +381,19 @@ export function Followups({ detail, api, onRefresh, write }: any) {
 function ReturnForm({ run, detail, api, onRefresh }: any) {
   const action = useAction(),
     [manifest, setManifest] = useState(""),
-    [parseError, setParseError] = useState("");
+    [parseError, setParseError] = useState(""),
+    [resultIds, setResultIds] = useState<string[]>([]);
   return (
     <details className="ops-return">
-      <summary>回传此任务的成果</summary>
+      <summary>上传并回传此任务的成果</summary>
+      <BatchUpload
+        key={run.id}
+        detail={detail}
+        api={api}
+        onRefresh={onRefresh}
+        run={run}
+        defaultKind="result"
+      />
       <form
         className="ops-form"
         onSubmit={(e) => {
@@ -392,7 +405,7 @@ function ReturnForm({ run, detail, api, onRefresh }: any) {
             await api(`/runs/${run.id}/return`, {
               version: run.version,
               inputHashes: m.inputHashes,
-              resultFileIds: b.getAll("result"),
+              resultFileIds: resultIds,
               summary: b.get("summary"),
             });
             await onRefresh();
@@ -415,6 +428,7 @@ function ReturnForm({ run, detail, api, onRefresh }: any) {
                 setManifest(text);
                 setParseError("");
               } catch (e: any) {
+                setManifest("");
                 setParseError(e.message);
               }
             }}
@@ -432,18 +446,25 @@ function ReturnForm({ run, detail, api, onRefresh }: any) {
         {manifest && (
           <p className="ops-good">已读取清单，提交时核对输入文件摘要。</p>
         )}
-        <fieldset className="ops-wide">
-          <legend>选择本次成果（只显示同名最新版本）</legend>
-          {latest(detail.files, "result").map((f) => (
-            <label className="check">
-              <input type="checkbox" name="result" value={f.id} />
-              {f.name} · v{f.version}
-            </label>
-          ))}
-          {!latest(detail.files, "result").length && (
-            <p>先在上方批量上传中选择“处理成果”，再上传成果及校验文件。</p>
-          )}
-        </fieldset>
+        <div className="ops-wide">
+          <FilePicker
+            api={api}
+            scope={{
+              companyId: detail.company_id,
+              period: detail.period,
+              orderId: detail.id,
+            }}
+            purpose="result"
+            runId={run.id}
+            eligibleOnly
+            latestOnly
+            selectedIds={resultIds}
+            onChange={setResultIds}
+            refreshKey={run.version}
+            disabled={action.busy}
+            title="选择此任务成果（可跨页，固定文件版本）"
+          />
+        </div>
         <label className="ops-wide">
           成果、校验与未解决事项
           <textarea
@@ -453,10 +474,250 @@ function ReturnForm({ run, detail, api, onRefresh }: any) {
             placeholder="填写行数、金额核对结果和未解决问题；没有异常也请明确说明。"
           />
         </label>
-        <button disabled={action.busy || !manifest}>确认所选成果并回传</button>
+        <button disabled={action.busy || !manifest || !resultIds.length}>
+          确认所选成果并回传
+        </button>
         <Notice text={action.message} />
       </form>
     </details>
+  );
+}
+
+function RunActions({ run, detail, api, onRefresh }: any) {
+  const action = useAction(),
+    [sourceIds, setSourceIds] = useState<string[]>([]),
+    [replaceInputs, setReplaceInputs] = useState(false);
+  const request = useRef({ key: crypto.randomUUID(), signature: "" });
+  const stale =
+    run.status === "stale" || run.input_revision !== detail.input_revision;
+  return (
+    <details className="ops-run-actions">
+      <summary>修订或取消任务</summary>
+      <form
+        className="ops-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const b = new FormData(e.currentTarget),
+            reason = String(b.get("reason") || "");
+          const mode = (e as any).submitter?.value || "revise";
+          void action.act(
+            async () => {
+              if (mode === "cancel")
+                await api(`/runs/${run.id}/cancel`, {
+                  version: run.version,
+                  reason,
+                });
+              else {
+                if ((stale || replaceInputs) && !sourceIds.length)
+                  throw Error("请重新选择本次输入版本");
+                const body = {
+                  version: run.version,
+                  reason,
+                  ...(stale || replaceInputs ? { fileIds: sourceIds } : {}),
+                };
+                const signature = JSON.stringify(body);
+                if (request.current.signature !== signature)
+                  request.current = { key: crypto.randomUUID(), signature };
+                await api(`/runs/${run.id}/revise`, {
+                  ...body,
+                  key: request.current.key,
+                });
+              }
+              await onRefresh();
+            },
+            mode === "cancel"
+              ? "任务已取消，原记录仍保留"
+              : "已建立修订任务，请下载新任务包重新处理",
+          );
+        }}
+      >
+        <p className="ops-wide muted">
+          修订会建立新任务并保留旧记录；取消或修订后须重新提交独立复核。
+        </p>
+        <label className="ops-wide">
+          原因
+          <textarea
+            name="reason"
+            required
+            maxLength={2000}
+            placeholder="说明修订或取消的原因"
+          />
+        </label>
+        {!stale && (
+          <label className="check ops-wide">
+            <input
+              type="checkbox"
+              checked={replaceInputs}
+              onChange={(e) => setReplaceInputs(e.currentTarget.checked)}
+            />
+            重新选择输入文件
+          </label>
+        )}
+        {(stale || replaceInputs) && (
+          <div className="ops-wide">
+            <FilePicker
+              api={api}
+              scope={{
+                companyId: detail.company_id,
+                period: detail.period,
+                orderId: detail.id,
+              }}
+              purpose="source"
+              selectedIds={sourceIds}
+              onChange={setSourceIds}
+              refreshKey={detail.version}
+              disabled={action.busy}
+              title="修订任务的输入"
+            />
+          </div>
+        )}
+        <div className="ops-inline ops-wide">
+          <button name="action" value="revise" disabled={action.busy}>
+            建立修订任务
+          </button>
+          <button
+            name="action"
+            value="cancel"
+            className="secondary"
+            disabled={action.busy}
+          >
+            取消此任务
+          </button>
+        </div>
+        <Notice text={action.message} />
+      </form>
+    </details>
+  );
+}
+
+export function ResultOrigins({ detail, api, onRefresh, write }: any) {
+  const [page, setPage] = useState(0),
+    [data, setData] = useState<any>(null),
+    [error, setError] = useState(""),
+    [choices, setChoices] = useState<Record<string, string>>({});
+  const action = useAction();
+  useEffect(() => {
+    let alive = true;
+    setData(null);
+    setError("");
+    setChoices({});
+    if (detail.status !== "archived")
+      void api(`/orders/${detail.id}/result-origins?limit=50&offset=${page}`)
+        .then((v: any) => {
+          if (alive) {
+            if (!v.rows.length && page && v.total <= page) setPage(0);
+            else setData(v);
+          }
+        })
+        .catch((e: any) => {
+          if (alive) setError(e.message);
+        });
+    return () => {
+      alive = false;
+    };
+  }, [detail.id, detail.version, page]);
+  if (detail.status === "archived" || (!error && !data?.total)) return null;
+  return (
+    <section className="ops-origins">
+      <h4>历史成果归属待确认</h4>
+      <p className="muted">
+        仅处理尚未归档的历史文件。确认属于某个 WorkBuddy
+        任务、人工处理成果，或从本次送审中排除。
+      </p>
+      <Notice text={error} />
+      {data && (
+        <form
+          className="ops-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const b = new FormData(e.currentTarget);
+            void action.act(async () => {
+              const assignments = Object.entries(choices)
+                .filter(([, value]) => !!value)
+                .map(([fileId, value]) =>
+                  value.startsWith("run:")
+                    ? { fileId, origin: "workbuddy", runId: value.slice(4) }
+                    : { fileId, origin: value },
+                );
+              if (!assignments.length) throw Error("请至少确认一份文件的归属");
+              await api(`/orders/${detail.id}/result-origins`, {
+                version: detail.version,
+                assignments,
+                reason: b.get("reason"),
+              });
+              await onRefresh();
+            }, "已确认所选历史成果归属");
+          }}
+        >
+          <div className="ops-wide">
+            {data.rows.map((f: any) => (
+              <div className="ops-file-row" key={f.id}>
+                <span className="ops-file-name">
+                  {f.name}
+                  <small>
+                    v{f.version} · {f.id.slice(0, 8)}
+                  </small>
+                </span>
+                <select
+                  aria-label={`确认 ${f.name} 归属`}
+                  disabled={!write || !data.canResolve || action.busy}
+                  value={choices[f.id] || ""}
+                  onChange={(e) =>
+                    setChoices((v) => ({ ...v, [f.id]: e.currentTarget.value }))
+                  }
+                >
+                  <option value="">待确认</option>
+                  <option value="manual">人工处理成果</option>
+                  <option value="excluded">排除本次送审</option>
+                  {(f.candidateRuns || data.candidateRuns || []).map(
+                    (r: any) => (
+                      <option value={`run:${r.id}`} key={r.id}>
+                        任务 {r.id.slice(0, 8)} ·{" "}
+                        {r.workflow_id || r.workflowId}
+                        {r.priorReference ? " · 原记录引用" : ""}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </div>
+            ))}
+          </div>
+          <div className="ops-file-pager ops-wide">
+            <span>待确认 {data.total} 份</span>
+            <button
+              type="button"
+              className="secondary"
+              disabled={!page || action.busy}
+              onClick={() => setPage((p) => Math.max(0, p - 50))}
+            >
+              上一页
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              disabled={page + 50 >= data.total || action.busy}
+              onClick={() => setPage((p) => p + 50)}
+            >
+              下一页
+            </button>
+          </div>
+          {write && data.canResolve && (
+            <>
+              <label className="ops-wide">
+                确认依据
+                <textarea name="reason" required maxLength={2000} />
+              </label>
+              <button
+                disabled={action.busy || !Object.values(choices).some(Boolean)}
+              >
+                确认当前页所选归属
+              </button>
+            </>
+          )}
+          <Notice text={action.message} />
+        </form>
+      )}
+    </section>
   );
 }
 
@@ -470,6 +731,7 @@ export function WorkBuddyHandoff({
   const action = useAction(),
     [jobs, setJobs] = useState<any[]>([]),
     [jobError, setJobError] = useState(""),
+    [sourceIds, setSourceIds] = useState<string[]>([]),
     request = useRef({ key: crypto.randomUUID(), body: "" });
   useEffect(() => {
     let alive = true;
@@ -517,7 +779,8 @@ export function WorkBuddyHandoff({
           open={
             !detail.runs.some(
               (r: any) =>
-                r.status === "external" && r.revision === detail.revision,
+                r.status === "external" &&
+                r.input_revision === detail.input_revision,
             )
           }
         >
@@ -529,7 +792,7 @@ export function WorkBuddyHandoff({
               const b = new FormData(e.currentTarget);
               const body = {
                 workflowId: b.get("workflowId"),
-                fileIds: b.getAll("source"),
+                fileIds: sourceIds,
                 taskBrief: { requirements: String(b.get("brief") || "") },
               };
               const signature = JSON.stringify({
@@ -567,23 +830,34 @@ export function WorkBuddyHandoff({
                 placeholder="说明范围、处理口径和需要交回的成果。"
               />
             </label>
-            <fieldset className="ops-wide">
-              <legend>本次输入版本（同名最新）</legend>
-              {latest(detail.files, "source").map((f) => (
-                <label className="check" key={f.id}>
-                  <input type="checkbox" name="source" value={f.id} />
-                  {f.name} · v{f.version}
-                </label>
-              ))}
-            </fieldset>
-            <button
-              disabled={action.busy || !latest(detail.files, "source").length}
-            >
+            <div className="ops-wide">
+              <FilePicker
+                api={api}
+                scope={{
+                  companyId: detail.company_id,
+                  period: detail.period,
+                  orderId: detail.id,
+                }}
+                purpose="source"
+                selectedIds={sourceIds}
+                onChange={setSourceIds}
+                refreshKey={detail.version}
+                disabled={action.busy}
+                title="本次输入版本（可跨页选择）"
+              />
+            </div>
+            <button disabled={action.busy || !sourceIds.length}>
               建立任务并生成任务包
             </button>
           </form>
         </details>
       )}
+      <ResultOrigins
+        detail={detail}
+        api={api}
+        onRefresh={onRefresh}
+        write={write}
+      />
       <Notice text={action.message || jobError} />
       {!detail.runs.length && (
         <p className="muted">
@@ -595,8 +869,9 @@ export function WorkBuddyHandoff({
           (j) => j.kind === "run_export" && j.run_id === r.id,
         );
         const current =
+          r.active !== false &&
           r.status === "external" &&
-          r.revision === detail.revision &&
+          r.input_revision === detail.input_revision &&
           detail.status === "processing";
         return (
           <article className="ops-run" key={r.id}>
@@ -617,8 +892,14 @@ export function WorkBuddyHandoff({
                       external: "外部处理中",
                       returned: "成果已回传",
                       stale: "输入已失效",
+                      cancelled: "已取消",
+                      superseded: "已有修订任务",
                     } as any
-                  )[r.status]
+                  )[
+                    r.active === false && r.status !== "cancelled"
+                      ? "superseded"
+                      : r.status
+                  ]
                 }
               </span>
             </div>
@@ -695,21 +976,39 @@ export function WorkBuddyHandoff({
                 />
               </>
             )}
+            {write && !current && job?.status === "completed" && (
+              <a className="ops-link" href={`/api/v1/jobs/${job.id}/download`}>
+                下载该任务的历史输入包
+              </a>
+            )}
             {r.status === "returned" && (
               <div className="ops-receipt">
                 <strong>回传记录</strong>
-                {r.result_files.map((id: string) => {
-                  const f = detail.files.find((f: any) => f.id === id);
-                  return (
-                    <p>
-                      {f?.name || "成果"} · v{f?.version}
-                    </p>
-                  );
-                })}
+                <FileSnapshotList
+                  api={api}
+                  scope={{
+                    companyId: detail.company_id,
+                    period: detail.period,
+                    orderId: detail.id,
+                  }}
+                  ids={r.result_files || []}
+                  title="回传时的固定成果版本"
+                />
                 <p>{r.check_result?.summary}</p>
                 <small>结构检查完成，财务判断以独立复核为准。</small>
               </div>
             )}
+            {write &&
+              r.active !== false &&
+              !["archived", "collecting", "checking"].includes(detail.status) &&
+              !["cancelled", "superseded"].includes(r.status) && (
+                <RunActions
+                  run={r}
+                  detail={detail}
+                  api={api}
+                  onRefresh={onRefresh}
+                />
+              )}
             {r.status === "stale" && (
               <small>
                 原输入或批次已变化，请依据当前资料重新建立任务。历史记录保留。

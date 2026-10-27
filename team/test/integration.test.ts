@@ -120,6 +120,7 @@ test(
       content: string,
       expected = 200,
       materialIndex?: number,
+      runId?: string,
     ) {
       const d = await detail(),
         boundary = "testBoundary";
@@ -129,7 +130,9 @@ test(
       const s = sessions[who];
       const r = await app.inject({
         method: "POST",
-        url: `/api/v1/orders/${oid}/files?kind=${kind}&version=${d.version}${materialIndex === undefined ? "" : "&materialIndex=" + materialIndex}`,
+        url: runId
+          ? `/api/v1/runs/${runId}/files?version=${d.runs.find((r: any) => r.id === runId).version}&key=${randomUUID()}`
+          : `/api/v1/orders/${oid}/files?kind=${kind}&origin=manual&version=${d.version}${materialIndex === undefined ? "" : "&materialIndex=" + materialIndex}`,
         headers: {
           cookie: s.cookie,
           "x-csrf-token": s.csrf,
@@ -380,6 +383,9 @@ test(
           "result",
           "result.csv",
           "reference,amount\nA,1.00",
+          200,
+          undefined,
+          run.id,
         );
         const rd = (await detail()).runs[0];
         await req(
@@ -411,18 +417,23 @@ test(
         await action("review", "reject", { reason: "补充说明" });
         const workflow = (await req("op", "/workflows"))[0].id;
         async function rerun() {
-          const r = await req("op", `/orders/${oid}/runs`, {
-            version: (await detail()).version,
-            workflowId: workflow,
+          const old = (await detail()).runs.find((r: any) => r.active);
+          const r = await req("op", `/runs/${old.id}/revise`, {
+            version: old.version,
+            reason: "修订成果",
+            key: randomUUID(),
             fileIds: [source.id],
           });
-          const rd = (await detail()).runs.find((x: any) => x.id === r.id);
           result = await upload(
             "op",
             "result",
             "result.csv",
             "reference,amount\nA,1.00\n",
+            200,
+            undefined,
+            r.id,
           );
+          const rd = (await detail()).runs.find((x: any) => x.id === r.id);
           await req("op", `/runs/${r.id}/return`, {
             version: rd.version,
             resultFileIds: [result.id],
@@ -754,8 +765,9 @@ test(
         await action("op", "finish_collection");
         await action("op", "start_processing");
         assert.equal((await detail()).readiness.ready, false);
-        await upload("op", "result", "成果.txt", "虚构成果");
-        assert.equal((await detail()).readiness.ready, true);
+        const manual = await upload("op", "result", "成果.txt", "虚构成果");
+        assert.equal((await detail()).readiness.blockingReady, true);
+        assert.equal((await detail()).readiness.ready, false);
         await req("owner", `/companies/${created.id}/members`, {
           userId: actors.review.id,
           enabled: false,
@@ -766,7 +778,12 @@ test(
           1,
         );
         assert.equal((await detail()).readiness.ready, false);
-        await action("op", "submit", { checks }, 400);
+        await action(
+          "op",
+          "submit",
+          { checks, manualFileIds: [manual.id] },
+          400,
+        );
         const revokedClient = await req("owner", "/clients/" + created.id);
         assert.equal(revokedClient.staffed, false);
         await req(
@@ -783,7 +800,7 @@ test(
           userId: actors.review.id,
           enabled: true,
         });
-        await action("op", "submit", { checks });
+        await action("op", "submit", { checks, manualFileIds: [manual.id] });
         const queue = `/reviews/queue?period=2026-10&companyId=${created.id}`;
         assert.equal((await req("review", queue)).actionable, 1);
         assert.equal((await req("outsider", queue)).total, 0);
@@ -803,7 +820,7 @@ test(
         const returned = await req("review", queue + "&queue=returned");
         assert.equal(returned.total, 1);
         assert.equal(returned.rows[0].last_review_reason, "请补充流水核对说明");
-        await action("op", "submit", { checks });
+        await action("op", "submit", { checks, manualFileIds: [manual.id] });
         await action("review", "approve", { reason: "更正后核对通过" });
         assert.equal((await req("review", queue + "&queue=delivery")).total, 1);
         const evidence = await upload(

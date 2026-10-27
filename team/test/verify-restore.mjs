@@ -19,6 +19,7 @@ try {
     "work_orders",
     "files",
     "runs",
+    "result_origins",
     "reviews",
     "material_followups",
     "audit_events",

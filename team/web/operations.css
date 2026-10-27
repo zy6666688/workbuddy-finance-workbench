@@ -267,3 +267,21 @@
     padding-right: 4px;
   }
 }
+.ops-files { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.ops-file-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; }
+.ops-file-tools input:not([type=checkbox]) { flex: 1 1 180px; min-width: 120px; }
+.ops-file-tools select { width: auto; max-width: 180px; }
+.ops-file-list { margin-top: 8px; max-height: 380px; overflow: auto; }
+.ops-file-row { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); min-width: 0; }
+.ops-file-row > input[type=checkbox] { width: 16px; flex: 0 0 16px; }
+.ops-file-row > span, .ops-file-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.ops-file-row small { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
+.ops-file-row a, .ops-file-row button { flex: 0 0 auto; white-space: nowrap; }
+.ops-file-row select { max-width: 260px; }
+.ops-file-pager { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 10px; }
+.ops-file-pager > span { margin-right: auto; color: var(--muted); font-size: 12px; }
+.ops-file-selection { margin-top: 10px; background: var(--fin-soft); border-radius: 8px; padding: 10px; max-height: 260px; overflow: auto; }
+.ops-run-actions, .ops-origins { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+.ops-origins { background: var(--fin-soft); padding: 14px; border-radius: 10px; }
+@media(max-width:600px) { .ops-file-tools select { max-width: 100%; flex: 1 1 100px; } .ops-file-row { flex-wrap: wrap; } .ops-file-row select { max-width: 100%; width: 100%; } }
+.ops-file-row.ops-file-ineligible { border-left: 3px solid var(--team-danger); padding-left: 8px; } .ops-file-row.ops-file-ineligible small[role=alert] { color: var(--team-danger); }

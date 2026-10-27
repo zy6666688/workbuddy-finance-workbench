@@ -9202,7 +9202,7 @@ export function workflowsForView(workflows, view) {
 
 ## src/finance-dashboard-styles.js
 
-SHA-256: f45cb95b7571fcab5e434bfe1372bbfe58656e17f160e3560ce253c49c09d5ad
+SHA-256: e580daef31419d83910e406141810368f3924c983a140eab1f42232fd519a312
 
 ~~~~~~text
 export const FINANCE_DASHBOARD_STYLES = `
@@ -9241,13 +9241,13 @@ export const FINANCE_DASHBOARD_STYLES = `
 @container finance-workbench (max-width:500px){.fdDesk_workflowIntro{padding:15px}.fdDesk_workflowIntro h1{font-size:20px}.fdDesk_workflowIntro ol{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.fdDesk_workflowIntro li{white-space:normal;text-align:center}.fdDesk_steps{grid-template-columns:1fr}.fdDesk_promptPreview{max-height:320px;font-size:10.5px}.fdDesk_launchBar{align-items:stretch;flex-wrap:wrap}.fdDesk_launchBar>div{flex-basis:100%}}
 
 .fdDesk_storageWarning{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;padding:14px 18px;border:1px solid #b97722;border-radius:12px;background:var(--fin-panel);color:var(--fin-ink);font-size:14px;line-height:1.6}.fdDesk_storageWarning span{flex:1;min-width:180px}.fdDesk_storageWarning button{border:0;border-radius:8px;background:var(--fin-accent);color:white;padding:10px 14px;cursor:pointer;font:inherit}
-`
+.fdDesk_filePageToolbar{gap:12px;flex-wrap:wrap}.fdDesk_filePager,.fdDesk_filePager form,.fdDesk_filePager label{display:flex;align-items:center;gap:8px}.fdDesk_filePager{margin-left:auto;flex-wrap:wrap;font-size:12px;color:var(--fin-muted)}.fdDesk_filePager form{margin:0}.fdDesk_filePager button,.fdDesk_filePager input{height:30px;border:1px solid var(--fin-line);border-radius:6px;background:var(--fin-panel);color:var(--fin-ink);padding:4px 9px}.fdDesk_filePager input{width:54px;text-align:center;padding:4px}.fdDesk_filePager button:disabled{opacity:.4;cursor:default}.fdDesk_filePager button:focus-visible,.fdDesk_filePager input:focus-visible{outline:2px solid var(--fin-accent);outline-offset:2px}@container finance-workbench (max-width:500px){.fdDesk_filePageToolbar{gap:8px}.fdDesk_filePager{margin-left:0;gap:6px}.fdDesk_filePager form{gap:6px}.fdDesk_filePager button{padding:4px 7px}}`
 
 ~~~~~~
 
 ## src/finance-dashboard.jsx
 
-SHA-256: 0c49ce55e8c9cde7e537ffd10b0051e1f78eed193d069de0f2d02d141a9858ef
+SHA-256: 2c89adb86a931bec1e6b83881fa935a01772013f432cf0200ef643a5d905571b
 
 ~~~~~~text
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
@@ -9258,6 +9258,7 @@ import { composeFinanceTask } from './task-prompt.js'
 import { filterWorkflowList, recentWorkflowIds } from './workflow-tools.js'
 import { TaskBrief, WorkflowFilter, WorkbenchPolish } from './workflow-tools.jsx'
 
+import { FileLibrary } from './finance-files.jsx'
 import { VERSION } from './version.js'
 import { copyText } from './clipboard.js'
 import { STORE_PREFIX, readFinanceStore, writeFinanceStore, commitFinanceRestore, storageIssueSnapshot, subscribeStorageIssues } from './finance-storage.js'
@@ -9327,8 +9328,17 @@ function WorkflowCards({ workflows, favorites, onSelect }) {
   return <div className="fdDesk_workflowGrid">{workflows.map(item => <button type="button" key={item.id} onClick={() => onSelect(item)}><span>{item.number} · {item.role}</span><strong>{item.title}</strong><small>{item.desc}</small>{item.extension && <em>高级</em>}<i>{favorites.includes(item.id) ? '★' : '☆'}</i></button>)}</div>
 }
 
-function WorkflowDetail({ workflow, files, favorites, launching, onBack, onFavorite, onLaunch, onCopyPrompt, onChooseFiles, onChooseFolder, launchLabel }) {
-  const matched = useMemo(() => matchScenarioFiles(files, workflow), [files, workflow])
+function WorkflowDetail({ workflow, files, favorites, launching, onBack, onFavorite, onLaunch, onCopyPrompt, onChooseFiles, onChooseFolder, launchLabel, fileSource }) {
+  const localMatched = useMemo(() => matchScenarioFiles(files, workflow), [files, workflow])
+  const [remoteMatched, setRemoteMatched] = useState([]), [matchError, setMatchError] = useState('')
+  useEffect(() => {
+    if (!fileSource) return
+    let cancelled=false
+    setRemoteMatched([]); setMatchError('')
+    fileSource.suggest(workflow.id).then(result=>{if(!cancelled)setRemoteMatched(result.rows)}).catch(e=>{if(!cancelled)setMatchError(e.message)})
+    return ()=>{cancelled=true}
+  },[workflow.id,fileSource?.scopeKey,fileSource?.refreshKey])
+  const matched = fileSource ? remoteMatched : localMatched
   const [showPrompt, setShowPrompt] = useState(false)
   const [taskBrief, setTaskBrief] = useState({})
   const preparedWorkflow = { ...workflow, taskBrief }
@@ -9340,6 +9350,7 @@ function WorkflowDetail({ workflow, files, favorites, launching, onBack, onFavor
       <article><span>2</span><div><strong>上传后先看预览</strong><small>字段、口径和异常规则不清楚时，先不跑全量。</small></div></article>
       <article><span>3</span><div><strong>人工复核后交付</strong><small>核对笔数、金额、异常和生成文件。</small></div></article>
     </section>
+    {fileSource?.selection}{matchError && <p role="alert">{matchError}</p>}
     <TaskBrief value={taskBrief} onChange={setTaskBrief}/>
     <Panel title="一句话发起" note="不会写提示词也没关系，直接按这句话开始"><div className="fdDesk_sampleRequest"><p>{workflow.sampleRequest}</p><button type="button" onClick={() => onCopyPrompt(workflow, 'sample')}>复制这句话</button></div></Panel>
     <div className="fdDesk_detailGrid"><Panel title="输入材料" note="缺少时会一次列出，不反复零散追问"><ul className="fdDesk_list">{workflow.inputs.map(item => <li key={item}>{item}</li>)}</ul></Panel><Panel title="关键规则" note="规则不清楚时先诊断，不直接跑全量"><ul className="fdDesk_list is-rules">{workflow.rules.map(item => <li key={item}>{item}</li>)}</ul></Panel></div>
@@ -9416,15 +9427,7 @@ function ManagementModulePage({ module, snapshot, todos, workflows, favorites, o
   return <div className="fdDesk_page"><div className="fdDesk_moduleHero fdDesk_moduleHeroPro"><div><small>{module.eyebrow} · {module.category}</small><h1>{module.title}</h1><p>{module.intro}</p><div><button type="button" onClick={() => workflows[0] && onSelect(workflows[0])}>启动推荐工作流</button><button type="button" className="is-secondary" onClick={onNewTodo}>新建模块待办</button><button type="button" className="is-secondary" onClick={onFiles}>打开资料库</button></div></div><span>{workflows.length}<small>个适用场景</small></span></div><div className="fdDesk_moduleContext"><article><span>主要责任岗位</span><strong>{guide[0]}</strong></article><article><span>建议工作频率</span><strong>{guide[1]}</strong></article><article className="is-focus"><span>新手先从这里开始</span><strong>{guide[2]}</strong></article><article><span>本模块复核断言</span><strong>{assurance}</strong></article></div><div className="fdDesk_moduleMetrics">{module.snapshotKeys.map(([label, key]) => <article key={key}><span>{label}</span><strong>{formatMoney(key === 'profit' ? profit : snapshot[key])}</strong></article>)}<article><span>未完成待办</span><strong>{todoCount}</strong></article><article><span>关键控制点</span><strong>{module.controls.length}</strong></article></div><Panel title="标准处理链路" note="每一步都有输入、判断与可交付结果"><ol className="fdDesk_process">{module.process.map(([title, note], index) => <li key={title}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{title}</strong><small>{note}</small></div></li>)}</ol></Panel><div className="fdDesk_moduleColumns"><Panel title="关键控制" note="优先检查高影响、不可逆和跨系统事项"><ul className="fdDesk_controlList">{module.controls.map(item => <li key={item}>{item}</li>)}</ul></Panel><Panel title="固定交付物" note="输出名称固定，方便复核、检索与归档"><div className="fdDesk_deliverables">{module.deliverables.map((item, index) => <article key={item}><span>{index + 1}</span><strong>{item}</strong></article>)}</div></Panel></div><Panel title="适用 AI 工作流" note="先看规则与样本，再由人工确认正式结果"><WorkflowCards workflows={workflows} favorites={favorites} onSelect={onSelect}/></Panel></div>
 }
 
-function FileLibrary({ files, workspace, onOpenWorkspace, onChooseFiles, onChooseFolder, onUploadFiles, onReferenceFile, onDownloadFile, onStatus, onAudit, pinnedFiles, setPinnedFiles }) {
-  const [query, setQuery] = useState(''); const [kind, setKind] = useState('all'); const [folder, setFolder] = useState('all'); const [order, setOrder] = useState('recent'); const [dragging, setDragging] = useState(false); const [pinned, setPinned] = [pinnedFiles, setPinnedFiles]
-  useEffect(() => { if (!files.length || pinned.length) return; const defaults = defaultPinnedPaths(files); if (defaults.length) setPinned(defaults) }, [files.length])
-  const summary = useMemo(() => summarizeFiles(files), [files]); const folders = useMemo(() => [...new Set(files.map(file => topFolder(file.relative)))].sort((a, b) => a.localeCompare(b, 'zh-CN')), [files]); const visible = useMemo(() => orderFiles(filterFiles(files, query, kind, folder), pinned, order), [files, query, kind, folder, pinned, order])
-  const togglePin = path => { const pinning = !pinned.includes(path); setPinned(current => current.includes(path) ? current.filter(item => item !== path) : [...current, path]); onAudit('资料库', pinning ? '置顶文件' : '取消置顶', path); onStatus('资料库置顶已更新') }
-  return <div className="fdDesk_page"><div className="fdDesk_directory"><span>库</span><div><small>当前财务资料目录</small><strong>{workspace.name}</strong><em title={workspace.path}>{workspace.path || '等待工作区准备'}</em></div><button type="button" onClick={onOpenWorkspace}>{workspace.mode === 'index' ? '文件索引说明' : '打开资料目录'}</button></div><div className={`fdDesk_dropzone ${dragging ? 'is-dragging' : ''}`} onDragEnter={event => { event.preventDefault(); setDragging(true) }} onDragOver={event => event.preventDefault()} onDragLeave={event => { if (event.currentTarget === event.target) setDragging(false) }} onDrop={event => { event.preventDefault(); setDragging(false); onUploadFiles([...event.dataTransfer.files]) }}><span>＋</span><div><strong>{workspace.mode === 'index' ? '选择并索引财务资料' : '上传并存档财务资料'}</strong><small>{workspace.mode === 'index' ? '支持文件、文件夹和拖放；执行时请在对话中添加原始附件。' : '支持文件、文件夹和拖放；原始文件不会被覆盖。'}</small></div><button type="button" onClick={onChooseFiles}>选择文件</button><button type="button" onClick={onChooseFolder}>选择文件夹</button></div><div className="fdDesk_fileStats">{[['文件', summary.total], ['表格', summary.sheet], ['文档', summary.document], ['图片', summary.image], ['总大小', formatSize(summary.bytes)]].map(([label, value]) => <div key={label}><strong>{value}</strong><span>{label}</span></div>)}</div><div className="fdDesk_fileFilters"><input value={query} onChange={event => setQuery(event.target.value)} placeholder="搜索文件名或目录"/><select value={kind} onChange={event => setKind(event.target.value)}>{Object.entries(TYPE_LABELS).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select><select value={folder} onChange={event => setFolder(event.target.value)}><option value="all">全部目录</option>{folders.map(item => <option key={item} value={item}>{item}</option>)}</select><select value={order} onChange={event => setOrder(event.target.value)}><option value="recent">最近更新</option><option value="name">按名称</option><option value="size">按大小</option></select></div><div className="fdDesk_fileHeading"><span>{visible.length} 个结果</span><span>置顶文件优先显示</span></div><div className="fdDesk_fileList">{visible.slice(0, 300).map(file => <article key={file.relative} className={pinned.includes(file.relative) ? 'is-pinned' : ''}><button type="button" className="fdDesk_pin" aria-label={pinned.includes(file.relative) ? `取消置顶${file.name}` : `置顶${file.name}`} onClick={() => togglePin(file.relative)}>{pinned.includes(file.relative) ? '★' : '☆'}</button><span className={`is-${fileKind(file.relative)}`}>{fileKind(file.relative).slice(0, 1).toUpperCase()}</span><div title={file.relative}><strong>{file.name}</strong><small>{file.relative} · {formatSize(file.size)} · {formatDate(file.modifiedAt)}</small></div><button type="button" onClick={() => onReferenceFile(file)}>引用</button><button type="button" onClick={() => onDownloadFile(file)}>下载</button></article>)}{!visible.length && <div className="fdDesk_empty">没有符合条件的文件</div>}</div></div>
-}
-
-export function FinanceDashboard({ sessionId, files, workspace, status, onStatus, onRefresh, onOpenWorkspace, onChooseFiles, onChooseFolder, onUploadFiles, onReferenceFile, onDownloadFile, onLaunchWorkflow, launching, onClose, team }) {
+export function FinanceDashboard({ sessionId, files, workspace, status, onStatus, onRefresh, onOpenWorkspace, onChooseFiles, onChooseFolder, onUploadFiles, onReferenceFile, onDownloadFile, onLaunchWorkflow, launching, onClose, team, fileSource }) {
   const today = localDateKey(); const [view, setView] = useState('home'); const [mobileNav, setMobileNav] = useState(false); const [selectedWorkflow, setSelectedWorkflow] = useState(null); const [profile, setProfile] = useStoredState('profile', PROFILE_DEFAULT); const [todosRaw, setTodos] = useStoredState('todos', () => defaultFinanceTodos(today)); const todos = useMemo(() => todosRaw.map(item => normalizeTodo(item, today)), [todosRaw, today]); const [closeTasks, setCloseTasks] = useStoredState('closeTasks', DEFAULT_CLOSE_TASKS); const [favorites, setFavorites] = useStoredState('favorites', ['bank-reconcile', 'invoice-ledger', 'month-close-completeness', 'budget-variance']); const [fieldDictionary, setFieldDictionary] = useStoredState('fieldDictionary', DEFAULT_FIELD_DICTIONARY); const [settings, setSettings] = useStoredState('settings', SETTINGS_DEFAULT); const [snapshots, setSnapshots] = useStoredState('snapshots', []); const [auditLog, setAuditLog] = useStoredState('auditLog', []); const [snapshotDraft, setSnapshotDraft] = useState(() => emptyFinanceSnapshot(profile.period)); const [workflowQuery, setWorkflowQuery] = useState(''); const [workflowGroup, setWorkflowGroup] = useState('all'); const [newTodo, setNewTodo] = useState({ text: '', category: '通用', due: today, priority: '中' }); const [newField, setNewField] = useState({ name: '', type: '文本', rule: '' }); const importPicker = useRef(null)
   const [pinnedFiles, setPinnedFiles] = useStoredState('pinnedFiles', [])
   const storageIssue = useSyncExternalStore(subscribeStorageIssues, storageIssueSnapshot, storageIssueSnapshot)
@@ -9433,7 +9436,7 @@ export function FinanceDashboard({ sessionId, files, workspace, status, onStatus
   const [workflowFilter, setWorkflowFilter] = useState('all')
   const [exceptionsRaw, setExceptions] = useStoredState('exceptions', [])
   const exceptions = useMemo(() => exceptionsRaw.map(item => normalizeFinanceException(item, today)), [exceptionsRaw, today])
-  const summary = useMemo(() => summarizeFiles(files), [files]); const progress = useMemo(() => closeProgress(closeTasks), [closeTasks]); const exceptionSummary = useMemo(() => summarizeFinanceExceptions(exceptions, settings, today), [exceptions, settings, today]); const activeTodos = todos.filter(item => !item.done).sort((a, b) => a.due.localeCompare(b.due) || ['高', '中', '低'].indexOf(a.priority) - ['高', '中', '低'].indexOf(b.priority)); const currentSnapshot = useMemo(() => normalizeFinanceSnapshot(snapshots.find(item => item.period === profile.period) || emptyFinanceSnapshot(profile.period), profile.period), [snapshots, profile.period]); const filteredWorkflows = useMemo(() => filterWorkflowList(FINANCE_WORKFLOWS.filter(item => workflowGroup === 'all' || item.group === workflowGroup), { query: workflowQuery, filter: workflowFilter, favorites, recent }), [workflowQuery, workflowGroup, workflowFilter, favorites, recent]); const featured = favorites.map(id => FINANCE_WORKFLOWS.find(item => item.id === id)).filter(Boolean).slice(0, 4)
+  const summary = fileSource?.summary || summarizeFiles(files); const progress = useMemo(() => closeProgress(closeTasks), [closeTasks]); const exceptionSummary = useMemo(() => summarizeFinanceExceptions(exceptions, settings, today), [exceptions, settings, today]); const activeTodos = todos.filter(item => !item.done).sort((a, b) => a.due.localeCompare(b.due) || ['高', '中', '低'].indexOf(a.priority) - ['高', '中', '低'].indexOf(b.priority)); const currentSnapshot = useMemo(() => normalizeFinanceSnapshot(snapshots.find(item => item.period === profile.period) || emptyFinanceSnapshot(profile.period), profile.period), [snapshots, profile.period]); const filteredWorkflows = useMemo(() => filterWorkflowList(FINANCE_WORKFLOWS.filter(item => workflowGroup === 'all' || item.group === workflowGroup), { query: workflowQuery, filter: workflowFilter, favorites, recent }), [workflowQuery, workflowGroup, workflowFilter, favorites, recent]); const featured = favorites.map(id => FINANCE_WORKFLOWS.find(item => item.id === id)).filter(Boolean).slice(0, 4)
   const recordEvent = (type, action, detail = '') => setAuditLog(current => [{ id: makeId('audit'), at: new Date().toISOString(), type, action, detail: String(detail).slice(0, 180) }, ...current].slice(0, 200))
   useEffect(() => { setView('home'); setSelectedWorkflow(null); setMobileNav(false) }, [sessionId]); useEffect(() => { setSnapshotDraft(currentSnapshot) }, [profile.period, snapshots])
   const changeView = next => { const resolved = team?.redirect?.[next] || next; setView(resolved); setSelectedWorkflow(null); setMobileNav(false); team?.onViewChange?.(resolved) }; const toggleFavorite = workflowId => { const adding = !favorites.includes(workflowId); setFavorites(current => current.includes(workflowId) ? current.filter(item => item !== workflowId) : [...current, workflowId]); recordEvent('工作流', adding ? '收藏' : '取消收藏', workflowId) }; const selectWorkflow = workflow => { setSelectedWorkflow(workflow); setRecent(current => recentWorkflowIds(current, workflow.id)); recordEvent('工作流', '打开流程', workflow.title) }; const launchWorkflow = workflow => { recordEvent('工作流', '准备任务指令', workflow.title); onLaunchWorkflow(workflow) }
@@ -9472,7 +9475,7 @@ export function FinanceDashboard({ sessionId, files, workspace, status, onStatus
   }
   useEffect(() => { if (team?.viewRequest?.view) changeView(team.viewRequest.view) }, [team?.viewRequest?.id])
   const frameProps = { team, storageIssue, onExportBackup: exportData, view, profile, status, mobileNav, setMobileNav, changeView, theme, setTheme: changeTheme, onRefresh, onOpenWorkspace, onClose }
-  if (selectedWorkflow) return <FinanceDashboardFrame {...frameProps}><WorkflowDetail key={selectedWorkflow.id} workflow={selectedWorkflow} files={files} favorites={favorites} launching={launching} launchLabel={team ? '创建执行记录并生成任务包' : undefined} onBack={() => setSelectedWorkflow(null)} onFavorite={toggleFavorite} onLaunch={launchWorkflow} onCopyPrompt={copyWorkflowPrompt} onChooseFiles={onChooseFiles} onChooseFolder={onChooseFolder}/></FinanceDashboardFrame>
+  if (selectedWorkflow) return <FinanceDashboardFrame {...frameProps}><WorkflowDetail fileSource={fileSource} key={selectedWorkflow.id} workflow={selectedWorkflow} files={files} favorites={favorites} launching={launching} launchLabel={team ? '创建执行记录并生成任务包' : undefined} onBack={() => setSelectedWorkflow(null)} onFavorite={toggleFavorite} onLaunch={launchWorkflow} onCopyPrompt={copyWorkflowPrompt} onChooseFiles={onChooseFiles} onChooseFolder={onChooseFolder}/></FinanceDashboardFrame>
   let content
   if (team && view.startsWith('team:')) content = team.renderView(view)
   else if (view === 'home') content = <OverviewPage profile={profile} snapshot={currentSnapshot} snapshots={snapshots} draft={snapshotDraft} setDraft={setSnapshotDraft} saveSnapshot={saveSnapshot} activeTodos={activeTodos} setTodos={setTodos} progress={progress} closeTasks={closeTasks} exceptionSummary={exceptionSummary} featured={featured} favorites={favorites} summary={summary} changeView={changeView} onSelectWorkflow={selectWorkflow}/>
@@ -9482,7 +9485,7 @@ export function FinanceDashboard({ sessionId, files, workspace, status, onStatus
   else if (FINANCE_MODULES[view] && view !== 'audit') { const module = FINANCE_MODULES[view]; const workflows = module.workflowIds.map(id => FINANCE_WORKFLOWS.find(item => item.id === id)).filter(Boolean); content = <ManagementModulePage module={module} snapshot={currentSnapshot} todos={todos} workflows={workflows} favorites={favorites} onSelect={selectWorkflow} onNewTodo={() => { setNewTodo(current => ({ ...current, category: module.todoCategories[0] || '通用' })); changeView('todos') }} onFiles={() => changeView('files')}/> }
   else if (view === 'audit') content = <div className="fdDesk_page"><div className="fdDesk_moduleHero fdDesk_moduleHeroPro"><div><small>AUDIT TRAIL · 治理与系统</small><h1>关键动作有迹可循</h1><p>记录工作台内的新增、恢复、启动、收藏和设置变更；日志仅保存在本机。</p></div><span>{auditLog.length}<small>条本机记录</small></span></div><Panel title="操作日志" note="最多保留最近 200 条" action={<button className="fdDesk_textButton" type="button" onClick={() => downloadJson(auditLog, `财务工作台-审计日志-${today}.json`)}>导出日志</button>}><div className="fdDesk_auditList">{auditLog.map(item => <article key={item.id}><time>{formatDate(item.at)}</time><span>{item.type}</span><div><strong>{item.action}</strong>{item.detail && <small>{item.detail}</small>}</div></article>)}{!auditLog.length && <div className="fdDesk_empty">完成一次新增、备份或工作流操作后，这里会出现留痕。</div>}</div></Panel></div>
   else if (view === 'close') content = <div className="fdDesk_page"><div className="fdDesk_moduleHero fdDesk_moduleHeroPro"><div><small>MONTH-END CONTROL</small><h1>月结不是“做完”，而是“有证据地完成”</h1><p>逐项确认责任人、证据、差异状态与预计完成时间。</p></div><span>{progress.percent}%<small>完成度</small></span></div><div className="fdDesk_closeGrid"><Panel title="月结任务清单" note="勾选表示已取得完成证据"><div className="fdDesk_closeTasks">{closeTasks.map(item => <label key={item.id} className={item.done ? 'is-done' : ''}><input type="checkbox" checked={item.done} onChange={() => { setCloseTasks(current => current.map(row => row.id === item.id ? { ...row, done: !row.done } : row)); recordEvent('月结', item.done ? '撤销完成' : '确认完成', item.title) }}/><span><strong>{item.title}</strong><small>{item.owner} · 证据：{item.evidence}</small></span></label>)}</div></Panel><Panel title="适用工作流" note="异常检查、资料完整性和归档"><WorkflowCards workflows={workflowsForView(FINANCE_WORKFLOWS, 'close')} favorites={favorites} onSelect={selectWorkflow}/></Panel></div></div>
-  else if (view === 'files') content = <FileLibrary files={files} workspace={workspace} onOpenWorkspace={onOpenWorkspace} onChooseFiles={onChooseFiles} onChooseFolder={onChooseFolder} onUploadFiles={onUploadFiles} onReferenceFile={onReferenceFile} onDownloadFile={onDownloadFile} onStatus={onStatus} onAudit={recordEvent} pinnedFiles={pinnedFiles} setPinnedFiles={setPinnedFiles}/>
+  else if (view === 'files') content = <FileLibrary remote={fileSource} files={files} workspace={workspace} onOpenWorkspace={onOpenWorkspace} onChooseFiles={onChooseFiles} onChooseFolder={onChooseFolder} onUploadFiles={onUploadFiles} onReferenceFile={onReferenceFile} onDownloadFile={onDownloadFile} onStatus={onStatus} onAudit={recordEvent} pinnedFiles={pinnedFiles} setPinnedFiles={setPinnedFiles}/>
   else if (view === 'backup') content = <div className="fdDesk_page"><div className="fdDesk_backupHero"><small>LOCAL-FIRST BACKUP</small><h1>把可复刻的数据带走</h1><p>备份经营快照、待办、异常台账、月结清单、收藏、字段字典、阈值和审计日志；财务原始资料继续留在工作区目录。</p><div><button type="button" onClick={exportData}>导出 JSON 备份</button><button type="button" className="is-secondary" onClick={() => importPicker.current?.click()}>恢复 JSON 备份</button><button type="button" className="is-secondary" onClick={downloadRollback}>下载恢复前副本</button></div></div><div className="fdDesk_backupStats">{[[snapshots.length, '经营期间'], [todos.length, '待办记录'], [exceptions.length, '异常记录'], [fieldDictionary.length, '字段规则'], [auditLog.length, '审计日志']].map(([value, label]) => <article key={label}><strong>{value}</strong><span>{label}</span></article>)}</div><Panel title="新手恢复说明" note="先导出一份当前备份，再导入历史文件"><ol className="fdDesk_restoreSteps"><li><span>1</span><div><strong>导出当前数据</strong><small>保留一份恢复前的回滚副本。</small></div></li><li><span>2</span><div><strong>选择 JSON 文件</strong><small>逐项检查数据、日期和关闭证据；恢复前自动保留副本。</small></div></li><li><span>3</span><div><strong>核对主体与期间</strong><small>恢复后检查首页数字、异常、待办和字段字典。</small></div></li></ol></Panel><input ref={importPicker} hidden type="file" accept="application/json,.json" onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) importData(file) }}/></div>
   else content = <div className="fdDesk_page"><div className="fdDesk_settingsGrid"><Panel title="个人与期间设置" note={team ? '公司和期间通过顶部切换；业务口径按公司保存' : '仅用于本机工作台显示'}><div className="fdDesk_settingsForm"><label>称呼<input disabled={Boolean(team)} value={profile.name} onChange={event => setProfile(current => ({ ...current, name: event.target.value }))}/></label><label>主体 / 工作区<input disabled={Boolean(team)} value={profile.entity} onChange={event => setProfile(current => ({ ...current, entity: event.target.value }))}/></label><label>岗位定位<input disabled={Boolean(team)} value={profile.role} onChange={event => setProfile(current => ({ ...current, role: event.target.value }))}/></label><label>当前期间<input type="month" disabled={Boolean(team)} value={profile.period} onChange={event => setProfile(current => ({ ...current, period: event.target.value }))}/></label></div></Panel><Panel title="关键阈值" note="用于筛选和提醒，不替代财务判断"><div className="fdDesk_settingsForm"><label>大额提醒（元）<input type="number" min="0" value={settings.largeAmount} onChange={event => setSettings(current => ({ ...current, largeAmount: Number(event.target.value) }))}/></label><label>对账日期容差（天）<input type="number" min="0" max="31" value={settings.dateTolerance} onChange={event => setSettings(current => ({ ...current, dateTolerance: Number(event.target.value) }))}/></label><label>异常变化阈值（%）<input type="number" min="0" value={settings.varianceRate} onChange={event => setSettings(current => ({ ...current, varianceRate: Number(event.target.value) }))}/></label></div></Panel></div><Panel title="字段字典" note="把口头经验写成可重复使用的字段规则"><div className="fdDesk_dictionary">{fieldDictionary.map(item => <article key={item.id}><div><strong>{item.name}</strong><small>{item.type}</small></div><p>{item.rule}</p><button type="button" onClick={() => { setFieldDictionary(current => current.filter(row => row.id !== item.id)); recordEvent('设置', '删除字段规则', item.name) }}>×</button></article>)}</div><form className="fdDesk_fieldForm" onSubmit={event => { event.preventDefault(); if (!newField.name.trim() || !newField.rule.trim()) return; setFieldDictionary(current => [...current, { ...newField, id: makeId('field') }]); recordEvent('设置', '新增字段规则', newField.name); setNewField({ name: '', type: '文本', rule: '' }); onStatus('字段规则已添加') }}><input value={newField.name} onChange={event => setNewField(current => ({ ...current, name: event.target.value }))} placeholder="字段名称"/><select value={newField.type} onChange={event => setNewField(current => ({ ...current, type: event.target.value }))}>{['文本', '数值', '日期', '枚举', '布尔'].map(item => <option key={item}>{item}</option>)}</select><input value={newField.rule} onChange={event => setNewField(current => ({ ...current, rule: event.target.value }))} placeholder="口径、必填、唯一性或取值规则"/><button type="submit">添加字段</button></form></Panel><Panel title="8 步自动化搭建法" note="先诊断、后执行；先小样本、后全量"><div className="fdDesk_sopGrid">{SOP_STEPS.map(([no, title, note]) => <article key={no}><span>{no}</span><div><strong>{title}</strong><small>{note}</small></div></article>)}</div></Panel></div>
   if (view === 'settings') content = <div className="fdDesk_page"><Panel title="界面主题" note={team ? '主题按账号保存，不影响其他同事' : '主题会保存在本机，也会随 JSON 备份一起导出'}><ThemePicker theme={theme} onChange={changeTheme}/></Panel><div className="fdDesk_settingsNested">{content}</div></div>
@@ -9924,6 +9927,79 @@ export const SOP_STEPS = [
   ['05', '先方案', '先看字段映射、异常边界与拟输出'], ['06', '小样本', '先跑20-50行并与人工结果逐条核对'],
   ['07', '补边界', '记录误判、漏项、权限与复杂关系'], ['08', '固化 SOP', '固定目录、命名、复核人、频率与日志'],
 ]
+
+~~~~~~
+
+## src/finance-files.jsx
+
+SHA-256: 4b9d02396e6fb567846d78482bf01727d0f57134c2c28e55a5f8d030e127d88e
+
+~~~~~~text
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { defaultPinnedPaths, fileKind, filterFiles, orderFiles, summarizeFiles, topFolder } from './ui-helpers.js'
+
+const types = { all: '全部类型', document: '文档', sheet: '表格', slides: '演示', image: '图片', other: '其他' }
+const size = bytes => Number(bytes) >= 1048576 ? `${(Number(bytes) / 1048576).toFixed(1)} MB` : `${Math.ceil(Number(bytes) / 1024)} KB`
+
+// The standalone plugin keeps its local array; the team host supplies a paged
+// data source. Never treat a server page as the entire collection.
+export function FileLibrary({ files, workspace, remote, onOpenWorkspace, onChooseFiles, onChooseFolder, onUploadFiles, onReferenceFile, onDownloadFile, onStatus, onAudit, pinnedFiles: pinned, setPinnedFiles: setPinned }) {
+  const [query, setQuery] = useState(''), [kind, setKind] = useState('all'), [folder, setFolder] = useState('all'), [order, setOrder] = useState('recent')
+  const [offset, setOffset] = useState(0), [dragging, setDragging] = useState(false), [data, setData] = useState(null), [loading, setLoading] = useState(false), [error, setError] = useState(''), [retry, setRetry] = useState(0)
+  const pageVersion = useRef(''), request = useRef(0), remoteRef = useRef(remote)
+  remoteRef.current = remote
+  const pinKey = JSON.stringify(pinned), filterKey = JSON.stringify([query,kind,folder,order,pinKey,remote?.scopeKey,remote?.refreshKey])
+  const local = useMemo(() => orderFiles(filterFiles(files, query, kind, folder), pinned, order), [files,query,kind,folder,pinKey,order])
+  useEffect(() => { if (!remote && files.length && !pinned.length) { const defaults = defaultPinnedPaths(files); if (defaults.length) setPinned(defaults) } }, [files.length, !!remote])
+  useEffect(() => { pageVersion.current = ''; setOffset(0) }, [filterKey])
+  useEffect(() => {
+    if (!remote) return
+    const n = ++request.current
+    setLoading(true); setError('')
+    // Reset effects run before this effect; don't issue an old offset with a
+    // newly cleared snapshot, then let the zero-offset render load the page.
+    if (offset && !pageVersion.current) { setOffset(0); return }
+    remoteRef.current.load({search:query,fileType:kind,category:folder==='all'?'':folder,sort:order,offset,limit:50,...(offset ? {pageVersion:pageVersion.current} : {})}).then(result => {
+      if (n !== request.current) return
+      if (offset && !result.rows.length && result.filteredTotal) { pageVersion.current=''; setOffset(0); return }
+      pageVersion.current=result.pageVersion; setData(result); setLoading(false)
+    }).catch(e => {
+      if (n !== request.current) return
+      setLoading(false)
+      if (e.status === 409 && offset) { pageVersion.current=''; setOffset(0); onStatus('资料或置顶顺序已变化，已回到第一页；已选引用保留。') }
+      else setError(e.message || '资料读取失败，请重试')
+    })
+    return () => { request.current++ }
+  }, [filterKey,offset,retry,!!remote])
+  useEffect(() => { if (!remote && offset >= local.length && offset) setOffset(Math.max(0,Math.floor(Math.max(0,local.length-1)/50)*50)) }, [local.length,offset,!!remote])
+  const summary = remote ? (data?.scopeSummary || remote.summary || {total:0,bytes:0}) : summarizeFiles(files)
+  const folders = remote ? (data?.facets?.categories || []) : [...new Set(files.map(f=>topFolder(f.relative)))].sort((a,b)=>a.localeCompare(b,'zh-CN'))
+  const rows = remote ? (data?.rows || []) : local.slice(offset,offset+50), total = remote ? (data?.filteredTotal || 0) : local.length
+  const isPinned = f => pinned.includes(f.relative) || pinned.includes(f.id)
+  const pageCount = Math.max(1, Math.ceil(total / 50))
+  const pagination = position => <nav className="fdDesk_filePager" aria-label={`资料${position}分页`}>
+    <button type="button" disabled={loading || !offset} onClick={()=>setOffset(Math.max(0,offset-50))}>上一页</button>
+    <form key={`${position}-${offset}-${total}`} onSubmit={e=>{e.preventDefault(); const value=Number(new FormData(e.currentTarget).get('page')); if(Number.isInteger(value)&&value>=1&&value<=pageCount)setOffset((value-1)*50)}}>
+      <label>第 <input aria-label={`${position}页码`} name="page" type="number" min="1" max={pageCount} defaultValue={Math.floor(offset/50)+1} disabled={loading}/> / {pageCount} 页</label><button disabled={loading} type="submit">跳转</button>
+    </form>
+    <button type="button" disabled={loading || offset+50>=total} onClick={()=>setOffset(offset+50)}>下一页</button>
+  </nav>
+  const togglePin = f => {
+    const pinning = !isPinned(f)
+    setPinned(current => pinning ? [...current, f.relative] : current.filter(x=>x!==f.relative && x!==f.id))
+    onAudit('资料库', pinning ? '置顶文件' : '取消置顶', f.relative); onStatus('资料库置顶已更新')
+  }
+  return <div className="fdDesk_page">
+    <div className="fdDesk_directory"><span>库</span><div><small>当前财务资料{remote ? '范围' : '目录'}</small><strong>{workspace.name}</strong><em title={workspace.path}>{workspace.path || '等待工作区准备'}</em></div><button type="button" onClick={onOpenWorkspace}>{remote ? '打开月度工作单' : workspace.mode==='index' ? '文件索引说明' : '打开资料目录'}</button></div>
+    <div className={`fdDesk_dropzone ${dragging?'is-dragging':''}`} onDragEnter={e=>{e.preventDefault();setDragging(true)}} onDragOver={e=>{e.preventDefault();setDragging(true)}} onDragLeave={e=>{if(e.currentTarget===e.target)setDragging(false)}} onDrop={e=>{e.preventDefault();setDragging(false);onUploadFiles([...e.dataTransfer.files])}}><span>＋</span><div><strong>{workspace.mode==='index'?'选择并索引财务资料':'上传并存档财务资料'}</strong><small>支持文件、文件夹和拖放；原始文件不会被覆盖。{remote?' 文件按业务类别管理。':''}</small></div><button type="button" onClick={onChooseFiles}>选择文件</button><button type="button" onClick={onChooseFolder}>选择文件夹</button></div>
+    <div className="fdDesk_fileStats">{[['文件',summary.total],['表格',summary.sheet],['文档',summary.document],['图片',summary.image],['总大小',size(summary.bytes||0)]].map(([label,value])=><div key={label}><strong>{value||0}</strong><span>{remote?'本期全部':''}{label}</span></div>)}</div>
+    {remote?.selection}
+    <div className="fdDesk_fileFilters"><input aria-label="搜索资料库" value={query} maxLength={100} onChange={e=>setQuery(e.target.value)} placeholder={remote?'搜索文件名或类别':'搜索文件名或目录'}/><select aria-label="文件类型" value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(types).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select><select aria-label={remote?'文件类别':'文件目录'} value={folder} onChange={e=>setFolder(e.target.value)}><option value="all">{remote?'全部类别':'全部目录'}</option>{folders.map(x=><option key={x} value={x}>{x}</option>)}</select><select aria-label="文件排序" value={order} onChange={e=>setOrder(e.target.value)}><option value="recent">最近更新</option><option value="name">按名称</option><option value="size">按大小</option></select></div>
+    <div className="fdDesk_fileHeading fdDesk_filePageToolbar"><span role="status">{loading?'正在读取…':`${total} 个结果 · ${total?offset+1:0}–${Math.min(offset+rows.length,total)}`} · 置顶优先</span>{pagination('上方')}</div>
+    {error?<div role="alert" className="fdDesk_empty">{error} <button type="button" onClick={()=>setRetry(x=>x+1)}>重试</button></div>:<div className="fdDesk_fileList" aria-busy={loading}>{rows.map(file=><article key={file.id||file.relative} className={isPinned(file)?'is-pinned':''}><button type="button" className="fdDesk_pin" disabled={loading} aria-label={`${isPinned(file)?'取消置顶':'置顶'}${file.name}`} onClick={()=>togglePin(file)}>{isPinned(file)?'★':'☆'}</button><span className={`is-${fileKind(file.relative)}`}>{fileKind(file.relative).slice(0,1).toUpperCase()}</span><div title={file.relative}><strong>{file.name}</strong><small>{remote?`${file.category} · v${file.version}`:file.relative} · {size(file.size)} · {new Date(file.modifiedAt).toLocaleDateString('zh-CN')}</small></div><button type="button" disabled={loading || (remote && !file.canReference)} onClick={()=>onReferenceFile(file)}>引用</button><button type="button" disabled={loading || (remote && !file.canDownload)} onClick={()=>onDownloadFile(file)}>下载</button></article>)}{!rows.length&&!loading&&<div className="fdDesk_empty">没有符合条件的文件</div>}</div>}
+    <div className="fdDesk_fileHeading fdDesk_filePageToolbar"><span>每页 50 条</span>{pagination('下方')}</div>
+  </div>
+}
 
 ~~~~~~
 

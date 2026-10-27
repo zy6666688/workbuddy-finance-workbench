@@ -2,8 +2,10 @@ import {
   BatchUpload,
   Followups,
   WorkBuddyHandoff,
+  ResultOrigins,
   TeamManagement,
 } from "./operations.js";
+import { FilePicker, PagedFiles } from "./file-picker.js";
 import { render } from "preact";
 import { useState, useEffect, useRef } from "preact/hooks";
 import "./style.css";
@@ -119,12 +121,27 @@ function Panel({ title, note, children }: any) {
     </section>
   );
 }
+function SingleAttachment({api, scope, purpose, name, initialId, title, disabled, refreshKey}: any) {
+  const [ids,setIds]=useState<string[]>(initialId?[initialId]:[]);
+  useEffect(()=>{setIds(initialId?[initialId]:[])},[initialId]);
+  return <details className="ops-attachment-choice"><summary>{title}{ids.length?" · 已选择":" · 请选择"}</summary>
+    <FilePicker api={api} scope={scope} purpose={purpose} selectedIds={ids} onChange={setIds} maxSelection={1} disabled={disabled} refreshKey={refreshKey} title={title}/>
+    <input type="hidden" name={name} value={ids[0]||""}/>
+  </details>;
+}
 function App() {
   const [deskReady, setDeskReady] = useState(""),
     [deskEpoch, setDeskEpoch] = useState(0),
     [viewRequest, setViewRequest] = useState<any>(null),
     [references, setReferences] = useState<string[]>([]),
-    [workspaceFiles, setWorkspaceFiles] = useState<any[]>([]);
+    [workspaceFiles, setWorkspaceFiles] = useState<any[]>([]),
+    [workspaceSummary, setWorkspaceSummary] = useState<any>({total:0}),
+    [filesEpoch, setFilesEpoch] = useState(0),
+    [referenceFiles, setReferenceFiles] = useState<any[]>([]),
+    [manualFileIds, setManualFileIds] = useState<string[]>([]),
+    [pendingUploads,setPendingUploads] = useState<File[]>([]);
+  const uploadInFlight=useRef(false);
+  const uploadKeys=useRef(new WeakMap<File,Map<string,string>>()), workflowRequest=useRef({signature:"",key:""});
   const uploadPicker = useRef<HTMLInputElement>(null),
     folderPicker = useRef<HTMLInputElement>(null);
   const [user, setUser] = useState<any>(null),
@@ -303,6 +320,7 @@ function App() {
     }, 5000);
     return () => clearInterval(timer);
   }, [page, user?.id]);
+  useEffect(()=>{setManualFileIds([])},[detail?.id,detail?.revision,detail?.input_revision]);
   const activeOrder = useRef<string | undefined>(undefined);
   activeOrder.current = detail?.id;
   async function refreshOrder(id: string) {
@@ -310,7 +328,7 @@ function App() {
   }
   async function openOrder(id: string) {
     const gen = ++generation.current;
-    const d = await api("/orders/" + id);
+    const d = await api("/orders/" + id + "?compact=1");
     if (gen === generation.current) {
       if (d.period !== period) {
         await flushStore();
@@ -375,6 +393,9 @@ function App() {
     setDeskReady("");
     setWorkspaceFiles([]);
     setReferences([]);
+    setReferenceFiles([]);
+    setPendingUploads([]);
+    workflowRequest.current={signature:"",key:""};
     setDeskLoadError("");
     if (!deskKey) return;
     void (async () => {
@@ -386,8 +407,8 @@ function App() {
             : Promise.resolve({ version: 0, state: {} }),
           api("/preferences"),
           cid
-            ? api(`/companies/${cid}/files?period=${period}`)
-            : Promise.resolve([]),
+            ? api(`/companies/${cid}/files/page?period=${period}&limit=50`)
+            : Promise.resolve({rows:[],scopeSummary:{total:0}}),
         ]);
         if (cancelled) return;
         configureStore({
@@ -406,7 +427,8 @@ function App() {
           request: api,
           onNotice: setNotice,
         });
-        setWorkspaceFiles(files);
+        setWorkspaceFiles(files.rows);
+        setWorkspaceSummary(files.scopeSummary);
         setDeskEpoch((x) => x + 1);
         setDeskReady(deskKey);
       } catch (e: any) {
@@ -421,22 +443,33 @@ function App() {
     };
   }, [deskKey, deskLoadAttempt]);
   async function uploadToMonth(selected: File[]) {
+    if(uploadInFlight.current) throw new Error("上一批文件仍在上传，请完成后再选下一批");
+    uploadInFlight.current=true;
+    try {
+    if(selected.length>30 || selected.reduce((n,f)=>n+f.size,0)>200*1024*1024) throw new Error("每批最多30份文件、合计200MB，请分批上传");
     if (!cid) throw new Error("请先选择客户公司");
     const orders = await api(`/orders?companyId=${cid}&period=${period}`);
     if (!orders.length) throw new Error("请先到月度交付创建本月工作单");
-    let order = await api("/orders/" + orders[0].id);
+    let order = await api("/orders/" + orders[0].id + "?compact=1");
+    if (activeDeskKey.current !== deskKey) return;
+    setPendingUploads(selected);
     for (const f of selected) {
       if (activeDeskKey.current !== deskKey) return;
+      let keys=uploadKeys.current.get(f);
+      if(!keys){keys=new Map();uploadKeys.current.set(f,keys);}
+      let key=keys.get(order.id);
+      if(!key){key=crypto.randomUUID();keys.set(order.id,key);}
       const body = new FormData();
       body.set("file", f);
-      await api(
-        `/orders/${order.id}/files?kind=source&version=${order.version}`,
+      const uploaded = await api(
+        `/orders/${order.id}/files?kind=source&version=${order.version}&key=${key}`,
         body,
       );
-      order = await api("/orders/" + order.id);
+      order = {...order,version:uploaded.orderVersion};
     }
-    const files = await api(`/companies/${cid}/files?period=${period}`);
-    if (activeDeskKey.current === deskKey) setWorkspaceFiles(files);
+    const files = await api(`/companies/${cid}/files/page?period=${period}&limit=50`);
+    if (activeDeskKey.current === deskKey) { setPendingUploads([]); setWorkspaceFiles(files.rows); setWorkspaceSummary(files.scopeSummary); setFilesEpoch(x=>x+1); }
+    } finally { uploadInFlight.current=false; }
   }
   if (loading)
     return (
@@ -851,21 +884,7 @@ function App() {
                         });
                       }}
                     >
-                      <select
-                        name="fileId"
-                        defaultValue={item.fileId || ""}
-                        aria-label={item.name + "对应文件"}
-                        required
-                      >
-                        <option value="">选择原件</option>
-                        {detail.files
-                          .filter((f: any) => f.kind === "source")
-                          .map((f: any) => (
-                            <option value={f.id}>
-                              {f.name} · v{f.version}
-                            </option>
-                          ))}
-                      </select>
+                      <SingleAttachment key={detail.id+"/material/"+i} api={api} scope={{companyId:detail.company_id,period:detail.period,orderId:detail.id}} purpose="source" name="fileId" initialId={item.fileId} title={item.name+"对应文件"} disabled={busy} refreshKey={detail.version}/>
                       <button className="secondary" disabled={busy}>
                         关联
                       </button>
@@ -919,6 +938,7 @@ function App() {
               title="当前阶段操作"
               note="状态由服务端检查。经办不能复核自己的交付。"
             >
+              {["review","delivery"].includes(detail.status) && <ResultOrigins detail={detail} api={api} onRefresh={()=>refreshOrder(detail.id)} write={write}/>}
               {detailTab === "review" && detail.submission && (
                 <div className="delivery-submission">
                   <h3>本次送审成果 · 第 {detail.submission.revision} 版</h3>
@@ -991,6 +1011,7 @@ function App() {
                     const b = values(e);
                     void run(() =>
                       orderAction("submit", {
+                        manualFileIds,
                         checks: {
                           passed: b.passed === "on",
                           summary: b.summary,
@@ -1000,6 +1021,8 @@ function App() {
                     );
                   }}
                 >
+                  <details className="ops-attachment-choice"><summary>选择本次送审的人工成果（{manualFileIds.length} 份）</summary><FilePicker api={api} scope={{companyId:detail.company_id,period:detail.period,orderId:detail.id}} purpose="result" origin="manual" eligibleOnly latestOnly selectedIds={manualFileIds} onChange={setManualFileIds} refreshKey={detail.version} title="人工成果"/></details>
+                  <p className="muted">有效任务的回传成果自动纳入；人工成果需明确勾选，未选草稿不进入交付。</p>
                   <Field label="校验说明">
                     <textarea
                       name="summary"
@@ -1017,7 +1040,7 @@ function App() {
                     <input type="checkbox" name="passed" required />
                     我已核对成果与来源，校验通过
                   </label>
-                  <button disabled={busy || !detail.readiness.ready}>
+                  <button disabled={busy || !(detail.readiness.blockingReady && (detail.readiness.ready || manualFileIds.length))}>
                     提交独立复核
                   </button>
                 </form>
@@ -1064,19 +1087,7 @@ function App() {
                   }}
                 >
                   <Field label="实际交付方式" name="channel" />
-                  <Field label="交付证据">
-                    <select name="evidenceFileId" required>
-                      {detail.files
-                        .filter(
-                          (f: any) =>
-                            f.kind === "evidence" &&
-                            f.category !== "系统任务包",
-                        )
-                        .map((f: any) => (
-                          <option value={f.id}>{f.name}</option>
-                        ))}
-                    </select>
-                  </Field>
+                  <SingleAttachment key={detail.id+"/evidence"} api={api} scope={{companyId:detail.company_id,period:detail.period,orderId:detail.id}} purpose="evidence" name="evidenceFileId" title="交付证据" disabled={busy} refreshKey={detail.version}/>
                   <button disabled={busy}>登记交付并归档</button>
                 </form>
               )}
@@ -1158,36 +1169,7 @@ function App() {
               title="资料与成果文件"
               note="上传同名文件会形成新版本。复核后更换成果将退回处理阶段，必须重新复核。"
             >
-              <div className="filelist">
-                {!detail.files.length && (
-                  <p className="muted">
-                    尚未上传文件。先上传原始资料，再关联到资料清单。
-                  </p>
-                )}
-                {detail.files.map((f: any) => (
-                  <div>
-                    <div>
-                      <strong>{f.name}</strong>
-                      <small>
-                        {
-                          (
-                            {
-                              source: "原始资料",
-                              result: "处理成果",
-                              evidence: "证据",
-                            } as any
-                          )[f.kind]
-                        }{" "}
-                        · {f.category} · v{f.version} ·{" "}
-                        {Math.ceil(Number(f.size) / 1024)} KB
-                      </small>
-                    </div>
-                    {write && (
-                      <a href={"/api/v1/files/" + f.id + "/download"}>下载</a>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <PagedFiles api={api} scope={{companyId:detail.company_id,period:detail.period,orderId:detail.id}} refreshKey={detail.version}/>
             </Panel>
           </div>
           <div
@@ -1784,6 +1766,18 @@ function App() {
         key={deskKey + "/" + deskEpoch}
         sessionId={user.id}
         files={workspaceFiles}
+        fileSource={{
+          scopeKey:deskKey,refreshKey:filesEpoch,summary:workspaceSummary,
+          load:async (query:any)=>{
+            if(!cid)return {rows:[],filteredTotal:0,scopeSummary:{total:0},facets:{categories:[]},pageVersion:""};
+            await flushStore();
+            const result=await api(`/companies/${cid}/files/page?`+new URLSearchParams({...query,period}));
+            if(activeDeskKey.current===deskKey) setWorkspaceSummary(result.scopeSummary);
+            return result;
+          },
+          suggest:(workflowId:string)=>cid?api(`/companies/${cid}/files/suggestions?`+new URLSearchParams({period,workflowId})):Promise.resolve({rows:[]}),
+          selection:<div className="ops-reference-tray"><strong>本次任务已引用 {references.length}/100 份原件</strong>{!!pendingUploads.length&&<button type="button" disabled={busy} onClick={()=>void run(()=>uploadToMonth(pendingUploads),"本批资料已全部保存")}>重试未完成上传（已保存文件不会重复入库）</button>}{referenceFiles.map((f:any)=><span key={f.id}>{f.name} · v{f.version}<button type="button" aria-label={"移除引用"+f.name} onClick={()=>{setReferences(x=>x.filter(id=>id!==f.id));setReferenceFiles(x=>x.filter(row=>row.id!==f.id))}}>移除</button></span>)}{!!references.length&&<button type="button" onClick={()=>{setReferences([]);setReferenceFiles([])}}>清空引用</button>}</div>
+        }}
         workspace={{
           name: current?.name || "客户资料库",
           path: cid ? `${current?.name} / ${period}` : "选择公司后读取",
@@ -1819,7 +1813,11 @@ function App() {
           void run(() => uploadToMonth(files), "资料已保存到本月工作单")
         }
         onReferenceFile={(file: any) => {
+          if(!file.canReference || file.kind!=="source") {setNotice("只有可用原件能够作为任务输入");return;}
+          if(references.includes(file.id))return;
+          if(references.length>=100){setNotice("每项任务最多引用100份原件，请拆分任务");return;}
           setReferences((x) => [...new Set([...x, file.id])]);
+          setReferenceFiles(x=>[...x,file]);
           setNotice("已引用 " + file.name + "；发起任务时会固定此版本");
         }}
         onDownloadFile={(file: any) => {
@@ -1833,22 +1831,27 @@ function App() {
             );
             if (!orders.length)
               throw new Error("请先建立本月工作单并完成资料核对");
-            const order = await api("/orders/" + orders[0].id);
+            const order = await api("/orders/" + orders[0].id + "?compact=1");
             if (activeDeskKey.current !== deskKey) return;
             const ids = references;
             if (!ids.length)
               throw new Error(
                 "请先到资料库引用本次输入文件版本，或在月度交付中逐项选择输入",
               );
+            const signature=JSON.stringify([order.id,workflow.id,[...ids].sort(),workflow.taskBrief||{}]);
+            if(workflowRequest.current.signature!==signature) workflowRequest.current={signature,key:crypto.randomUUID()};
+            const requestKey=workflowRequest.current.key;
             const r = await api(`/orders/${order.id}/runs`, {
               version: order.version,
               workflowId: workflow.id,
               taskBrief: workflow.taskBrief || {},
               fileIds: ids,
-              key: crypto.randomUUID(),
+              key: requestKey,
             });
             if (activeDeskKey.current !== deskKey) return;
-            await enqueue("run_export", { runId: r.id }, cid);
+            await api("/jobs",{kind:"run_export",payload:{runId:r.id},companyId:cid,key:"run-export-"+r.id});
+            if (activeDeskKey.current !== deskKey) return;
+            workflowRequest.current={signature:"",key:""};
             if (activeDeskKey.current === deskKey)
               setViewRequest({ id: Date.now(), view: "team:jobs" });
           }, "执行记录已建立，任务包生成中")

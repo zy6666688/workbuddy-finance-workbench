@@ -58,10 +58,23 @@ async function upload(
   form.set("file", new Blob([content]), name);
   return request(
     who,
-    `/orders/${oid}/files?kind=${kind}&version=${version ?? (await detail()).version}&key=${key}${index === undefined ? "" : "&materialIndex=" + index}`,
+    `/orders/${oid}/files?kind=${kind}&version=${version ?? (await detail()).version}&key=${key}${kind === "result" ? "&origin=manual" : ""}${index === undefined ? "" : "&materialIndex=" + index}`,
     form,
     expected,
   );
+}
+async function uploadTask(runId,name,content,expected=200) {
+  const r=(await detail()).runs.find(x=>x.id===runId), form=new FormData();
+  form.set("file",new Blob([content]),name);
+  return request("op",`/runs/${runId}/files?version=${r.version}&key=${randomUUID()}`,form,expected);
+}
+async function reviseRun(runId) {
+  const d=await detail(),r=d.runs.find(x=>x.id===runId);
+  return request("op",`/runs/${runId}/revise`,{version:r.version,reason:"按复核意见补充逐笔说明",fileIds:r.input_files.map(f=>f.id),key:randomUUID()});
+}
+async function returnTask(runId,manifest,ids) {
+  const r=(await detail()).runs.find(x=>x.id===runId);
+  return request("op",`/runs/${runId}/return`,{version:r.version,inputHashes:manifest.inputHashes,resultFileIds:ids,summary:"虚构资料逐笔核对完成，无未解决事项"});
 }
 async function packageFor(runId) {
   const body = {
@@ -239,9 +252,9 @@ try {
   const manifest = await packageFor(run.id);
   // Deterministic simulation of external WorkBuddy processing, not an AI invocation.
   await upload("result", "internal-draft.txt", "未选中内部草稿，不得送审交付");
-  const obsolete = await upload("result", "reconciliation.txt", "旧草稿");
-  const output = await upload(
-    "result",
+  const obsolete = await uploadTask(run.id, "reconciliation.txt", "旧草稿");
+  const output = await uploadTask(
+    run.id,
     "reconciliation.txt",
     "虚构流水 2 笔，合计 301.00；账务明细 2 笔，合计 301.00；差异 0.00。",
   );
@@ -279,24 +292,29 @@ try {
     (await request("op", `/runs/${run.id}/return`, returned)).replayed,
     true,
   );
+  // A second concurrent execution owns its own identically named files.
+  const parallel=await request("op",`/orders/${oid}/runs`,{...runBody,key:randomUUID(),version:(await detail()).version});
+  const parallelManifest=await packageFor(parallel.id);
+  const parallelOutput=await uploadTask(parallel.id,"reconciliation.txt","独立任务B的同名核对说明");
+  const parallelCheck=await uploadTask(parallel.id,"checks.csv","检查项,结果\n金额,通过");
+  assert.equal((await detail()).runs.find(x=>x.id===run.id).status,"returned","B upload must not invalidate A");
+  await returnTask(parallel.id,parallelManifest,[parallelOutput.id,parallelCheck.id]);
+  const manual=await upload("result","人工补充说明.txt","人工判断及复核补充，不属于AI任务");
   const checks = {
     passed: true,
     summary: "两表均为 2 笔 301.00，差异 0.00",
     unresolved: "",
   };
-  await action("op", "submit", { checks });
+  await action("op", "submit", { checks, manualFileIds:[manual.id] });
   await action("op", "approve", { reason: "自审不得通过" }, 403);
   await action("review", "reject", {
     reason: "请补充逐笔核对说明，保留金额合计",
   });
-  const run2 = await request("op", `/orders/${oid}/runs`, {
-    ...runBody,
-    key: randomUUID(),
-    version: (await detail()).version,
-  });
+  const run2 = await reviseRun(run.id);
+  const parallel2=await reviseRun(parallel.id);
   const manifest2 = await packageFor(run2.id);
-  const revised = await upload(
-    "result",
+  const revised = await uploadTask(
+    run2.id,
     "reconciliation.txt",
     "虚构逐笔核对：2026-10-01 100.25；2026-10-02 200.75；两表一致；合计 301.00。",
   );
@@ -307,9 +325,26 @@ try {
     resultFileIds: [revised.id],
     summary: "逐笔及汇总已核对，差异 0.00，无未解决事项",
   });
-  await action("op", "submit", { checks });
+  const parallelManifest2=await packageFor(parallel2.id);
+  const parallelRevised=await uploadTask(parallel2.id,"reconciliation.txt","任务B修订后独立成果");
+  await returnTask(parallel2.id,parallelManifest2,[parallelRevised.id]);
+  const manual2=await upload("result","人工补充说明.txt","经退回更正的人工补充判断");
+  await action("op", "submit", { checks,manualFileIds:[manual2.id] });
+  const submitted=(await detail()).submission;
+  assert.deepEqual(new Set(submitted.files.map(f=>f.id)),new Set([revised.id,parallelRevised.id,manual2.id]));
+  assert.equal(submitted.files.filter(f=>f.name==="reconciliation.txt").length,2);
   await action("review", "approve", { reason: "已逐笔复核，金额及来源一致" });
   await action("review", "approve", { reason: "重复审批" }, 409);
+  const deliveryJob=await request("op","/jobs",{kind:"delivery_export",key:randomUUID(),companyId:cid,payload:{orderId:oid}});
+  let delivered;
+  for(let n=0;n<90;n++){delivered=(await request("op","/jobs")).find(j=>j.id===deliveryJob.id);if(delivered.status==="completed")break;if(delivered.status==="failed")throw Error(delivered.error);await new Promise(r=>setTimeout(r,1000));}
+  assert.equal(delivered.status,"completed");
+  const deliveryBytes=(await request("op",`/jobs/${deliveryJob.id}/download`,undefined,200,true)).bytes;
+  const deliveryZip=new AdmZip(deliveryBytes);
+  const deliveryManifest=JSON.parse(deliveryZip.readAsText("交付清单.json"));
+  assert.deepEqual(new Set(deliveryManifest.submission.files.map(f=>f.id)),new Set([revised.id,parallelRevised.id,manual2.id]));
+  for(const f of deliveryManifest.submission.files) assert.equal(hash(deliveryZip.getEntry(`results/${f.id}-${f.name}`).getData()),f.sha256);
+  events.push({step:"并行任务同名成果与人工成果混合送审、固定快照交付包",status:"passed",files:3});
   const evidence = await upload(
     "evidence",
     "delivery-receipt.txt",
@@ -321,11 +356,11 @@ try {
   const archived = await detail();
   assert.equal(archived.status, "archived");
   assert.equal(archived.reviews.length, 2);
-  assert.equal(archived.submission.files[0].id, revised.id);
+  assert.ok(archived.submission.files.some(f=>f.id===revised.id));
   assert.equal(
     archived.submission.files.length,
-    1,
-    "only explicitly returned results enter approval",
+    3,
+    "only returned task files and explicitly selected manual files enter approval",
   );
   await upload("result", "frozen.txt", "不得修改", { expected: 409 });
   events.push({
@@ -449,11 +484,22 @@ try {
     boundary.release();
   }
   events.push({ step: "新增跟进记录的跨机构行级隔离", status: "passed" });
+  const oldSnapshot=JSON.stringify(archived.submission),oldReviews=archived.reviews.map(x=>JSON.stringify(x.snapshot));
+  const reopenReq=await request("replacement","/orders/"+oid);
+  await request("replacement",`/orders/${oid}/action`,{version:reopenReq.version,action:"request_reopen",reason:"虚构归档更正演练"});
+  const reopenNow=await request("review","/orders/"+oid);
+  await request("review",`/orders/${oid}/action`,{version:reopenNow.version,action:"reopen",reason:"独立复核同意重开演练"});
+  const reopened=await request("replacement","/orders/"+oid);
+  assert.equal(reopened.status,"processing");
+  assert.ok(reopened.runs.filter(x=>x.active).every(x=>x.status==="stale"));
+  assert.deepEqual(reopened.reviews.map(x=>JSON.stringify(x.snapshot)),oldReviews);
+  assert.equal(JSON.stringify(deliveryManifest.submission),oldSnapshot);
+  events.push({step:"归档重开新轮次，历史审批和已下载交付包不变",status:"passed"});
   const report = {
     at: new Date().toISOString(),
     customer: "虚构客户 · 青禾商贸",
     period: "2026-10",
-    status: "archived",
+    status: "archived_then_reopened",
     externalProcessing:
       "按 WorkBuddy 交接协议模拟外部处理，未调用 WorkBuddy AI",
     events,

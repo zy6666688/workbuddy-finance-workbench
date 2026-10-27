@@ -1,3 +1,4 @@
+import { invalidateInputs } from "./results.js";
 import { z } from "zod";
 import {
   tx,
@@ -122,7 +123,10 @@ export function workspaceRoutes(app: any) {
           [r.actor.org_id, q.cid, q.period, JSON.stringify(state)],
         );
       if (!saved.rows[0]) fail(409, "记录已被其他同事修改，请刷新后重试");
-      if (order) await touch(db, order, r.actor);
+      if (order) {
+        await invalidateInputs(db, order);
+        await touch(db, order, r.actor);
+      }
       await audit(
         db,
         r.actor,

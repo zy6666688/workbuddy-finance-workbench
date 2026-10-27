@@ -1,3 +1,13 @@
+import {
+  resultRoutes,
+  resultColumns,
+  latestResult,
+  invalidateInputs,
+  invalidateApproval,
+  selectedResults,
+  assertOriginsResolved,
+} from "./results.js";
+import { filePageRoutes } from "./file-pages.js";
 import { workspaceRoutes } from "./workspace.js";
 import { deliveryRead } from "./delivery.js";
 import { literalContains } from "./search.js";
@@ -480,6 +490,25 @@ export async function buildServer() {
   get("/api/v1/orders/:id", "工作单详情", async (r) =>
     tx(r.actor, async (db) => {
       const o = await order(db, (r.params as any).id);
+      const runs = (
+        await db.query(
+          "SELECT * FROM runs WHERE order_id=$1 ORDER BY created_at DESC",
+          [o.id],
+        )
+      ).rows;
+      const refs = [
+        ...new Set([
+          ...o.checklist.map((x: any) => x.fileId).filter(Boolean),
+          ...(o.submission?.files || []).map((x: any) => x.id),
+          ...runs.flatMap((x: any) => x.result_files),
+        ]),
+      ];
+      const files = (
+        await db.query(
+          `SELECT ${resultColumns} FROM files f LEFT JOIN result_origins p ON p.file_id=f.id WHERE f.order_id=$1 ${(r.query as any).compact === "1" ? "AND f.id=ANY($2::uuid[])" : ""} ORDER BY f.created_at DESC`,
+          (r.query as any).compact === "1" ? [o.id, refs] : [o.id],
+        )
+      ).rows;
       return {
         ...o,
         followups: (
@@ -506,18 +535,13 @@ export async function buildServer() {
             [o.company_id, o.id],
           )
         ).rows,
-        files: (
-          await db.query(
-            "SELECT id,name,kind,category,size,sha256,version,uploaded_by,created_at FROM files WHERE order_id=$1 ORDER BY created_at DESC",
-            [o.id],
-          )
-        ).rows,
-        runs: (
-          await db.query(
-            "SELECT * FROM runs WHERE order_id=$1 ORDER BY created_at DESC",
-            [o.id],
-          )
-        ).rows,
+        files,
+        runs: runs.map((run: any) => ({
+          ...run,
+          resultFiles: run.result_files
+            .map((id: string) => files.find((f: any) => f.id === id))
+            .filter(Boolean),
+        })),
         reviews: (
           await db.query(
             "SELECT r.*,u.name AS actor_name FROM reviews r LEFT JOIN users u ON u.id=r.actor_id WHERE r.order_id=$1 ORDER BY r.created_at DESC",
@@ -624,6 +648,7 @@ export async function buildServer() {
           unresolved: z.string().max(4000),
         })
         .optional(),
+      manualFileIds: z.array(uuid).max(100).default([]),
       delivery: z.object({ channel: label, evidenceFileId: uuid }).optional(),
     }),
     "执行受控流程动作",
@@ -638,165 +663,207 @@ export async function buildServer() {
         ),
       ),
   );
-  app.post(
-    "/api/v1/orders/:id/files",
-    { schema: { summary: "上传原件、成果或交付证据；单文件50MB" } },
-    async (r) => {
-      writer(r.actor);
-      const q = r.query as any;
-      const kind = z.enum(["source", "result", "evidence"]).parse(q.kind);
-      const expected = z.coerce.number().int().positive().parse(q.version);
-      const category = label.parse(q.category || "其他");
-      const uploadKey = q.key === undefined ? null : uuid.parse(q.key);
-      const materialIndex =
-        q.materialIndex === undefined
-          ? undefined
-          : z.coerce.number().int().min(0).max(39).parse(q.materialIndex);
-      const file = await r.file();
-      if (!file) fail(400, "请选择文件");
-      const name = file.filename;
-      const ext = path.extname(name).toLowerCase();
-      if (
-        ![
-          ".csv",
-          ".xlsx",
-          ".pdf",
-          ".png",
-          ".jpg",
-          ".jpeg",
-          ".txt",
-          ".docx",
-        ].includes(ext)
-      )
-        fail(400, "不支持的文件类型");
-      const bytes = await file.toBuffer();
-      if (file.file.truncated) fail(413, "文件超过50MB");
-      validateFile(bytes, ext);
-      const fingerprint = sha(
-        canonical({
-          name,
-          kind,
-          category,
-          materialIndex: materialIndex ?? null,
-          hash: sha(bytes),
-        }),
-      );
-      return tx(r.actor, async (db) => {
-        const o = await order(db, (r.params as any).id);
-        if (uploadKey) {
-          const previous = (
-            await db.query(
-              "SELECT id,upload_fingerprint FROM files WHERE order_id=$1 AND uploaded_by=$2 AND upload_key=$3",
-              [o.id, r.actor.id, uploadKey],
-            )
-          ).rows[0];
-          if (previous) {
-            if (previous.upload_fingerprint !== fingerprint)
-              fail(409, "上传标识已用于不同文件，请重新选择文件");
-            return { id: previous.id, orderVersion: o.version, replayed: true };
-          }
-        }
-        if (o.version !== expected) fail(409, "记录已被修改，请刷新后重试");
-        editable(o);
-        if (
-          materialIndex !== undefined &&
-          (kind !== "source" ||
-            o.status !== "collecting" ||
-            !o.checklist[materialIndex])
-        )
-          fail(400, "只能在收集阶段为现有资料项上传原件");
-        if (kind === "source" && ["review", "delivery"].includes(o.status))
-          fail(409, "复核期间不能修改输入资料，请先退回");
-        const f = await storeFile(r.actor, o, name, bytes, kind);
-        try {
-          const v = Number(
-            (
-              await db.query(
-                "SELECT coalesce(max(version),0)+1 AS v FROM files WHERE order_id=$1 AND name=$2",
-                [o.id, f.name],
-              )
-            ).rows[0].v,
-          );
+  const upload = (taskResult: boolean) => async (r: any) => {
+    writer(r.actor);
+    const q = r.query as any;
+    const kind = taskResult
+      ? "result"
+      : z.enum(["source", "result", "evidence"]).parse(q.kind);
+    const origin =
+      kind === "result"
+        ? taskResult
+          ? "workbuddy"
+          : z.literal("manual").parse(q.origin)
+        : null;
+    const runId = taskResult ? uuid.parse(r.params.id) : null;
+    const expected = z.coerce.number().int().positive().parse(q.version);
+    const category = label.parse(q.category || "其他");
+    const uploadKey = q.key === undefined ? null : uuid.parse(q.key);
+    const materialIndex =
+      q.materialIndex === undefined
+        ? undefined
+        : z.coerce.number().int().min(0).max(39).parse(q.materialIndex);
+    const file = await r.file();
+    if (!file) fail(400, "请选择文件");
+    const name = file.filename;
+    const ext = path.extname(name).toLowerCase();
+    if (
+      ![
+        ".csv",
+        ".xlsx",
+        ".pdf",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".txt",
+        ".docx",
+      ].includes(ext)
+    )
+      fail(400, "不支持的文件类型");
+    const bytes = await file.toBuffer();
+    if (file.file.truncated) fail(413, "文件超过50MB");
+    validateFile(bytes, ext);
+    const fingerprint = sha(
+      canonical({
+        name,
+        origin,
+        runId,
+        kind,
+        category,
+        materialIndex: materialIndex ?? null,
+        hash: sha(bytes),
+      }),
+    );
+    return tx(r.actor, async (db) => {
+      const ref = taskResult
+        ? await one(db, "SELECT order_id FROM runs WHERE id=$1", [runId])
+        : null;
+      const o = await order(db, ref?.order_id || r.params.id);
+      const run = taskResult
+        ? await one(db, "SELECT * FROM runs WHERE id=$1 FOR UPDATE", [runId])
+        : null;
+      if (uploadKey) {
+        const previous = (
           await db.query(
-            "INSERT INTO files(id,org_id,company_id,order_id,name,kind,category,size,sha256,storage_key,uploaded_by,version,upload_key,upload_fingerprint) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)",
+            "SELECT id,upload_fingerprint FROM files WHERE order_id=$1 AND uploaded_by=$2 AND upload_key=$3",
+            [o.id, r.actor.id, uploadKey],
+          )
+        ).rows[0];
+        if (previous) {
+          if (previous.upload_fingerprint !== fingerprint)
+            fail(409, "上传标识已用于不同文件，请重新选择文件");
+          return {
+            id: previous.id,
+            orderVersion: o.version,
+            runVersion: run?.version,
+            replayed: true,
+          };
+        }
+      }
+      if ((run ? run.version : o.version) !== expected)
+        fail(409, "记录已被修改，请刷新后重试");
+      if (
+        run &&
+        (!run.active ||
+          run.status !== "external" ||
+          run.input_revision !== o.input_revision ||
+          o.status !== "processing")
+      )
+        fail(409, "只能上传至当前输入版本的外部处理中任务，已回传请创建修订");
+      editable(o);
+      if (
+        materialIndex !== undefined &&
+        (kind !== "source" ||
+          o.status !== "collecting" ||
+          !o.checklist[materialIndex])
+      )
+        fail(400, "只能在收集阶段为现有资料项上传原件");
+      if (kind === "source" && ["review", "delivery"].includes(o.status))
+        fail(409, "复核期间不能修改输入资料，请先退回");
+      const f = await storeFile(r.actor, o, name, bytes, kind);
+      try {
+        const v = Number(
+          (
+            await db.query(
+              kind === "result"
+                ? "SELECT coalesce(max(f.version),0)+1 AS v FROM files f JOIN result_origins p ON p.file_id=f.id WHERE f.order_id=$1 AND f.name=$2 AND p.origin=$3 AND p.run_id IS NOT DISTINCT FROM $4::uuid"
+                : "SELECT coalesce(max(version),0)+1 AS v FROM files WHERE order_id=$1 AND name=$2 AND kind=$3",
+              kind === "result"
+                ? [o.id, f.name, origin, runId]
+                : [o.id, f.name, kind],
+            )
+          ).rows[0].v,
+        );
+        await db.query(
+          "INSERT INTO files(id,org_id,company_id,order_id,name,kind,category,size,sha256,storage_key,uploaded_by,version,upload_key,upload_fingerprint) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)",
+          [
+            f.id,
+            r.actor.org_id,
+            o.company_id,
+            o.id,
+            f.name,
+            kind,
+            category,
+            f.size,
+            f.hash,
+            f.key,
+            r.actor.id,
+            v,
+            uploadKey,
+            fingerprint,
+          ],
+        );
+        if (kind === "result") {
+          await db.query(
+            "INSERT INTO result_origins(file_id,org_id,company_id,order_id,origin,run_id,input_revision,method,actor_id) VALUES($1,$2,$3,$4,$5,$6,$7,'upload',$8)",
             [
               f.id,
-              r.actor.org_id,
+              o.org_id,
               o.company_id,
               o.id,
-              f.name,
-              kind,
-              category,
-              f.size,
-              f.hash,
-              f.key,
+              origin,
+              runId,
+              o.input_revision,
               r.actor.id,
-              v,
-              uploadKey,
-              fingerprint,
             ],
           );
-          if (kind === "result" && ["review", "delivery"].includes(o.status))
-            await db.query(
-              "UPDATE work_orders SET status='processing',revision=revision+1,submission=NULL WHERE id=$1",
-              [o.id],
-            );
-          if (materialIndex !== undefined) {
-            o.checklist[materialIndex] = {
-              name: o.checklist[materialIndex].name,
-              required: o.checklist[materialIndex].required,
-              fileId: f.id,
-            };
-            await db.query("UPDATE work_orders SET checklist=$1 WHERE id=$2", [
-              JSON.stringify(o.checklist),
-              o.id,
+          await invalidateApproval(db, o);
+          if (run)
+            await db.query("UPDATE runs SET version=version+1 WHERE id=$1", [
+              run.id,
             ]);
-            await audit(
-              db,
-              r.actor,
-              "material_receive",
-              o.id,
-              o.company_id,
-              { index: materialIndex, fileId: f.id },
-              r.id,
-            );
-          }
-          const returned =
-            kind === "result" && o.status === "processing"
-              ? (
-                  await db.query(
-                    "SELECT id FROM runs WHERE order_id=$1 AND revision=$2 AND status='returned'",
-                    [o.id, o.revision],
-                  )
-                ).rowCount
-              : 0;
-          if (kind === "source" || returned) {
-            await db.query(
-              "UPDATE runs SET status='stale',version=version+1 WHERE order_id=$1",
-              [o.id],
-            );
-            await db.query(
-              "UPDATE work_orders SET revision=revision+1 WHERE id=$1",
-              [o.id],
-            );
-          }
-          await touch(db, o, r.actor, kind !== "evidence");
+        }
+        if (materialIndex !== undefined) {
+          o.checklist[materialIndex] = {
+            name: o.checklist[materialIndex].name,
+            required: o.checklist[materialIndex].required,
+            fileId: f.id,
+          };
+          await db.query("UPDATE work_orders SET checklist=$1 WHERE id=$2", [
+            JSON.stringify(o.checklist),
+            o.id,
+          ]);
           await audit(
             db,
             r.actor,
-            "file_uploaded",
-            f.id,
+            "material_receive",
+            o.id,
             o.company_id,
-            { name: f.name, kind, sha256: f.hash },
+            { index: materialIndex, fileId: f.id },
             r.id,
           );
-          return { id: f.id, orderVersion: o.version + 1 };
-        } catch (e) {
-          await unlink(path.join(dataRoot, f.key)).catch(() => {});
-          throw e;
         }
-      });
-    },
+        if (kind === "source") await invalidateInputs(db, o);
+        await touch(db, o, r.actor, kind !== "evidence");
+        await audit(
+          db,
+          r.actor,
+          "file_uploaded",
+          f.id,
+          o.company_id,
+          { name: f.name, kind, origin, runId, sha256: f.hash },
+          r.id,
+        );
+        return {
+          id: f.id,
+          orderVersion: o.version + 1,
+          runVersion: run ? run.version + 1 : undefined,
+        };
+      } catch (e) {
+        await unlink(path.join(dataRoot, f.key)).catch(() => {});
+        throw e;
+      }
+    });
+  };
+  app.post(
+    "/api/v1/orders/:id/files",
+    { schema: { summary: "上传资料、人工成果或证据" } },
+    upload(false),
+  );
+  app.post(
+    "/api/v1/runs/:id/files",
+    { schema: { summary: "上传明确归属任务的成果" } },
+    upload(true),
   );
   app.get(
     "/api/v1/files/:id/download",
@@ -876,7 +943,7 @@ export async function buildServer() {
           fail(400, "工作流不存在");
         const fs = (
           await db.query(
-            "SELECT id,name,sha256,version FROM files WHERE id=ANY($1::uuid[]) AND order_id=$2 AND kind='source'",
+            "SELECT f.id,f.name,f.sha256,f.version FROM files f WHERE f.id=ANY($1::uuid[]) AND f.order_id=$2 AND f.kind='source' AND NOT EXISTS(SELECT 1 FROM files n WHERE n.order_id=f.order_id AND n.kind=f.kind AND n.name=f.name AND n.version>f.version)",
             [b.fileIds, o.id],
           )
         ).rows;
@@ -884,7 +951,7 @@ export async function buildServer() {
           fail(400, "输入文件不属于本工作单");
         const id = randomUUID();
         await db.query(
-          "INSERT INTO runs(id,org_id,company_id,order_id,workflow_id,input_files,revision,created_by,task_brief,client_key,client_fingerprint) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
+          "INSERT INTO runs(id,org_id,company_id,order_id,workflow_id,input_files,revision,created_by,task_brief,client_key,client_fingerprint,input_revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
           [
             id,
             r.actor.org_id,
@@ -897,6 +964,7 @@ export async function buildServer() {
             JSON.stringify(b.taskBrief),
             b.key || null,
             fingerprint,
+            o.input_revision,
           ],
         );
         await touch(db, o, r.actor);
@@ -929,7 +997,8 @@ export async function buildServer() {
           fail(400, "输入清单与原任务不一致");
         if (
           run.status === "returned" &&
-          run.revision === o.revision &&
+          run.active &&
+          run.input_revision === o.input_revision &&
           o.status === "processing" &&
           canonical([...run.result_files].sort()) ===
             canonical([...new Set(b.resultFileIds)].sort()) &&
@@ -939,7 +1008,8 @@ export async function buildServer() {
         if (
           run.version !== b.version ||
           run.status !== "external" ||
-          run.revision !== o.revision ||
+          !run.active ||
+          run.input_revision !== o.input_revision ||
           o.status !== "processing"
         )
           fail(409, "任务版本或状态已改变，请重新发起");
@@ -947,16 +1017,14 @@ export async function buildServer() {
           fail(400, "输入清单与原任务不一致");
         const fs = (
           await db.query(
-            // Compare database timestamps directly, preserving microsecond
-            // precision. A new execution cannot claim a previous round's output.
-            "SELECT f.id FROM files f WHERE f.order_id=$1 AND f.kind='result' AND f.id=ANY($2::uuid[]) AND f.created_at>(SELECT created_at FROM runs WHERE id=$3) AND NOT EXISTS(SELECT 1 FROM files newer WHERE newer.order_id=f.order_id AND newer.kind=f.kind AND newer.name=f.name AND newer.version>f.version)",
+            `SELECT ${resultColumns} FROM files f JOIN result_origins p ON p.file_id=f.id WHERE f.order_id=$1 AND f.id=ANY($2::uuid[]) AND p.origin='workbuddy' AND p.run_id=$3 AND ${latestResult}`,
             [o.id, b.resultFileIds, run.id],
           )
         ).rows;
         if (fs.length !== new Set(b.resultFileIds).size)
           fail(
             400,
-            "请上传本次任务的成果并选择最新版本，不能沿用任务创建前的成果或历史版本",
+            "请选择明确归属本次任务的最新成果，不能复用其他任务或人工成果",
           );
         await db.query(
           "UPDATE runs SET status='returned',result_files=$1,check_result=$2,version=version+1 WHERE id=$3",
@@ -977,7 +1045,7 @@ export async function buildServer() {
           "run_returned",
           run.id,
           o.company_id,
-          { results: b.resultFileIds },
+          { results: fs, inputFiles: run.input_files, summary: b.summary },
           r.id,
         );
         return { ok: true };
@@ -1164,6 +1232,7 @@ export async function buildServer() {
               !w.submission?.at
             )
               fail(409, "只有通过复核的成果可以打包交付");
+            await assertOriginsResolved(db, w);
             // Bind the queued request to the approved submission visible now.
             // The worker must never silently export a later approved correction.
             payload.revision = w.revision;
@@ -1366,6 +1435,8 @@ export async function buildServer() {
   agencyRoutes(get, post, createOrder);
   operationsRoutes(get, post);
   workspaceRoutes(app);
+  resultRoutes(get, post);
+  filePageRoutes(app);
   await app.register(staticFiles, {
     root: path.resolve(process.env.WEB_DIR || "dist/web"),
     prefix: "/",
@@ -1432,7 +1503,7 @@ export async function transition(
   } else if (b.action === "submit") {
     if (o.status !== "processing") fail(409, "当前不能提交复核");
     const readiness = await submissionReadiness(db, o);
-    if (!readiness.ready)
+    if (!readiness.blockingReady)
       fail(
         400,
         readiness.items
@@ -1444,39 +1515,15 @@ export async function transition(
       fail(400, "指定复核人员不能经办送审，请先调整分工");
     if (!b.checks?.passed) fail(400, "需填写并通过校验清单");
     if (b.checks.unresolved.trim()) fail(400, "存在未解决事项，不能提交");
-    const results = (
-      await db.query(
-        "SELECT DISTINCT ON(name) id,name,sha256,version FROM files WHERE order_id=$1 AND kind='result' AND (NOT EXISTS(SELECT 1 FROM runs WHERE order_id=$1) OR id IN(SELECT unnest(result_files) FROM runs WHERE order_id=$1 AND revision=$2 AND status='returned')) ORDER BY name,version DESC",
-        [o.id, o.revision],
-      )
-    ).rows;
-    if (!results.length) fail(400, "缺少成果文件");
-    if (
-      (
-        await db.query(
-          "SELECT id FROM runs WHERE order_id=$1 AND revision=$2 AND status='external'",
-          [o.id, o.revision],
-        )
-      ).rowCount
-    )
-      fail(400, "仍有未回传的外部任务");
-    const history = await db.query(
-      "SELECT status,revision FROM runs WHERE order_id=$1",
-      [o.id],
-    );
-    if (
-      history.rowCount &&
-      !history.rows.some(
-        (r: any) => r.status === "returned" && r.revision === o.revision,
-      )
-    )
-      fail(400, "请重新执行当前版本的 WorkBuddy 任务并回传");
+    const results = await selectedResults(db, o, b.manualFileIds || []);
+    if (!results.length) fail(400, "请回传任务成果或明确选择人工成果");
     const snapshot = {
       files: results,
       checks: b.checks,
       submittedBy: a.id,
       at: new Date().toISOString(),
       revision: o.revision,
+      inputRevision: o.input_revision,
     };
     await db.query(
       "UPDATE work_orders SET submission=$1,contributors=ARRAY(SELECT DISTINCT unnest(contributors||$3::uuid)) WHERE id=$2",
@@ -1486,6 +1533,7 @@ export async function transition(
     next = "review";
   } else if (["approve", "reject"].includes(b.action)) {
     if (o.status !== "review") fail(409, "当前不在复核阶段");
+    await assertOriginsResolved(db, o);
     independent(o, a);
     if (!b.reason) fail(400, "请填写复核意见");
     await db.query(
@@ -1503,14 +1551,20 @@ export async function transition(
       ],
     );
     next = b.action === "approve" ? "delivery" : "processing";
-    if (b.action === "reject")
+    if (b.action === "reject") {
+      await db.query(
+        "UPDATE runs SET status='stale',version=version+1 WHERE order_id=$1 AND active",
+        [o.id],
+      );
       await db.query(
         "UPDATE work_orders SET revision=revision+1,submission=NULL WHERE id=$1",
         [o.id],
       );
+    }
   } else if (b.action === "deliver") {
     if (o.status !== "delivery" || !b.delivery)
       fail(409, "请先通过复核并补充交付证据");
+    await assertOriginsResolved(db, o);
     await one(
       db,
       "SELECT id FROM files WHERE id=$1 AND order_id=$2 AND kind='evidence' AND category<>'系统任务包'",
@@ -1539,7 +1593,10 @@ export async function transition(
       "UPDATE work_orders SET revision=revision+1,submission=NULL,reopen_request=NULL WHERE id=$1",
       [o.id],
     );
-    await db.query("UPDATE runs SET status='stale' WHERE order_id=$1", [o.id]);
+    await db.query(
+      "UPDATE runs SET status='stale',version=version+1 WHERE order_id=$1 AND active",
+      [o.id],
+    );
     next = "processing";
   }
   await db.query(

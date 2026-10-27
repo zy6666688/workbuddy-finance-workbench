@@ -1,3 +1,4 @@
+import { assertOriginsResolved } from "./results.js";
 import { PgBoss } from "pg-boss";
 import { Pool } from "pg";
 import { randomUUID } from "node:crypto";
@@ -112,9 +113,11 @@ export async function processJob(actor: Actor, id: string) {
           j.payload.runId,
         ]);
         o = await order(db, run.order_id);
+        run = await one(db, "SELECT * FROM runs WHERE id=$1", [run.id]);
         if (
           run.status !== "external" ||
-          run.revision !== o.revision ||
+          !run.active ||
+          run.input_revision !== o.input_revision ||
           o.status !== "processing"
         )
           fail(409, "任务输入或状态已改变");
@@ -124,6 +127,19 @@ export async function processJob(actor: Actor, id: string) {
             [run.input_files.map((f: any) => f.id), o.id],
           )
         ).rows;
+        if (
+          files.length !== run.input_files.length ||
+          run.input_files.some(
+            (x: any) =>
+              !files.some(
+                (f: any) =>
+                  f.id === x.id &&
+                  f.sha256 === x.sha256 &&
+                  f.version === x.version,
+              ),
+          )
+        )
+          fail(409, "任务输入快照不一致");
         const workflow = FINANCE_WORKFLOWS.find(
           (w: any) => w.id === run.workflow_id,
         );
@@ -140,7 +156,8 @@ export async function processJob(actor: Actor, id: string) {
             JSON.stringify(
               {
                 runId: run.id,
-                version: run.version,
+                schemaVersion: 2,
+                inputRevision: run.input_revision,
                 inputHashes: Object.fromEntries(
                   run.input_files.map((f: any) => [f.id, f.sha256]),
                 ),
@@ -167,12 +184,26 @@ export async function processJob(actor: Actor, id: string) {
           j.payload.submittedAt !== o.submission?.at
         )
           fail(409, "交付版本已变化或任务缺少版本信息，请重新生成交付包");
+        await assertOriginsResolved(db, o);
         files = (
           await db.query(
             "SELECT * FROM files WHERE id=ANY($1::uuid[]) AND order_id=$2",
             [o.submission.files.map((f: any) => f.id), o.id],
           )
         ).rows;
+        if (
+          files.length !== o.submission.files.length ||
+          o.submission.files.some(
+            (x: any) =>
+              !files.some(
+                (f: any) =>
+                  f.id === x.id &&
+                  f.sha256 === x.sha256 &&
+                  f.version === x.version,
+              ),
+          )
+        )
+          fail(409, "交付快照不一致");
         zip.addFile(
           "交付清单.json",
           Buffer.from(
@@ -211,6 +242,16 @@ export async function processJob(actor: Actor, id: string) {
                 name: f.name,
                 sha256: f.sha256,
                 version: f.version,
+                ...(j.kind === "delivery_export"
+                  ? {
+                      origin:
+                        o.submission.files.find((x: any) => x.id === f.id)
+                          ?.origin || "legacy_unrecorded",
+                      runId:
+                        o.submission.files.find((x: any) => x.id === f.id)
+                          ?.run_id || null,
+                    }
+                  : {}),
               })),
             },
             null,

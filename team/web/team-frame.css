@@ -214,3 +214,8 @@
     gap: 12px;
   }
 }
+/* Shared original screens live outside .team-panels. */
+.team-host .ops-reference-tray { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:12px 16px; border:1px solid var(--fin-line); border-radius:12px; margin:12px 0; color:var(--fin-text); }
+.team-host .ops-reference-tray strong { flex-basis:100%; }
+.team-host .ops-reference-tray span { display:inline-flex; align-items:center; gap:8px; max-width:100%; overflow-wrap:anywhere; font-size:12px; }
+.team-host .ops-reference-tray button { padding:5px 9px; min-height:30px; }

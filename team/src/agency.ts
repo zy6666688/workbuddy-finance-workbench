@@ -1,3 +1,4 @@
+import { resultReadiness } from "./results.js";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import { literalContains } from "./search.js";
@@ -339,15 +340,7 @@ export function agencyRoutes(get: any, post: any, createOrder: any) {
 }
 
 export async function submissionReadiness(db: any, o: any) {
-  const results = (
-    await db.query(
-      "SELECT count(DISTINCT name)::int AS n FROM files WHERE order_id=$1 AND kind='result'",
-      [o.id],
-    )
-  ).rows[0].n;
-  const runs = (
-    await db.query("SELECT status,revision FROM runs WHERE order_id=$1", [o.id])
-  ).rows;
+  const results = await resultReadiness(db, o);
   let reviewerReady = true;
   try {
     await membership(db, o.company_id, o.reviewer_id, true);
@@ -360,25 +353,20 @@ export async function submissionReadiness(db: any, o: any) {
     o.reviewer_id !== o.assignee_id &&
     !o.contributors.includes(o.reviewer_id);
   const items = [
-    { label: "至少一份成果文件", ok: results > 0 },
-    {
-      label: "外部任务已全部回传",
-      ok: !runs.some(
-        (r: any) => r.status === "external" && r.revision === o.revision,
-      ),
-    },
-    {
-      label: "WorkBuddy 回传对应当前版本",
-      ok:
-        !runs.length ||
-        runs.some(
-          (r: any) => r.status === "returned" && r.revision === o.revision,
-        ),
-    },
+    ...results.items,
     {
       label: "指定复核人员在职、有权限且未参与经办",
       ok: reviewerReady && independent,
     },
+    {
+      label: "至少一份已回传成果或明确选择人工成果",
+      ok: results.taskResultCount > 0,
+    },
   ];
-  return { items, ready: items.every((i) => i.ok) };
+  return {
+    items,
+    manualCandidateCount: results.manualCandidateCount,
+    blockingReady: results.blockingReady && reviewerReady && independent,
+    ready: items.every((i) => i.ok),
+  };
 }

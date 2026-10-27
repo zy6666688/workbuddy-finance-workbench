@@ -88,7 +88,7 @@ test(
         const boundary = "compatBoundary";
         const r = await app.inject({
           method: "POST",
-          url: `/api/v1/orders/${orderId}/files?kind=${kind}&version=${d.version}`,
+          url: `/api/v1/orders/${orderId}/files?kind=${kind}&version=${d.version}${kind === "result" ? "&origin=manual" : ""}`,
           headers: {
             ...headers,
             "content-type": `multipart/form-data; boundary=${boundary}`,
