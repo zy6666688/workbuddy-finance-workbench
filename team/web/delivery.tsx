@@ -421,7 +421,13 @@ export function DeliveryOverview({
   );
 }
 
-export function DeliveryDetailHeader({ order: o, tab, onTab, onBack }: any) {
+export function DeliveryDetailHeader({
+  order: o,
+  tab,
+  onTab,
+  onBack,
+  backLabel = "返回工作清单",
+}: any) {
   const complete = o.checklist.filter(
       (i: any) => i.required && (i.fileId || i.waiver),
     ).length,
@@ -434,7 +440,7 @@ export function DeliveryDetailHeader({ order: o, tab, onTab, onBack }: any) {
   return (
     <div className="delivery-detailHeader">
       <button className="ghost" onClick={onBack}>
-        ← 返回工作清单
+        ← {backLabel}
       </button>
       <div className="delivery-heading">
         <div>

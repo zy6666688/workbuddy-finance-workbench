@@ -1,5 +1,6 @@
 import { workspaceRoutes } from "./workspace.js";
 import { deliveryRead } from "./delivery.js";
+import { agencyRoutes, submissionReadiness } from "./agency.js";
 import Fastify, { type FastifyRequest } from "fastify";
 import cookie from "@fastify/cookie";
 import multipart from "@fastify/multipart";
@@ -88,7 +89,14 @@ export async function buildServer() {
     requestTimeout: 30000,
   });
   await app.register(cookie);
-  await app.register(rateLimit, { max: 300, timeWindow: "1 minute" });
+  // Authenticated colleagues behind the same reverse proxy each get their own
+  // request budget. Anonymous login throttling stays IP based and stricter.
+  await app.register(rateLimit, {
+    max: 300,
+    timeWindow: "1 minute",
+    hook: "preHandler",
+    keyGenerator: (req) => req.actor?.id || req.ip,
+  });
   await app.register(multipart, {
     limits: {
       fileSize: 50 * 1024 * 1024,
@@ -422,7 +430,11 @@ export async function buildServer() {
     async (r, b) =>
       tx(r.actor, async (db) => {
         role(r.actor, "owner");
-        const c = await company(db, (r.params as any).id);
+        const c = await one(
+          db,
+          "SELECT * FROM companies WHERE id=$1 FOR UPDATE",
+          [uuid.parse((r.params as any).id)],
+        );
         if (b.enabled)
           await db.query(
             "INSERT INTO memberships(org_id,company_id,user_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",
@@ -433,6 +445,9 @@ export async function buildServer() {
             "DELETE FROM memberships WHERE company_id=$1 AND user_id=$2",
             [c.id, b.userId],
           );
+        await db.query("UPDATE companies SET version=version+1 WHERE id=$1", [
+          c.id,
+        ]);
         await audit(db, r.actor, "membership_changed", b.userId, c.id, b, r.id);
         return { ok: true };
       }),
@@ -464,6 +479,13 @@ export async function buildServer() {
       const o = await order(db, (r.params as any).id);
       return {
         ...o,
+        readiness: await submissionReadiness(db, o),
+        assignable: (
+          await db.query(
+            "SELECT u.id,u.name,u.role FROM users u WHERE u.active AND u.role<>'viewer' AND (u.role='owner' OR EXISTS(SELECT 1 FROM memberships m WHERE m.company_id=$1 AND m.user_id=u.id)) ORDER BY u.name",
+            [o.company_id],
+          )
+        ).rows,
         ...(await one(
           db,
           "SELECT c.name AS company_name,c.code AS company_code,a.name AS assignee_name,r.name AS reviewer_name FROM companies c LEFT JOIN users a ON a.id=$2 LEFT JOIN users r ON r.id=$3 WHERE c.id=$1",
@@ -507,6 +529,12 @@ export async function buildServer() {
         editable(o);
         if (b.assigneeId === b.reviewerId)
           fail(400, "经办与复核必须是不同人员");
+        if (
+          o.contributors.includes(b.reviewerId) ||
+          o.assignee_id === b.reviewerId ||
+          o.submission?.submittedBy === b.reviewerId
+        )
+          fail(400, "所选复核人员曾参与本批次经办，请选择另一名人员");
         await membership(db, o.company_id, b.assigneeId);
         await membership(db, o.company_id, b.reviewerId, true);
         await db.query(
@@ -610,6 +638,10 @@ export async function buildServer() {
       const kind = z.enum(["source", "result", "evidence"]).parse(q.kind);
       const expected = z.coerce.number().int().positive().parse(q.version);
       const category = label.parse(q.category || "其他");
+      const materialIndex =
+        q.materialIndex === undefined
+          ? undefined
+          : z.coerce.number().int().min(0).max(39).parse(q.materialIndex);
       const file = await r.file();
       if (!file) fail(400, "请选择文件");
       const name = file.filename;
@@ -633,6 +665,13 @@ export async function buildServer() {
       return tx(r.actor, async (db) => {
         const o = await order(db, (r.params as any).id, expected);
         editable(o);
+        if (
+          materialIndex !== undefined &&
+          (kind !== "source" ||
+            o.status !== "collecting" ||
+            !o.checklist[materialIndex])
+        )
+          fail(400, "只能在收集阶段为现有资料项上传原件");
         if (kind === "source" && ["review", "delivery"].includes(o.status))
           fail(409, "复核期间不能修改输入资料，请先退回");
         const f = await storeFile(r.actor, o, name, bytes, kind);
@@ -667,6 +706,26 @@ export async function buildServer() {
               "UPDATE work_orders SET status='processing',revision=revision+1,submission=NULL WHERE id=$1",
               [o.id],
             );
+          if (materialIndex !== undefined) {
+            o.checklist[materialIndex] = {
+              name: o.checklist[materialIndex].name,
+              required: o.checklist[materialIndex].required,
+              fileId: f.id,
+            };
+            await db.query("UPDATE work_orders SET checklist=$1 WHERE id=$2", [
+              JSON.stringify(o.checklist),
+              o.id,
+            ]);
+            await audit(
+              db,
+              r.actor,
+              "material_receive",
+              o.id,
+              o.company_id,
+              { index: materialIndex, fileId: f.id },
+              r.id,
+            );
+          }
           const returned =
             kind === "result" && o.status === "processing"
               ? (
@@ -1187,6 +1246,7 @@ export async function buildServer() {
     }));
   });
   get("/api/v1/openapi.json", "接口文档", async () => app.swagger());
+  agencyRoutes(get, post, createOrder);
   workspaceRoutes(app);
   await app.register(staticFiles, {
     root: path.resolve(process.env.WEB_DIR || "dist/web"),
@@ -1222,7 +1282,16 @@ export async function createOrder(
     ],
   );
   if (r.rows[0]) await audit(db, a, "order_created", id, c.id, b, requestId);
-  return r.rows[0] || { existing: true };
+  return (
+    r.rows[0] || {
+      ...(await one(
+        db,
+        "SELECT id FROM work_orders WHERE company_id=$1 AND period=$2",
+        [c.id, b.period],
+      )),
+      existing: true,
+    }
+  );
 }
 export async function transition(
   db: any,
@@ -1244,6 +1313,17 @@ export async function transition(
     next = "processing";
   } else if (b.action === "submit") {
     if (o.status !== "processing") fail(409, "当前不能提交复核");
+    const readiness = await submissionReadiness(db, o);
+    if (!readiness.ready)
+      fail(
+        400,
+        readiness.items
+          .filter((i) => !i.ok)
+          .map((i) => i.label)
+          .join("；"),
+      );
+    if (o.reviewer_id === a.id)
+      fail(400, "指定复核人员不能经办送审，请先调整分工");
     if (!b.checks?.passed) fail(400, "需填写并通过校验清单");
     if (b.checks.unresolved.trim()) fail(400, "存在未解决事项，不能提交");
     const results = (
@@ -1322,6 +1402,8 @@ export async function transition(
     next = "archived";
   } else if (b.action === "request_reopen") {
     if (o.status !== "archived" || !b.reason) fail(400, "归档重开必须填写理由");
+    if (o.reopen_request)
+      fail(409, "已有重开申请，等待独立审批，不能覆盖申请记录");
     await db.query("UPDATE work_orders SET reopen_request=$1 WHERE id=$2", [
       JSON.stringify({
         by: a.id,

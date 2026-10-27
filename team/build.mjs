@@ -51,6 +51,7 @@ await writeFile(
     (await readFile("dist/web/app.css", "utf8")) +
     "\n" +
     (await readFile("web/delivery.css", "utf8")) +
+    (await readFile("web/agency.css", "utf8")) +
     "\n}\n" +
     (await readFile("web/auth.css", "utf8")),
 );

@@ -119,6 +119,7 @@ test(
       name: string,
       content: string,
       expected = 200,
+      materialIndex?: number,
     ) {
       const d = await detail(),
         boundary = "testBoundary";
@@ -128,7 +129,7 @@ test(
       const s = sessions[who];
       const r = await app.inject({
         method: "POST",
-        url: `/api/v1/orders/${oid}/files?kind=${kind}&version=${d.version}`,
+        url: `/api/v1/orders/${oid}/files?kind=${kind}&version=${d.version}${materialIndex === undefined ? "" : "&materialIndex=" + materialIndex}`,
         headers: {
           cookie: s.cookie,
           "x-csrf-token": s.csrf,
@@ -448,12 +449,17 @@ test(
         await admin!.query("UPDATE users SET role='owner' WHERE id=$1", [
           actors.op.id,
         ]);
-        await req("owner", `/orders/${oid}/assign`, {
-          version: (await detail()).version,
-          assigneeId: actors.owner.id,
-          reviewerId: actors.op.id,
-          dueDate: "2026-02-10",
-        });
+        await req(
+          "owner",
+          `/orders/${oid}/assign`,
+          {
+            version: (await detail()).version,
+            assigneeId: actors.owner.id,
+            reviewerId: actors.op.id,
+            dueDate: "2026-02-10",
+          },
+          400,
+        );
         await action("op", "approve", { reason: "调岗后尝试自审" }, 403);
         await req("owner", `/orders/${oid}/assign`, {
           version: (await detail()).version,
@@ -617,6 +623,203 @@ test(
           actors.viewer.id,
         ]);
         await req("viewer", "/auth/me", undefined, 401);
+      },
+    );
+    await t.test(
+      "client onboarding, default handoff, atomic materials and review queues",
+      async () => {
+        const oldOrder = oid;
+        const draft = {
+          name: "新建交接验收",
+          code: "onboard-" + randomUUID(),
+          profile: {
+            contactName: "虚构联系人",
+            contactPhone: "",
+            serviceNotes: "合成验收",
+          },
+          checklist: [
+            { name: "银行流水", required: true },
+            { name: "补充说明", required: false },
+          ],
+          assigneeId: actors.op.id,
+          reviewerId: actors.review.id,
+          firstMonth: { period: "2026-10", dueDate: "2026-11-15" },
+        };
+        await req("op", "/clients/onboard", draft, 403);
+        await req(
+          "owner",
+          "/clients/onboard",
+          { ...draft, reviewerId: actors.outsider.id },
+          404,
+        );
+        assert.equal(
+          (await req("owner", `/clients?period=2026-10&search=${draft.code}`))
+            .total,
+          0,
+          "failed onboarding rolls back company and grants",
+        );
+        const created = await req("owner", "/clients/onboard", draft);
+        oid = created.orderId;
+        await req("owner", "/clients/onboard", draft, 409);
+        const client = await req("owner", "/clients/" + created.id);
+        assert.equal(client.orders.length, 1);
+        assert.ok(client.members.some((u: any) => u.id === actors.review.id));
+        await req("outsider", "/clients/" + created.id, undefined, 404);
+        assert.equal(
+          (
+            await req(
+              "outsider",
+              `/clients?period=2026-10&search=${draft.code}`,
+            )
+          ).total,
+          0,
+        );
+        await req(
+          "review",
+          "/clients/" + created.id + "/profile",
+          { ...draft, version: client.version },
+          403,
+        );
+        const edits = await Promise.all(
+          [1, 2].map((i) =>
+            app.inject({
+              method: "POST",
+              url: `/api/v1/clients/${created.id}/profile`,
+              headers: {
+                cookie: sessions.owner.cookie,
+                "x-csrf-token": sessions.owner.csrf,
+              },
+              payload: {
+                ...draft,
+                version: client.version,
+                checklist: [{ name: "下月资料" + i, required: true }],
+              },
+            }),
+          ),
+        );
+        assert.deepEqual(edits.map((r) => r.statusCode).sort(), [200, 409]);
+        assert.equal(
+          (await detail()).checklist[0].name,
+          "银行流水",
+          "template update must not change current month",
+        );
+        const latest = await req("owner", "/clients/" + created.id);
+        await req(
+          "owner",
+          `/clients/${created.id}/start-month`,
+          { version: client.version, period: "2026-11", dueDate: "2026-12-10" },
+          409,
+        );
+        const next = await req("review", `/clients/${created.id}/start-month`, {
+          version: latest.version,
+          period: "2026-11",
+          dueDate: "2026-12-10",
+        });
+        assert.equal(
+          (
+            await req("review", `/clients/${created.id}/start-month`, {
+              version: latest.version,
+              period: "2026-11",
+              dueDate: "2026-12-10",
+            })
+          ).id,
+          next.id,
+        );
+        assert.match(
+          (await req("op", "/orders/" + next.id)).checklist[0].name,
+          /下月资料/,
+        );
+        const countBefore = (await detail()).files.length;
+        await upload("op", "source", "wrong.txt", "bad index", 400, 39);
+        assert.equal((await detail()).files.length, countBefore);
+        const file = await upload(
+          "op",
+          "source",
+          "材料.txt",
+          "虚构流水",
+          200,
+          0,
+        );
+        assert.equal(
+          (await detail()).checklist[0].fileId,
+          file.id,
+          "file and material association commit together",
+        );
+        await action("op", "finish_collection");
+        await action("op", "start_processing");
+        assert.equal((await detail()).readiness.ready, false);
+        await upload("op", "result", "成果.txt", "虚构成果");
+        assert.equal((await detail()).readiness.ready, true);
+        await req("owner", `/companies/${created.id}/members`, {
+          userId: actors.review.id,
+          enabled: false,
+        });
+        assert.equal(
+          (await req("owner", `/clients?period=2026-10&search=${draft.code}`))
+            .unstaffed,
+          1,
+        );
+        assert.equal((await detail()).readiness.ready, false);
+        await action("op", "submit", { checks }, 400);
+        const revokedClient = await req("owner", "/clients/" + created.id);
+        assert.equal(revokedClient.staffed, false);
+        await req(
+          "owner",
+          `/clients/${created.id}/start-month`,
+          {
+            version: revokedClient.version,
+            period: "2026-12",
+            dueDate: "2027-01-10",
+          },
+          400,
+        );
+        await req("owner", `/companies/${created.id}/members`, {
+          userId: actors.review.id,
+          enabled: true,
+        });
+        await action("op", "submit", { checks });
+        const queue = `/reviews/queue?period=2026-10&companyId=${created.id}`;
+        assert.equal((await req("review", queue)).actionable, 1);
+        assert.equal((await req("outsider", queue)).total, 0);
+        await req("op", queue, undefined, 403);
+        await admin!.query("UPDATE users SET role='owner' WHERE id=$1", [
+          actors.op.id,
+        ]);
+        assert.equal(
+          (await req("op", queue)).actionable,
+          0,
+          "promoted contributor excluded from independent queue",
+        );
+        await admin!.query("UPDATE users SET role='operator' WHERE id=$1", [
+          actors.op.id,
+        ]);
+        await action("review", "reject", { reason: "请补充流水核对说明" });
+        const returned = await req("review", queue + "&queue=returned");
+        assert.equal(returned.total, 1);
+        assert.equal(returned.rows[0].last_review_reason, "请补充流水核对说明");
+        await action("op", "submit", { checks });
+        await action("review", "approve", { reason: "更正后核对通过" });
+        assert.equal((await req("review", queue + "&queue=delivery")).total, 1);
+        const evidence = await upload(
+          "op",
+          "evidence",
+          "回执.txt",
+          "虚构交付回执",
+        );
+        await action("op", "deliver", {
+          delivery: { channel: "虚构交付", evidenceFileId: evidence.id },
+        });
+        await action("op", "request_reopen", { reason: "虚构更正申请" });
+        await action("owner", "request_reopen", { reason: "不能覆盖" }, 409);
+        assert.equal((await req("review", queue + "&queue=reopen")).total, 1);
+        await action("review", "reopen", { reason: "同意更正" });
+        assert.equal((await req("review", queue + "&queue=reopen")).total, 0);
+        await req("owner", `/companies/${created.id}/members`, {
+          userId: actors.op.id,
+          enabled: false,
+        });
+        await req("op", "/clients/" + created.id, undefined, 404);
+        oid = oldOrder;
       },
     );
     await mkdir("/results", { recursive: true });

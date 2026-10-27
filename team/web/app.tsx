@@ -2,6 +2,7 @@ import { render } from "preact";
 import { useState, useEffect, useRef } from "preact/hooks";
 import "./style.css";
 import { AuthLayout, AuthPassword } from "./auth.js";
+import { ClientWorkspace, ReviewCenter } from "./agency.js";
 import {
   DeliveryOverview,
   DeliveryDetailHeader,
@@ -211,12 +212,12 @@ function App() {
   async function refresh() {
     const gen = ++generation.current;
     let data: any[] = [];
-    if (["orders", "review"].includes(page)) {
+    if (page === "orders") {
       const params = new URLSearchParams({
         ...deliveryQuery,
         companyId: cid,
         period,
-        status: page === "review" ? "review" : filter,
+        status: filter,
         offset: String(offset),
       });
       const [list, summary] = await Promise.all([
@@ -276,7 +277,7 @@ function App() {
     const gen = ++generation.current;
     const d = await api("/orders/" + id);
     if (gen === generation.current) {
-      if (detail?.id !== d.id)
+      if (detail?.id !== d.id || detail?.status !== d.status)
         setDetailTab(
           ["collecting", "checking"].includes(d.status)
             ? "materials"
@@ -499,7 +500,7 @@ function App() {
           </button>
         </div>
       )}
-      {["orders", "review"].includes(page) && !detail && (
+      {page === "orders" && !detail && (
         <>
           {reviewer && showCreate && (
             <div className="delivery-create">
@@ -624,7 +625,7 @@ function App() {
             stats={deliveryStats}
             period={period}
             company={current?.name}
-            reviewOnly={page === "review"}
+            reviewOnly={false}
             query={deliveryQuery}
             filter={filter}
             offset={offset}
@@ -650,6 +651,7 @@ function App() {
         <>
           <DeliveryDetailHeader
             order={detail}
+            backLabel={page === "review" ? "返回审核队列" : "返回工作清单"}
             tab={detailTab}
             onTab={setDetailTab}
             onBack={() => {
@@ -704,6 +706,34 @@ function App() {
                           : "待补充"}
                     </small>
                   </div>
+                  {detail.status === "collecting" && write && !item.fileId && (
+                    <form
+                      className="agency-material-upload"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const form = e.currentTarget;
+                        const data = new FormData(form);
+                        void run(async () => {
+                          await api(
+                            `/orders/${detail.id}/files?kind=source&version=${detail.version}&materialIndex=${i}&category=${encodeURIComponent(item.name)}`,
+                            data,
+                          );
+                          await openOrder(detail.id);
+                        }, "原件已上传并关联到资料清单");
+                      }}
+                    >
+                      <label>
+                        {item.name}原件
+                        <input
+                          type="file"
+                          name="file"
+                          required
+                          accept=".csv,.xlsx,.pdf,.png,.jpg,.jpeg,.txt,.docx"
+                        />
+                      </label>
+                      <button disabled={busy}>上传并关联</button>
+                    </form>
+                  )}
                   {detail.status === "collecting" && write && (
                     <form
                       onSubmit={(e) => {
@@ -778,7 +808,9 @@ function App() {
               detailTab !==
               (["collecting", "checking"].includes(detail.status)
                 ? "materials"
-                : "review")
+                : detail.status === "processing"
+                  ? "processing"
+                  : "review")
             }
           >
             <Panel
@@ -833,6 +865,24 @@ function App() {
                     : "核对完成，进入处理"}
                 </button>
               )}
+              {detail.status === "processing" && (
+                <div className="agency-readiness">
+                  <h3>送审前检查</h3>
+                  {detail.reviews[0]?.action === "reject" && (
+                    <p className="agency-warning">
+                      上次退回：{detail.reviews[0].reason}
+                    </p>
+                  )}
+                  <ul>
+                    {detail.readiness.items.map((i: any) => (
+                      <li>
+                        {i.ok ? "已具备" : "待完成"} · {i.label}
+                      </li>
+                    ))}
+                  </ul>
+                  <p>以上检查通过后，仍须经办填写校验说明并确认成果。</p>
+                </div>
+              )}
               {detail.status === "processing" && write && (
                 <form
                   onSubmit={(e) => {
@@ -865,7 +915,9 @@ function App() {
                     <input type="checkbox" name="passed" required />
                     我已核对成果与来源，校验通过
                   </label>
-                  <button disabled={busy}>提交独立复核</button>
+                  <button disabled={busy || !detail.readiness.ready}>
+                    提交独立复核
+                  </button>
                 </form>
               )}
               {detail.status === "review" && !canReviewDetail && (
@@ -932,7 +984,9 @@ function App() {
                     const b = values(e);
                     void run(() =>
                       orderAction(
-                        detail.reopen_request && reviewer
+                        detail.reopen_request &&
+                          canReviewDetail &&
+                          detail.reopen_request.by !== user.id
                           ? "reopen"
                           : "request_reopen",
                         { reason: b.reason },
@@ -946,11 +1000,29 @@ function App() {
                       ? "已有重开申请，等待独立审批。"
                       : "需要更正时，先申请重开。"}
                   </p>
+                  {detail.reopen_request && (
+                    <p className="agency-warning">
+                      重开申请：{detail.reopen_request.reason} ·{" "}
+                      {new Date(detail.reopen_request.at).toLocaleString(
+                        "zh-CN",
+                        { timeZone: "Asia/Shanghai" },
+                      )}
+                    </p>
+                  )}
                   <Field label="原因">
                     <textarea name="reason" required />
                   </Field>
-                  <button disabled={busy}>
-                    {detail.reopen_request && reviewer
+                  <button
+                    disabled={
+                      busy ||
+                      (!!detail.reopen_request &&
+                        (!canReviewDetail ||
+                          detail.reopen_request.by === user.id))
+                    }
+                  >
+                    {detail.reopen_request &&
+                    canReviewDetail &&
+                    detail.reopen_request.by !== user.id
                       ? "批准重开"
                       : "申请重开"}
                   </button>
@@ -1204,21 +1276,22 @@ function App() {
                 >
                   <Field label="经办">
                     <select name="assigneeId" defaultValue={detail.assignee_id}>
-                      {users
-                        .filter((u) => u.active && u.role !== "viewer")
-                        .map((u) => (
-                          <option value={u.id}>{u.name}</option>
-                        ))}
+                      {detail.assignable.map((u: any) => (
+                        <option value={u.id}>{u.name}</option>
+                      ))}
                     </select>
                   </Field>
                   <Field label="复核">
                     <select name="reviewerId" defaultValue={detail.reviewer_id}>
-                      {users
+                      {detail.assignable
                         .filter(
-                          (u) =>
-                            u.active && ["owner", "reviewer"].includes(u.role),
+                          (u: any) =>
+                            ["owner", "reviewer"].includes(u.role) &&
+                            !detail.contributors.includes(u.id) &&
+                            u.id !== detail.assignee_id &&
+                            u.id !== detail.submission?.submittedBy,
                         )
-                        .map((u) => (
+                        .map((u: any) => (
                           <option value={u.id}>{u.name}</option>
                         ))}
                     </select>
@@ -1269,168 +1342,30 @@ function App() {
         </>
       )}
       {page === "companies" && (
-        <>
-          <h1>客户公司</h1>
-          <form
-            className="toolbar"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setOffset(0);
-              void run(refresh, "");
-            }}
-          >
-            <input
-              aria-label="搜索客户公司"
-              placeholder="公司名称或编号"
-              value={search}
-              onInput={(e) => setSearch(e.currentTarget.value)}
-            />
-            <button>搜索</button>
-          </form>
-          <div className="tablewrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>公司名称</th>
-                  <th>编号</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((c) => (
-                  <tr>
-                    <td>{c.name}</td>
-                    <td>{c.code}</td>
-                    <td>
-                      <button
-                        className="ghost"
-                        onClick={() => {
-                          setCid(c.id);
-                          if (!companies.some((x) => x.id === c.id))
-                            setCompanies([...companies, c]);
-                          navigate("orders");
-                        }}
-                      >
-                        进入工作区
-                      </button>
-                      {owner && (
-                        <button
-                          className="ghost"
-                          onClick={() =>
-                            void run(async () => {
-                              setCid(c.id);
-                              if (!companies.some((x) => x.id === c.id))
-                                setCompanies([...companies, c]);
-                              setMembers(
-                                await api("/companies/" + c.id + "/members"),
-                              );
-                            }, "")
-                          }
-                        >
-                          管理授权
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {owner && (
-            <Panel title="新增客户公司">
-              <form
-                className="formgrid"
-                onSubmit={(e) => {
-                  const b = values(e);
-                  void run(async () => {
-                    await api("/companies", b);
-                    await refresh();
-                    await loadCompanies();
-                  });
-                }}
-              >
-                <Field label="公司名称" name="name" />
-                <Field label="内部公司编号" name="code" />
-                <button disabled={busy}>创建公司</button>
-              </form>
-            </Panel>
-          )}
-          {owner && cid && (
-            <Panel
-              title={"公司授权 · " + (current?.name || "当前公司")}
-              note="撤销授权后，即使员工尚未退出登录，也不能继续访问该公司。"
-            >
-              <p>
-                {members.map((m) => m.name).join("、") ||
-                  "点击公司列表的“管理授权”查看现有成员"}
-              </p>
-              <form
-                className="formgrid"
-                onSubmit={(e) => {
-                  const b = values(e);
-                  void run(async () => {
-                    await api("/companies/" + cid + "/members", {
-                      userId: b.userId,
-                      enabled: b.enabled === "true",
-                    });
-                    setMembers(await api("/companies/" + cid + "/members"));
-                  });
-                }}
-              >
-                <Field label="员工">
-                  <select name="userId">
-                    {users.map((u) => (
-                      <option value={u.id}>
-                        {u.name} · {roleNames[u.role]}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="操作">
-                  <select name="enabled">
-                    <option value="true">授予访问</option>
-                    <option value="false">撤销访问</option>
-                  </select>
-                </Field>
-                <button disabled={busy}>保存授权</button>
-              </form>
-            </Panel>
-          )}
-          {reviewer && current && (
-            <Panel
-              title="后续月份资料模板"
-              note="一行一项必需资料；不会修改已经创建的工作单。"
-            >
-              <form
-                key={cid}
-                onSubmit={(e) => {
-                  const b = values(e);
-                  void run(async () => {
-                    await api("/companies/" + cid + "/template", {
-                      version: current.version,
-                      checklist: String(b.items)
-                        .split("\n")
-                        .filter(Boolean)
-                        .map((name) => ({ name: name.trim(), required: true })),
-                    });
-                    await loadCompanies();
-                  });
-                }}
-              >
-                <Field label="必需资料">
-                  <textarea
-                    name="items"
-                    required
-                    defaultValue={current.template
-                      .map((i: any) => i.name)
-                      .join("\n")}
-                  />
-                </Field>
-                <button disabled={busy}>保存模板</button>
-              </form>
-            </Panel>
-          )}
-        </>
+        <ClientWorkspace
+          api={api}
+          period={period}
+          companyId={cid}
+          owner={owner}
+          reviewer={reviewer}
+          users={users}
+          onChanged={loadCompanies}
+          onOpen={(id: string) => {
+            pendingOpen.current = id;
+            navigate("orders");
+          }}
+        />
+      )}
+      {page === "review" && (
+        <div className="delivery-section" hidden={!!detail}>
+          <ReviewCenter
+            api={api}
+            period={period}
+            companyId={cid}
+            refreshKey={detail?.version || 0}
+            onOpen={(id: string) => void run(() => openOrder(id), "")}
+          />
+        </div>
       )}
       {page === "imports" && (
         <>
@@ -1936,7 +1871,7 @@ function App() {
           </form>
         </Panel>
       )}
-      {["companies", "audit"].includes(page) && !detail && (
+      {["audit"].includes(page) && !detail && (
         <div className="pagination">
           <button
             className="secondary"
@@ -2138,7 +2073,10 @@ function App() {
                         await flushStore();
                         generation.current++;
                         if (page !== "finance")
-                          setViewRequest({ id: Date.now(), view: "team:" + page });
+                          setViewRequest({
+                            id: Date.now(),
+                            view: "team:" + page,
+                          });
                         setCid(next);
                         setDetail(null);
                         setPreview(null);
@@ -2163,7 +2101,10 @@ function App() {
                       void run(async () => {
                         await flushStore();
                         if (page !== "finance")
-                          setViewRequest({ id: Date.now(), view: "team:" + page });
+                          setViewRequest({
+                            id: Date.now(),
+                            view: "team:" + page,
+                          });
                         setPeriod(next);
                       }, "");
                     }}

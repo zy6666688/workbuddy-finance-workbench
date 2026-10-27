@@ -51,6 +51,19 @@ try {
     [org, users[0].id],
   );
   await admin.query("ANALYZE");
+  await admin.query(
+    "UPDATE users SET role='reviewer' WHERE id=ANY($1::uuid[])",
+    [users.slice(0, 50).map((u) => u.id)],
+  );
+  for (let i = 0; i < 50; i++)
+    await admin.query(
+      "UPDATE work_orders SET assignee_id=$1,reviewer_id=$2,status='review' WHERE company_id=ANY($3::uuid[]) AND period='2026-06'",
+      [
+        users[i + 50].id,
+        users[i].id,
+        companies.slice(i * 40, (i + 1) * 40).map((c) => c.id),
+      ],
+    );
   const sessions = [];
   for (const u of users.slice(0, 50)) {
     const token = randomUUID(),
@@ -70,6 +83,8 @@ try {
         "/companies?search=容量&limit=30",
         "/orders?offset=30",
         "/orders/overview?period=2026-06",
+        "/clients?period=2026-06&search=容量",
+        "/reviews/queue?period=2026-06",
         "/jobs",
       ]) {
         const at = performance.now();
@@ -94,6 +109,18 @@ try {
         assert.equal(r.statusCode, 200, r.body);
         if (url.startsWith("/orders/overview"))
           assert.equal(r.json().total, 40);
+        if (url.startsWith("/clients") || url.startsWith("/reviews/queue")) {
+          assert.equal(r.json().total, 40);
+          assert.ok(
+            r
+              .json()
+              .rows.every((c) =>
+                companies
+                  .slice(i * 40, (i + 1) * 40)
+                  .some((x) => x.id === (c.company_id || c.id)),
+              ),
+          );
+        }
         samples.push(performance.now() - at);
         if (url.startsWith("/companies"))
           assert.ok(
@@ -149,6 +176,11 @@ try {
   // Remove only this generated organization's index-only file records so restore tests can check every real file.
   await admin.query("DELETE FROM files WHERE org_id=$1", [org]);
 } finally {
+  // Failed measurements must not leave index-only files that break restore checks.
+  await admin.query(
+    "DELETE FROM files WHERE org_id=$1 AND sha256='index-only'",
+    [org],
+  );
   await app.close();
   await pool.end();
   await admin.end();
