@@ -69,6 +69,7 @@ try {
         "/orders?period=2026-06",
         "/companies?search=容量&limit=30",
         "/orders?offset=30",
+        "/orders/overview?period=2026-06",
         "/jobs",
       ]) {
         const at = performance.now();
@@ -91,6 +92,8 @@ try {
             remoteAddress: `192.0.2.${i + 1}`,
           });
         assert.equal(r.statusCode, 200, r.body);
+        if (url.startsWith("/orders/overview"))
+          assert.equal(r.json().total, 40);
         samples.push(performance.now() - at);
         if (url.startsWith("/companies"))
           assert.ok(

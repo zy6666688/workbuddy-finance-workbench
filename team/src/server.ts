@@ -1,4 +1,5 @@
 import { workspaceRoutes } from "./workspace.js";
+import { deliveryRead } from "./delivery.js";
 import Fastify, { type FastifyRequest } from "fastify";
 import cookie from "@fastify/cookie";
 import multipart from "@fastify/multipart";
@@ -437,23 +438,10 @@ export async function buildServer() {
       }),
   );
   get("/api/v1/orders", "月度工作单与逾期筛选", async (r) =>
-    tx(r.actor, async (db) => {
-      const q = r.query as any,
-        p = limitQuery(q);
-      return (
-        await db.query(
-          `SELECT w.*,c.name AS company_name,count(*) OVER() AS total FROM work_orders w JOIN companies c ON c.id=w.company_id WHERE ($1::uuid IS NULL OR w.company_id=$1) AND ($2='' OR w.period=$2) AND ($3='' OR w.status=$3) AND ($4=false OR (w.due_date<CURRENT_DATE AND w.status<>'archived')) ORDER BY w.due_date,w.id LIMIT $5 OFFSET $6`,
-          [
-            q.companyId ? uuid.parse(q.companyId) : null,
-            q.period ? period.parse(q.period) : "",
-            q.status || "",
-            q.overdue === "true",
-            p.limit,
-            p.offset,
-          ],
-        )
-      ).rows;
-    }),
+    tx(r.actor, (db) => deliveryRead(db, r.actor, r.query)),
+  );
+  get("/api/v1/orders/overview", "授权范围内月度交付统计", async (r) =>
+    tx(r.actor, (db) => deliveryRead(db, r.actor, r.query, true)),
   );
   post(
     "/api/v1/orders",
@@ -476,6 +464,17 @@ export async function buildServer() {
       const o = await order(db, (r.params as any).id);
       return {
         ...o,
+        ...(await one(
+          db,
+          "SELECT c.name AS company_name,c.code AS company_code,a.name AS assignee_name,r.name AS reviewer_name FROM companies c LEFT JOIN users a ON a.id=$2 LEFT JOIN users r ON r.id=$3 WHERE c.id=$1",
+          [o.company_id, o.assignee_id, o.reviewer_id],
+        )),
+        activity: (
+          await db.query(
+            "SELECT e.action,e.created_at,u.name AS actor_name,CASE WHEN e.action='deliver' THEN e.details ELSE '{}'::jsonb END AS delivery FROM audit_events e LEFT JOIN users u ON u.id=e.actor_id WHERE e.company_id=$1 AND e.target_id=$2 ORDER BY e.created_at DESC LIMIT 50",
+            [o.company_id, o.id],
+          )
+        ).rows,
         files: (
           await db.query(
             "SELECT id,name,kind,category,size,sha256,version,uploaded_by,created_at FROM files WHERE order_id=$1 ORDER BY created_at DESC",
@@ -490,7 +489,7 @@ export async function buildServer() {
         ).rows,
         reviews: (
           await db.query(
-            "SELECT * FROM reviews WHERE order_id=$1 ORDER BY created_at DESC",
+            "SELECT r.*,u.name AS actor_name FROM reviews r LEFT JOIN users u ON u.id=r.actor_id WHERE r.order_id=$1 ORDER BY r.created_at DESC",
             [o.id],
           )
         ).rows,

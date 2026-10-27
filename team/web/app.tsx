@@ -2,6 +2,12 @@ import { render } from "preact";
 import { useState, useEffect, useRef } from "preact/hooks";
 import "./style.css";
 import { AuthLayout, AuthPassword } from "./auth.js";
+import {
+  DeliveryOverview,
+  DeliveryDetailHeader,
+  DeliveryActivity,
+  defaultDeliveryQuery,
+} from "./delivery.js";
 import { FinanceDashboard } from "../../src/finance-dashboard.jsx";
 import {
   writeFinanceStore,
@@ -140,6 +146,11 @@ function App() {
     [theme, setTheme] = useState("indigo"),
     [favorites, setFavorites] = useState<string[]>([]),
     [recent, setRecent] = useState<string[]>([]);
+  const [deliveryQuery, setDeliveryQuery] = useState(defaultDeliveryQuery),
+    [deliveryStats, setDeliveryStats] = useState<any>(null),
+    [showCreate, setShowCreate] = useState(false),
+    [batchMode, setBatchMode] = useState(false),
+    [detailTab, setDetailTab] = useState("materials");
   const pendingOpen = useRef("");
   const generation = useRef(0),
     fileRef = useRef<HTMLInputElement>(null),
@@ -148,6 +159,13 @@ function App() {
     reviewer = owner || user?.role === "reviewer",
     write = user?.role !== "viewer";
   const current = companies.find((c) => c.id === cid);
+  const canReviewDetail =
+    reviewer &&
+    detail &&
+    detail.assignee_id !== user?.id &&
+    !detail.contributors.includes(user?.id) &&
+    detail.submission?.submittedBy !== user?.id &&
+    (owner || detail.reviewer_id === user?.id);
   const run = async (fn: () => Promise<any>, message = "已保存") => {
     setBusy(true);
     setNotice("");
@@ -193,10 +211,21 @@ function App() {
   async function refresh() {
     const gen = ++generation.current;
     let data: any[] = [];
-    if (["orders", "review"].includes(page))
-      data = await api(
-        `/orders?companyId=${cid}&period=${period}&status=${page === "review" ? "review" : filter === "overdue" ? "" : filter}&overdue=${filter === "overdue"}&offset=${offset}`,
-      );
+    if (["orders", "review"].includes(page)) {
+      const params = new URLSearchParams({
+        ...deliveryQuery,
+        companyId: cid,
+        period,
+        status: page === "review" ? "review" : filter,
+        offset: String(offset),
+      });
+      const [list, summary] = await Promise.all([
+        api("/orders?" + params),
+        api("/orders/overview?" + params),
+      ]);
+      data = list;
+      if (gen === generation.current) setDeliveryStats(summary);
+    }
     if (page === "companies")
       data = await api(
         `/companies?search=${encodeURIComponent(search)}&offset=${offset}`,
@@ -222,7 +251,20 @@ function App() {
       pendingOpen.current = "";
       void run(() => openOrder(id), "");
     } else void run(refresh, "");
-  }, [page, cid, period, offset, filter, user?.must_change_password]);
+  }, [
+    page,
+    cid,
+    period,
+    offset,
+    filter,
+    deliveryQuery,
+    user?.must_change_password,
+  ]);
+  useEffect(() => {
+    setOffset(0);
+    setShowCreate(false);
+    setDeliveryStats(null);
+  }, [cid, period, page]);
   useEffect(() => {
     if (page !== "jobs" || !user) return;
     const timer = setInterval(() => {
@@ -234,6 +276,14 @@ function App() {
     const gen = ++generation.current;
     const d = await api("/orders/" + id);
     if (gen === generation.current) {
+      if (detail?.id !== d.id)
+        setDetailTab(
+          ["collecting", "checking"].includes(d.status)
+            ? "materials"
+            : d.status === "processing"
+              ? "processing"
+              : "review",
+        );
       setDetail(d);
       const next = [id, ...recent.filter((x) => x !== id)].slice(0, 10);
       setRecent(next);
@@ -451,164 +501,196 @@ function App() {
       )}
       {["orders", "review"].includes(page) && !detail && (
         <>
-          <div className="hero">
-            <p className="eyebrow">MONTHLY DELIVERY</p>
-            <h1>
-              {page === "review"
-                ? "待复核的成果，逐项确认。"
-                : "把本月工作，推进到交付。"}
-            </h1>
-            <p>按公司、期间与责任人组织资料，关键节点由另一位同事复核。</p>
-          </div>
-          <div className="toolbar">
-            <label>
-              处理阶段
-              <select
-                disabled={page === "review"}
-                value={filter}
-                onChange={(e) => {
-                  setFilter(e.currentTarget.value);
-                  setOffset(0);
-                }}
+          {reviewer && showCreate && (
+            <div className="delivery-create">
+              <div className="delivery-createHead">
+                <h2>安排客户月份</h2>
+                <button className="ghost" onClick={() => setShowCreate(false)}>
+                  收起
+                </button>
+              </div>
+              <Panel
+                title="安排月度工作"
+                note="每家公司每月一份；重复创建不会新增。批量建立前请明确勾选客户。经办与复核必须不同人。"
               >
-                <option value="">全部阶段</option>
-                {steps.map((s) => (
-                  <option value={s}>{statusNames[s]}</option>
-                ))}
-                <option value="overdue">仅看逾期</option>
-              </select>
-            </label>
-            <button
-              className="secondary"
-              onClick={() => void run(refresh, "已刷新")}
-            >
-              刷新列表
-            </button>
-          </div>
-          <div className="cards">
-            {rows.map((o) => (
-              <button
-                className="ordercard"
-                onClick={() => void run(() => openOrder(o.id), "")}
-              >
-                <div>
-                  <Badge value={o.status} />
-                  <small>{o.period}</small>
-                </div>
-                <h2>{o.company_name}</h2>
-                <p>截止 {String(o.due_date).slice(0, 10)}</p>
-                <span>查看资料与处理进度 →</span>
-              </button>
-            ))}
-          </div>
-          {!rows.length && (
-            <div className="empty">
-              本期暂无工作单。选择客户公司后创建，或批量安排本月任务。
+                <form
+                  className="formgrid"
+                  onSubmit={(e) => {
+                    const b = values(e),
+                      selectedCompanies = new FormData(
+                        e.currentTarget as HTMLFormElement,
+                      ).getAll("companyIds");
+                    void run(async () => {
+                      if (b.assigneeId === b.reviewerId)
+                        throw new Error("经办与复核必须选择不同人员");
+                      const payload = {
+                        period,
+                        dueDate: b.dueDate,
+                        assigneeId: b.assigneeId,
+                        reviewerId: b.reviewerId,
+                      };
+                      if (b.mode === "batch") {
+                        if (!selectedCompanies.length)
+                          throw new Error("请勾选需要安排的客户公司");
+                        await enqueue(
+                          "monthly_batch",
+                          {
+                            ...payload,
+                            companyIds: selectedCompanies,
+                          },
+                          "",
+                        );
+                      } else {
+                        if (!b.companyId) throw new Error("请选择客户公司");
+                        await api("/orders", {
+                          companyId: b.companyId,
+                          ...payload,
+                        });
+                        await refresh();
+                        setShowCreate(false);
+                      }
+                    }, "工作已安排");
+                  }}
+                >
+                  {!batchMode && (
+                    <Field label="客户公司">
+                      <select name="companyId" required defaultValue={cid}>
+                        <option value="">请选择客户公司</option>
+                        {companies.map((c) => (
+                          <option value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </Field>
+                  )}
+                  <Field label="经办人员">
+                    <select name="assigneeId" required>
+                      {users
+                        .filter((u) => u.active && u.role !== "viewer")
+                        .map((u) => (
+                          <option value={u.id}>{u.name}</option>
+                        ))}
+                    </select>
+                  </Field>
+                  <Field label="复核人员">
+                    <select name="reviewerId" required>
+                      {users
+                        .filter(
+                          (u) =>
+                            u.active && ["owner", "reviewer"].includes(u.role),
+                        )
+                        .map((u) => (
+                          <option value={u.id}>{u.name}</option>
+                        ))}
+                    </select>
+                  </Field>
+                  <Field label="截止日期" name="dueDate" type="date" />
+                  <Field label="创建方式">
+                    <select
+                      name="mode"
+                      value={batchMode ? "batch" : "single"}
+                      onChange={(e) =>
+                        setBatchMode(e.currentTarget.value === "batch")
+                      }
+                    >
+                      <option value="single">单个客户</option>
+                      <option value="batch">勾选客户批量生成</option>
+                    </select>
+                  </Field>
+                  {batchMode && (
+                    <fieldset className="delivery-companyPick">
+                      <legend>
+                        选择客户（当前已加载 {companies.length} 家）
+                      </legend>
+                      {companies.map((c) => (
+                        <label className="check">
+                          <input
+                            type="checkbox"
+                            name="companyIds"
+                            value={c.id}
+                          />
+                          {c.name}
+                        </label>
+                      ))}
+                      <small>查找更多客户可使用顶部客户搜索。</small>
+                    </fieldset>
+                  )}
+                  <button disabled={busy}>确认安排</button>
+                </form>
+              </Panel>
             </div>
           )}
-          {reviewer && (
-            <Panel
-              title="安排月度工作"
-              note="每家公司每月一份；重复创建不会新增。批量任务使用当前公司列表中显示的客户。"
-            >
-              <form
-                className="formgrid"
-                onSubmit={(e) => {
-                  const b = values(e);
-                  void run(async () => {
-                    const payload = {
-                      period,
-                      dueDate: b.dueDate,
-                      assigneeId: b.assigneeId,
-                      reviewerId: b.reviewerId,
-                    };
-                    if (b.mode === "batch")
-                      await enqueue(
-                        "monthly_batch",
-                        {
-                          ...payload,
-                          companyIds: cid ? [cid] : companies.map((c) => c.id),
-                        },
-                        "",
-                      );
-                    else {
-                      if (!cid) throw new Error("请选择一家公司");
-                      await api("/orders", { companyId: cid, ...payload });
-                      await refresh();
-                    }
-                  }, "工作已安排");
-                }}
-              >
-                <Field label="经办人员">
-                  <select name="assigneeId" required>
-                    {users
-                      .filter((u) => u.active && u.role !== "viewer")
-                      .map((u) => (
-                        <option value={u.id}>{u.name}</option>
-                      ))}
-                  </select>
-                </Field>
-                <Field label="复核人员">
-                  <select name="reviewerId" required>
-                    {users
-                      .filter(
-                        (u) =>
-                          u.active && ["owner", "reviewer"].includes(u.role),
-                      )
-                      .map((u) => (
-                        <option value={u.id}>{u.name}</option>
-                      ))}
-                  </select>
-                </Field>
-                <Field label="截止日期" name="dueDate" type="date" />
-                <Field label="创建方式">
-                  <select name="mode">
-                    <option value="single">当前公司</option>
-                    <option value="batch">当前列表批量生成</option>
-                  </select>
-                </Field>
-                <button disabled={busy}>创建月度工作</button>
-              </form>
-            </Panel>
-          )}
+          <DeliveryOverview
+            rows={rows}
+            stats={deliveryStats}
+            period={period}
+            company={current?.name}
+            reviewOnly={page === "review"}
+            query={deliveryQuery}
+            filter={filter}
+            offset={offset}
+            busy={busy}
+            canCreate={reviewer}
+            onQuery={(q: any) => {
+              setDeliveryQuery(q);
+              setOffset(0);
+            }}
+            onFilter={(s: string) => {
+              setFilter(s);
+              setOffset(0);
+            }}
+            onOffset={setOffset}
+            onOpen={(id: string) => void run(() => openOrder(id), "")}
+            onRefresh={() => void run(refresh, "已刷新")}
+            onCreate={() => setShowCreate(true)}
+            onNavigate={navigate}
+          />
         </>
       )}
       {["orders", "review"].includes(page) && detail && (
         <>
-          <button
-            className="ghost"
-            onClick={() => {
+          <DeliveryDetailHeader
+            order={detail}
+            tab={detailTab}
+            onTab={setDetailTab}
+            onBack={() => {
               setDetail(null);
               void run(refresh, "");
             }}
-          >
-            ← 返回月度列表
-          </button>
-          <div className="detailhead">
-            <div>
-              <p className="eyebrow">
-                {detail.period} / 第 {detail.revision} 次交付版本
-              </p>
-              <h1>
-                {companies.find((c) => c.id === detail.company_id)?.name ||
-                  "月度工作单"}
-              </h1>
-            </div>
-            <Badge value={detail.status} />
-          </div>
-          <ol className="steps">
-            {steps.map((s, i) => (
-              <li className={i <= steps.indexOf(detail.status) ? "done" : ""}>
-                <span>{i + 1}</span>
-                {statusNames[s]}
-              </li>
-            ))}
-          </ol>
-          <div className="columns">
+          />
+          <div className="delivery-section" hidden={detailTab !== "materials"}>
             <Panel
               title="资料清单"
               note="原件必须与本公司、本期间关联。缺件豁免需要独立复核人员说明理由。"
             >
+              {write &&
+                detail.checklist.some(
+                  (i: any) => i.required && !i.fileId && !i.waiver,
+                ) && (
+                  <button
+                    className="secondary"
+                    onClick={() =>
+                      void run(async () => {
+                        await navigator.clipboard.writeText(
+                          [
+                            `${detail.company_name}｜${detail.period} 资料补充清单`,
+                            ...detail.checklist
+                              .filter(
+                                (i: any) =>
+                                  i.required && !i.fileId && !i.waiver,
+                              )
+                              .map(
+                                (i: any, n: number) => `${n + 1}. ${i.name}`,
+                              ),
+                            `工作截止日期：${detail.due_date}`,
+                            "请提供对应期间的资料，收到后由经办核对。",
+                          ].join("\n"),
+                        );
+                      }, "补件清单已复制，请核对后自行发送给客户")
+                    }
+                  >
+                    复制补件清单
+                  </button>
+                )}
               {detail.checklist.map((item: any, i: number) => (
                 <div className="material">
                   <div>
@@ -639,6 +721,7 @@ function App() {
                     >
                       <select
                         name="fileId"
+                        defaultValue={item.fileId || ""}
                         aria-label={item.name + "对应文件"}
                         required
                       >
@@ -657,7 +740,7 @@ function App() {
                     </form>
                   )}
                   {detail.status === "collecting" &&
-                    reviewer &&
+                    canReviewDetail &&
                     !item.fileId &&
                     !item.waiver && (
                       <form
@@ -688,13 +771,53 @@ function App() {
                 </div>
               ))}
             </Panel>
+          </div>
+          <div
+            className="delivery-section"
+            hidden={
+              detailTab !==
+              (["collecting", "checking"].includes(detail.status)
+                ? "materials"
+                : "review")
+            }
+          >
             <Panel
-              title="推进工作"
+              title="当前阶段操作"
               note="状态由服务端检查。经办不能复核自己的交付。"
             >
+              {detailTab === "review" && detail.submission && (
+                <div className="delivery-submission">
+                  <h3>本次送审成果 · 第 {detail.submission.revision} 版</h3>
+                  <p>{detail.submission.checks?.summary}</p>
+                  {detail.submission.checks?.unresolved && (
+                    <p>未解决事项：{detail.submission.checks.unresolved}</p>
+                  )}
+                  <div className="filelist">
+                    {detail.submission.files.map((f: any) => (
+                      <div>
+                        <strong>
+                          {f.name} · v{f.version}
+                        </strong>
+                        {write && (
+                          <a href={"/api/v1/files/" + f.id + "/download"}>
+                            下载送审版本
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <small>复核针对以上版本；替换成果后需要重新提交。</small>
+                </div>
+              )}
               {["collecting", "checking"].includes(detail.status) && write && (
                 <button
-                  disabled={busy}
+                  disabled={
+                    busy ||
+                    (detail.status === "collecting" &&
+                      detail.checklist.some(
+                        (i: any) => i.required && !i.fileId && !i.waiver,
+                      ))
+                  }
                   onClick={() =>
                     void run(() =>
                       orderAction(
@@ -745,7 +868,13 @@ function App() {
                   <button disabled={busy}>提交独立复核</button>
                 </form>
               )}
-              {detail.status === "review" && reviewer && (
+              {detail.status === "review" && !canReviewDetail && (
+                <p className="muted">
+                  本批次等待 {detail.reviewer_name || "指定复核人员"}{" "}
+                  独立复核。参与过经办的人员不能审核自己的成果。
+                </p>
+              )}
+              {detail.status === "review" && canReviewDetail && (
                 <form
                   onSubmit={(e) => {
                     const b = values(e);
@@ -847,249 +976,296 @@ function App() {
               )}
             </Panel>
           </div>
-          <Panel
-            title="原始资料与成果版本"
-            note="上传同名文件会形成新版本。复核后更换成果将退回处理阶段，必须重新复核。"
-          >
-            <div className="filelist">
-              {detail.files.map((f: any) => (
-                <div>
+          <div className="delivery-section" hidden={detailTab === "history"}>
+            <Panel
+              title="资料与成果文件"
+              note="上传同名文件会形成新版本。复核后更换成果将退回处理阶段，必须重新复核。"
+            >
+              <div className="filelist">
+                {!detail.files.length && (
+                  <p className="muted">
+                    尚未上传文件。先上传原始资料，再关联到资料清单。
+                  </p>
+                )}
+                {detail.files.map((f: any) => (
                   <div>
-                    <strong>{f.name}</strong>
-                    <small>
-                      {
-                        (
-                          {
-                            source: "原始资料",
-                            result: "处理成果",
-                            evidence: "证据",
-                          } as any
-                        )[f.kind]
-                      }{" "}
-                      · {f.category} · v{f.version} ·{" "}
-                      {Math.ceil(Number(f.size) / 1024)} KB
-                    </small>
+                    <div>
+                      <strong>{f.name}</strong>
+                      <small>
+                        {
+                          (
+                            {
+                              source: "原始资料",
+                              result: "处理成果",
+                              evidence: "证据",
+                            } as any
+                          )[f.kind]
+                        }{" "}
+                        · {f.category} · v{f.version} ·{" "}
+                        {Math.ceil(Number(f.size) / 1024)} KB
+                      </small>
+                    </div>
+                    {write && (
+                      <a href={"/api/v1/files/" + f.id + "/download"}>下载</a>
+                    )}
                   </div>
-                  {write && (
-                    <a href={"/api/v1/files/" + f.id + "/download"}>下载</a>
+                ))}
+              </div>
+              {write && detail.status !== "archived" && (
+                <form
+                  className="formgrid"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const form = e.currentTarget;
+                    const b = new FormData(form);
+                    const file = b.get("file") as File;
+                    void run(async () => {
+                      const upload = new FormData();
+                      upload.set("file", file);
+                      await api(
+                        `/orders/${detail.id}/files?kind=${b.get("kind")}&category=${encodeURIComponent(String(b.get("category")))}&version=${detail.version}`,
+                        upload,
+                      );
+                      form.reset();
+                      await openOrder(detail.id);
+                    }, "文件已保存");
+                  }}
+                >
+                  <Field label="文件用途">
+                    <select
+                      name="kind"
+                      key={detailTab}
+                      defaultValue={
+                        detailTab === "processing"
+                          ? "result"
+                          : detailTab === "review"
+                            ? "evidence"
+                            : "source"
+                      }
+                    >
+                      <option value="source">原始资料</option>
+                      <option value="result">处理成果</option>
+                      <option value="evidence">交付证据</option>
+                    </select>
+                  </Field>
+                  <Field label="资料类别" name="category" value="其他" />
+                  <Field label="选择文件（单个50MB以内）">
+                    <input
+                      name="file"
+                      type="file"
+                      required
+                      accept=".csv,.xlsx,.pdf,.png,.jpg,.jpeg,.txt,.docx"
+                    />
+                  </Field>
+                  <button disabled={busy}>上传并保存版本</button>
+                </form>
+              )}
+            </Panel>
+          </div>
+          <div className="delivery-section" hidden={detailTab !== "processing"}>
+            <Panel
+              title="WorkBuddy 任务交接"
+              note="下载任务包 → 在 WorkBuddy 处理 → 上传成果 → 回传任务。复制提示词不代表任务完成。"
+            >
+              {!detail.runs.length && (
+                <p className="muted">
+                  暂无外部执行记录。进入经办处理阶段后，选择工作流和输入文件建立任务。
+                </p>
+              )}
+              {detail.status === "processing" && write && (
+                <form
+                  className="formgrid"
+                  onSubmit={(e) => {
+                    const b = values(e),
+                      inputIds = new FormData(
+                        e.currentTarget as HTMLFormElement,
+                      ).getAll("inputFile");
+                    void run(async () => {
+                      await api(`/orders/${detail.id}/runs`, {
+                        version: detail.version,
+                        workflowId: b.workflowId,
+                        fileIds: inputIds,
+                      });
+                      await openOrder(detail.id);
+                    });
+                  }}
+                >
+                  <Field label="选择工作流">
+                    <select name="workflowId">
+                      {workflows.map((w) => (
+                        <option value={w.id}>{w.title}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <fieldset>
+                    <legend>选择本次输入版本</legend>
+                    {detail.files
+                      .filter((f: any) => f.kind === "source")
+                      .map((f: any) => (
+                        <label className="check">
+                          <input
+                            type="checkbox"
+                            name="inputFile"
+                            value={f.id}
+                          />
+                          {f.name} · v{f.version}
+                        </label>
+                      ))}
+                  </fieldset>
+                  <button
+                    disabled={
+                      busy ||
+                      !detail.files.some((f: any) => f.kind === "source")
+                    }
+                  >
+                    建立执行记录
+                  </button>
+                </form>
+              )}
+              {detail.runs.map((r: any) => (
+                <div className="run">
+                  <div>
+                    <strong>
+                      {workflows.find((w) => w.id === r.workflow_id)?.title}
+                    </strong>{" "}
+                    <Badge value={r.status} />
+                  </div>
+                  <small>任务编号 {r.id}</small>
+                  {r.status === "external" && write && (
+                    <>
+                      <button
+                        className="secondary"
+                        onClick={() =>
+                          void run(
+                            () =>
+                              enqueue(
+                                "run_export",
+                                { runId: r.id },
+                                detail.company_id,
+                              ),
+                            "任务包生成中",
+                          )
+                        }
+                      >
+                        生成 WorkBuddy 任务包
+                      </button>
+                      <form
+                        onSubmit={(e) => {
+                          const b = values(e);
+                          void run(async () => {
+                            const manifest = JSON.parse(String(b.manifest));
+                            if (manifest.runId !== r.id)
+                              throw new Error("回传清单不属于此任务");
+                            await api("/runs/" + r.id + "/return", {
+                              version: r.version,
+                              inputHashes: manifest.inputHashes,
+                              resultFileIds: detail.files
+                                .filter((f: any) => f.kind === "result")
+                                .map((f: any) => f.id),
+                              summary: b.summary,
+                            });
+                            await openOrder(detail.id);
+                          });
+                        }}
+                      >
+                        <Field label="任务包中的 return-manifest.json">
+                          <textarea
+                            name="manifest"
+                            required
+                            placeholder="粘贴任务包里的回传清单"
+                          />
+                        </Field>
+                        <Field label="成果与校验说明">
+                          <textarea name="summary" required />
+                        </Field>
+                        <button disabled={busy}>关联已上传成果并回传</button>
+                      </form>
+                    </>
                   )}
                 </div>
               ))}
-            </div>
-            {write && detail.status !== "archived" && (
-              <form
-                className="formgrid"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const form = e.currentTarget;
-                  const b = new FormData(form);
-                  const file = b.get("file") as File;
-                  void run(async () => {
-                    const upload = new FormData();
-                    upload.set("file", file);
-                    await api(
-                      `/orders/${detail.id}/files?kind=${b.get("kind")}&category=${encodeURIComponent(String(b.get("category")))}&version=${detail.version}`,
-                      upload,
-                    );
-                    form.reset();
-                    await openOrder(detail.id);
-                  }, "文件已保存");
-                }}
-              >
-                <Field label="文件用途">
-                  <select name="kind">
-                    <option value="source">原始资料</option>
-                    <option value="result">处理成果</option>
-                    <option value="evidence">交付证据</option>
-                  </select>
-                </Field>
-                <Field label="资料类别" name="category" value="其他" />
-                <Field label="选择文件（单个50MB以内）">
-                  <input
-                    name="file"
-                    type="file"
-                    required
-                    accept=".csv,.xlsx,.pdf,.png,.jpg,.jpeg,.txt,.docx"
-                  />
-                </Field>
-                <button disabled={busy}>上传并保存版本</button>
-              </form>
-            )}
-          </Panel>
-          <Panel
-            title="WorkBuddy 任务交接"
-            note="下载任务包 → 在 WorkBuddy 处理 → 上传成果 → 回传任务。复制提示词不代表任务完成。"
-          >
-            {detail.status === "processing" && write && (
-              <form
-                className="formgrid"
-                onSubmit={(e) => {
-                  const b = values(e),
-                    inputIds = new FormData(
-                      e.currentTarget as HTMLFormElement,
-                    ).getAll("inputFile");
-                  void run(async () => {
-                    await api(`/orders/${detail.id}/runs`, {
-                      version: detail.version,
-                      workflowId: b.workflowId,
-                      fileIds: inputIds,
-                    });
-                    await openOrder(detail.id);
-                  });
-                }}
-              >
-                <Field label="选择工作流">
-                  <select name="workflowId">
-                    {workflows.map((w) => (
-                      <option value={w.id}>{w.title}</option>
-                    ))}
-                  </select>
-                </Field>
-                <fieldset>
-                  <legend>选择本次输入版本</legend>
-                  {detail.files
-                    .filter((f: any) => f.kind === "source")
-                    .map((f: any) => (
-                      <label className="check">
-                        <input type="checkbox" name="inputFile" value={f.id} />
-                        {f.name} · v{f.version}
-                      </label>
-                    ))}
-                </fieldset>
-                <button
-                  disabled={
-                    busy || !detail.files.some((f: any) => f.kind === "source")
-                  }
-                >
-                  建立执行记录
-                </button>
-              </form>
-            )}
-            {detail.runs.map((r: any) => (
-              <div className="run">
-                <div>
-                  <strong>
-                    {workflows.find((w) => w.id === r.workflow_id)?.title}
-                  </strong>{" "}
-                  <Badge value={r.status} />
-                </div>
-                <small>任务编号 {r.id}</small>
-                {r.status === "external" && write && (
-                  <>
-                    <button
-                      className="secondary"
-                      onClick={() =>
-                        void run(
-                          () =>
-                            enqueue(
-                              "run_export",
-                              { runId: r.id },
-                              detail.company_id,
-                            ),
-                          "任务包生成中",
-                        )
-                      }
-                    >
-                      生成 WorkBuddy 任务包
-                    </button>
-                    <form
-                      onSubmit={(e) => {
-                        const b = values(e);
-                        void run(async () => {
-                          const manifest = JSON.parse(String(b.manifest));
-                          if (manifest.runId !== r.id)
-                            throw new Error("回传清单不属于此任务");
-                          await api("/runs/" + r.id + "/return", {
-                            version: r.version,
-                            inputHashes: manifest.inputHashes,
-                            resultFileIds: detail.files
-                              .filter((f: any) => f.kind === "result")
-                              .map((f: any) => f.id),
-                            summary: b.summary,
-                          });
-                          await openOrder(detail.id);
-                        });
-                      }}
-                    >
-                      <Field label="任务包中的 return-manifest.json">
-                        <textarea
-                          name="manifest"
-                          required
-                          placeholder="粘贴任务包里的回传清单"
-                        />
-                      </Field>
-                      <Field label="成果与校验说明">
-                        <textarea name="summary" required />
-                      </Field>
-                      <button disabled={busy}>关联已上传成果并回传</button>
-                    </form>
-                  </>
-                )}
-              </div>
-            ))}
-          </Panel>
-          {reviewer && detail.status !== "archived" && (
-            <Panel title="分工与截止日期">
-              <form
-                className="formgrid"
-                onSubmit={(e) => {
-                  const b = values(e);
-                  void run(async () => {
-                    await api(`/orders/${detail.id}/assign`, {
-                      version: detail.version,
-                      ...b,
-                    });
-                    await openOrder(detail.id);
-                  });
-                }}
-              >
-                <Field label="经办">
-                  <select name="assigneeId" defaultValue={detail.assignee_id}>
-                    {users
-                      .filter((u) => u.active && u.role !== "viewer")
-                      .map((u) => (
-                        <option value={u.id}>{u.name}</option>
-                      ))}
-                  </select>
-                </Field>
-                <Field label="复核">
-                  <select name="reviewerId" defaultValue={detail.reviewer_id}>
-                    {users
-                      .filter(
-                        (u) =>
-                          u.active && ["owner", "reviewer"].includes(u.role),
-                      )
-                      .map((u) => (
-                        <option value={u.id}>{u.name}</option>
-                      ))}
-                  </select>
-                </Field>
-                <Field
-                  label="截止日期"
-                  name="dueDate"
-                  type="date"
-                  value={String(detail.due_date).slice(0, 10)}
-                />
-                <button disabled={busy}>更新分工</button>
-              </form>
             </Panel>
-          )}
-          <Panel title="历次复核记录">
-            {detail.reviews.length ? (
-              detail.reviews.map((r: any) => (
-                <article className="record">
-                  <strong>
-                    {r.action === "approve" ? "通过" : "退回"} · 第 {r.revision}{" "}
-                    版
-                  </strong>
-                  <p>{r.reason}</p>
-                  <small>{new Date(r.created_at).toLocaleString()}</small>
-                </article>
-              ))
-            ) : (
-              <p className="muted">尚未提交复核</p>
+          </div>
+          <div className="delivery-section" hidden={detailTab !== "history"}>
+            {reviewer && detail.status !== "archived" && (
+              <Panel title="分工与截止日期">
+                <form
+                  className="formgrid"
+                  onSubmit={(e) => {
+                    const b = values(e);
+                    void run(async () => {
+                      await api(`/orders/${detail.id}/assign`, {
+                        version: detail.version,
+                        ...b,
+                      });
+                      await openOrder(detail.id);
+                    });
+                  }}
+                >
+                  <Field label="经办">
+                    <select name="assigneeId" defaultValue={detail.assignee_id}>
+                      {users
+                        .filter((u) => u.active && u.role !== "viewer")
+                        .map((u) => (
+                          <option value={u.id}>{u.name}</option>
+                        ))}
+                    </select>
+                  </Field>
+                  <Field label="复核">
+                    <select name="reviewerId" defaultValue={detail.reviewer_id}>
+                      {users
+                        .filter(
+                          (u) =>
+                            u.active && ["owner", "reviewer"].includes(u.role),
+                        )
+                        .map((u) => (
+                          <option value={u.id}>{u.name}</option>
+                        ))}
+                    </select>
+                  </Field>
+                  <Field
+                    label="截止日期"
+                    name="dueDate"
+                    type="date"
+                    value={String(detail.due_date).slice(0, 10)}
+                  />
+                  <button disabled={busy}>更新分工</button>
+                </form>
+              </Panel>
             )}
-          </Panel>
+            <Panel
+              title="工作单动态"
+              note="显示最近 50 条工作单操作，时间按上海时区显示"
+            >
+              <DeliveryActivity items={detail.activity} files={detail.files} />
+            </Panel>
+          </div>
+          <div
+            className="delivery-section"
+            hidden={!["history", "review"].includes(detailTab)}
+          >
+            <Panel title="历次复核记录">
+              {detail.reviews.length ? (
+                detail.reviews.map((r: any) => (
+                  <article className="record">
+                    <strong>
+                      {r.action === "approve" ? "通过" : "退回"} · 第{" "}
+                      {r.revision} 版
+                    </strong>
+                    <p>{r.reason}</p>
+                    <small>
+                      {r.actor_name} ·{" "}
+                      {new Date(r.created_at).toLocaleString("zh-CN", {
+                        timeZone: "Asia/Shanghai",
+                      })}
+                    </small>
+                  </article>
+                ))
+              ) : (
+                <p className="muted">尚无已完成的复核记录</p>
+              )}
+            </Panel>
+          </div>
         </>
       )}
       {page === "companies" && (
@@ -1760,7 +1936,7 @@ function App() {
           </form>
         </Panel>
       )}
-      {["orders", "review", "companies", "audit"].includes(page) && !detail && (
+      {["companies", "audit"].includes(page) && !detail && (
         <div className="pagination">
           <button
             className="secondary"
@@ -1961,6 +2137,8 @@ function App() {
                       void run(async () => {
                         await flushStore();
                         generation.current++;
+                        if (page !== "finance")
+                          setViewRequest({ id: Date.now(), view: "team:" + page });
                         setCid(next);
                         setDetail(null);
                         setPreview(null);
@@ -1984,6 +2162,8 @@ function App() {
                       const next = e.currentTarget.value;
                       void run(async () => {
                         await flushStore();
+                        if (page !== "finance")
+                          setViewRequest({ id: Date.now(), view: "team:" + page });
                         setPeriod(next);
                       }, "");
                     }}

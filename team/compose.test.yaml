@@ -5,7 +5,8 @@ services:
       - '127.0.0.1:8081:80'
   app:
     environment:
-      APP_ORIGIN: http://localhost:8081
+      # Keep synthetic browser sessions separate from the localhost workspace.
+      APP_ORIGIN: http://127.0.0.1:8081
   backup:
     volumes: !override
       - files:/files:ro

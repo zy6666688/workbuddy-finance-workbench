@@ -85,8 +85,7 @@
   padding: 24px;
   box-shadow: 0 5px 18px #1c2d4610;
 }
-.team-panels button,
-.team-panels .button {
+.team-panels :where(button, .button) {
   background: var(--fin-accent);
   border-radius: 10px;
 }

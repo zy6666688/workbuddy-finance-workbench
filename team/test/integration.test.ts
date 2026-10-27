@@ -249,6 +249,60 @@ test(
         };
         oid = (await req("owner", "/orders", body)).id;
         assert.equal((await req("owner", "/orders", body)).existing, true);
+        // Populate inaccessible companies too: aggregates must respect RLS, not
+        // merely hide cards after reading every company's totals.
+        await admin!.query(
+          "INSERT INTO work_orders(id,org_id,company_id,period,due_date,checklist) VALUES($1,$2,$3,'2026-01','2026-02-10','[]'),($4,$5,$6,'2026-01','2026-02-10','[]')",
+          [randomUUID(), org, hidden, randomUUID(), otherOrg, foreign],
+        );
+        const overview = await req("op", "/orders/overview?period=2026-01");
+        assert.equal(overview.total, 1);
+        assert.equal(overview.missing, 1);
+        assert.equal(overview.stages.collecting, 1);
+        assert.equal(
+          (await req("owner", "/orders/overview?period=2026-01")).total,
+          2,
+        );
+        assert.equal(
+          (await req("outsider", "/orders/overview?period=2026-01")).total,
+          1,
+        );
+        assert.equal(
+          (await req("op", `/orders/overview?companyId=${hidden}`)).total,
+          0,
+        );
+        assert.equal((await req("op", "/orders?scope=handling")).length, 1);
+        assert.equal((await req("op", "/orders?scope=reviewing")).length, 0);
+        const listed = await req(
+          "review",
+          "/orders?scope=reviewing&attention=missing&limit=1",
+        );
+        assert.equal(listed[0].missing_count, 3);
+        assert.equal(listed[0].assignee_name, "op");
+        assert.equal(
+          (await req("op", "/orders?search=" + encodeURIComponent("验收公司")))
+            .length,
+          1,
+        );
+        assert.equal(
+          (
+            await req(
+              "op",
+              "/orders?search=" + encodeURIComponent("未授权公司"),
+            )
+          ).length,
+          0,
+        );
+        assert.equal(
+          (await req("owner", "/orders?limit=1&offset=1")).length,
+          1,
+        );
+        assert.equal(
+          (await req("owner", "/orders/overview?limit=1&offset=1")).total,
+          2,
+        );
+        await req("op", "/orders?sort=not-a-column", undefined, 400);
+        await req("op", "/orders/overview?scope=someone-else", undefined, 400);
         await req("outsider", "/orders/" + oid, undefined, 404);
         await req(
           "viewer",
@@ -278,6 +332,17 @@ test(
           });
         await action("op", "finish_collection");
         await action("op", "start_processing");
+        assert.equal(
+          (await req("op", "/orders/overview?attention=missing"))
+            .filtered_total,
+          0,
+        );
+        assert.equal(
+          (await req("op", "/orders?sort=updated"))[0].received_count,
+          3,
+        );
+        assert.equal((await detail()).company_name, "验收公司");
+        assert.ok((await detail()).activity.length > 0);
       },
     );
     await t.test(
