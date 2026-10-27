@@ -1,6 +1,6 @@
 // Runs only against the explicitly named synthetic test project. Does not remove volumes.
 import { spawnSync } from "node:child_process";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import assert from "node:assert/strict";
 const docker = process.env.DOCKER_BIN || "docker";
@@ -136,8 +136,14 @@ assert.deepEqual(
   JSON.parse(await readFile(".test/results/restored.json")),
 );
 dc("up", "-d", "app", "worker", "gateway");
-await writeFile(
-  ".test/results/recovery.json",
+dc(
+  "run",
+  "--rm",
+  "--no-deps",
+  "acceptance",
+  "node",
+  "-e",
+  "require('node:fs').writeFileSync('/results/recovery.json',process.argv[1])",
   JSON.stringify(
     {
       at: new Date().toISOString(),

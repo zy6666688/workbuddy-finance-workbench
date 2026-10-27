@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { readFile, writeFile, unlink } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 const docker = process.env.DOCKER_BIN || "docker",
   base = [
     "compose",
@@ -10,7 +10,27 @@ const docker = process.env.DOCKER_BIN || "docker",
     "-f",
     "compose.test.yaml",
   ];
-await unlink(".test/results/queue-stage.json").catch(() => {});
+// Write test markers as the same container user that owns the result directory.
+// Linux CI hosts need not share the container's uid; keep application file modes strict.
+function marker(script, ...args) {
+  const result = spawnSync(
+    docker,
+    [
+      ...base,
+      "run",
+      "--rm",
+      "--no-deps",
+      "acceptance",
+      "node",
+      "-e",
+      script,
+      ...args,
+    ],
+    { encoding: "utf8" },
+  );
+  if (result.status) throw Error(result.stderr);
+}
+marker("require('node:fs').rmSync('/results/queue-stage.json',{force:true})");
 const child = spawn(
   docker,
   [
@@ -48,6 +68,9 @@ for (const args of [
   const r = spawnSync(docker, [...base, ...args], { encoding: "utf8" });
   if (r.status) throw Error(r.stderr);
 }
-await writeFile(".test/results/queue-release-" + ready.job, "release");
+marker(
+  "require('node:fs').writeFileSync('/results/queue-release-'+process.argv[1],'release')",
+  ready.job,
+);
 if ((await done) !== 0) throw Error(output);
 console.log(output);
