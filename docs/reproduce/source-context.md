@@ -4,18 +4,18 @@
 
 ## .codebuddy-plugin/plugin.json
 
-SHA-256: 9fd72ef613572aef48b98546f3be9a7a96ed2db5448040ad3b1fa9e246ee889a
+SHA-256: cbc150c9cb80f9bc04c388488fe258b8a78fc37ad54cd796daa0f5d9713a380e
 
 ~~~~~~text
 {
   "name": "workbuddy-finance-workbench",
-  "version": "2.7.0",
-  "description": "面向财务人员的完整交互式工作台：20 个模块、异常责任闭环、月结控制、本机备份和 25 个 AI 工作流。",
+  "version": "2.7.1",
+  "description": "ZY 财务工作台：zy6666688 个人维护版：20 个模块、异常责任闭环、月结控制、本机备份和 25 个 AI 工作流。",
   "author": {
-    "name": "feng-liu-1994"
+    "name": "zy6666688"
   },
-  "homepage": "https://github.com/feng-liu-1994/workbuddy-finance-workbench",
-  "repository": "https://github.com/feng-liu-1994/workbuddy-finance-workbench",
+  "homepage": "https://github.com/zy6666688/workbuddy-finance-workbench",
+  "repository": "https://github.com/zy6666688/workbuddy-finance-workbench",
   "license": "MIT",
   "keywords": [
     "workbuddy",
@@ -35,7 +35,7 @@ SHA-256: 9fd72ef613572aef48b98546f3be9a7a96ed2db5448040ad3b1fa9e246ee889a
 
 ## .github/ISSUE_TEMPLATE/bug_report.yml
 
-SHA-256: d28603f7ad2d1e41771ce6bcd0616dcfcb177b45c55f7bf73e03e2bf63e40fa5
+SHA-256: 21c36678a668db58b9c382b4d320f0913e97b4038b1d79b6e8d4d46b8ee95bf2
 
 ~~~~~~text
 name: 问题反馈
@@ -83,7 +83,7 @@ body:
 
 ## .github/ISSUE_TEMPLATE/feature_request.yml
 
-SHA-256: 7af5121191dbca30a96708985c1c7d5ea3f3aefcfce0755fd8908339213dacd6
+SHA-256: 7801c261b73af4731a2ea6ab212332bdc2ebdafc8ab885ece9b57910d57eb8ad
 
 ~~~~~~text
 name: 功能建议
@@ -108,7 +108,7 @@ body:
 
 ## .github/workflows/ci.yml
 
-SHA-256: a4e682dd37786e9545dde2892c84256669af2fdc677c83b32182c74998eb5fb5
+SHA-256: d3f6358fc1716dfe4c8cce3a9a14b20c32fa6e6b814bb56cda7791f67e42d39f
 
 ~~~~~~text
 name: CI
@@ -153,7 +153,7 @@ jobs:
 
 ## .gitignore
 
-SHA-256: 18c822cefaea1cd9dd1701a6c71e87f5d305a998c918388ff980873bd21aa052
+SHA-256: afe72bf33f41ad5979aad4274502e3c6d08b7ef0dc4811d9c674383f5ae249ca
 
 ~~~~~~text
 node_modules/
@@ -173,7 +173,7 @@ release.backup-*/
 
 ## .mcp.json
 
-SHA-256: 9d6b85b2f4c3deb1cb3935bdc5ac149f5e2da0b7431dab6ee6fd896f53a22d9d
+SHA-256: ed9c036e150c9b7e2f0590f2e46d42f9f6b308019436eecd7c560c0dc43ba2c6
 
 ~~~~~~text
 {
@@ -191,7 +191,7 @@ SHA-256: 9d6b85b2f4c3deb1cb3935bdc5ac149f5e2da0b7431dab6ee6fd896f53a22d9d
 
 ## AGENTS.md
 
-SHA-256: e694e44e6a523683182c87e89d588f3bde01254b90fed7f0d766d5420d592a58
+SHA-256: b10cdfa1766fc373b6e9eb8becab067a7ce2d5066b679af84a54efe569e3d0fe
 
 ~~~~~~text
 # AI Agent 开发说明
@@ -219,9 +219,17 @@ npm run verify:release
 
 ## CHANGELOG.md
 
-SHA-256: 4e84defc519dbf97fe9acd89c12d3d1d02fc8b8ed44798cc0bc1e71a1b6dcb9b
+SHA-256: f8ac54401f0bc0ae14752cb2539b3e2b1e6a842e8c633d04b12279d58425d55e
 
 ~~~~~~text
+# 2.7.1 · ZY 个人维护版（2026-10-26）
+
+- 工作台显示名称调整为 ZY 财务工作台；仓库、下载与安装入口指向 zy6666688 的分支。
+- 删除 README 底部微信推广与二维码图片，保留 MIT 许可与上游署名。
+- 新增中文使用说明书和测试报告。
+- 修复 WorkBuddy 构建漏打包任务填写区和工作流筛选样式的问题，使窄屏表单正常单列显示。
+- 更新锁文件中的兼容依赖，修复依赖审计发现的问题。
+
 # 更新记录
 
 ## 2.7.0 - 2026-10-08
@@ -304,7 +312,7 @@ SHA-256: 4e84defc519dbf97fe9acd89c12d3d1d02fc8b8ed44798cc0bc1e71a1b6dcb9b
 
 ## CONTRIBUTING.md
 
-SHA-256: e802e88d029fd038fcf16158b66476ce6498c69258e7156e6f6b97c67be8fb07
+SHA-256: 7b5894eb59b918d252d691eefa7a735bc334d3e47c465778071865a17c3a954a
 
 ~~~~~~text
 # 参与贡献
@@ -323,7 +331,7 @@ SHA-256: e802e88d029fd038fcf16158b66476ce6498c69258e7156e6f6b97c67be8fb07
 
 ## LICENSE
 
-SHA-256: cca39cca9a6cd0c0b1b2c4a86a0200c09b104a7b06f054190f5035e0ed3a713e
+SHA-256: 109706a22980f1411c87fa4bc5a3b76830b42facd7ed0058f9116dce95f33026
 
 ~~~~~~text
 MIT License
@@ -352,29 +360,25 @@ SOFTWARE.
 
 ## README.md
 
-SHA-256: b220b1f751e8fca78f0335cf61bdbe2bfbc4ea1ef9b70c50f887e5ccb1cd8620
+SHA-256: e63b759011d6d0b6d85ea8d0004a96b4f07a8b963d3ab465e0fe670e10852151
 
 ~~~~~~text
 <div align="center">
 
-> **源码版本 2.7.0**：修复安装回滚、备份完整性、目录越界和依赖漏洞，增加本机预览。见 [升级说明](docs/releases/v2.7.0.md)。下载包版本以 GitHub Releases 为准。
+> **个人版 2.7.1** · zy6666688 维护。已移除二维码与微信推广，更新依赖并新增中文说明书。
 
-[查看本次全面检查报告与界面验证](docs/AUDIT_2026-10-08.md)。
-
-> **2026-09-09 源码同步 · 2.6.0（公开仓库）**：新增 [AI 精确复刻指南](docs/REPRODUCE.md)、[总提示词](docs/reproduce/MASTER_PROMPT.md)、[25 套完整工作流](docs/reproduce/WORKFLOWS.md) 和 [离线一键复制页面](docs/reproduce/index.html)（下载后双击打开）。复刻包包含源码上下文与 SHA-256 清单；保留原界面源码和锁文件，避免仅凭文字重新设计。
-
-# AI智能体财务工作台
+# ZY 财务工作台
 
 **把收入、往来、报销、资金、核算、税务、报表和经营分析，整理成可执行、可复核、可留痕的标准流程。界面采用现代雾光背景、清晰信息层级和克制卡片体系，提供 4 套专业主题；正文、表单和按钮按长时间办公重新放大，适合财务人员持续录入与复核，兼顾使用财务自动化的新手。**
 
-[![CI](https://github.com/feng-liu-1994/workbuddy-finance-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/feng-liu-1994/workbuddy-finance-workbench/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/feng-liu-1994/workbuddy-finance-workbench?display_name=tag)](https://github.com/feng-liu-1994/workbuddy-finance-workbench/releases/latest)
+[![CI](https://github.com/zy6666688/workbuddy-finance-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/zy6666688/workbuddy-finance-workbench/actions/workflows/ci.yml)
+[![Source](https://img.shields.io/badge/下载-个人版源码-28564F)](https://github.com/zy6666688/workbuddy-finance-workbench/archive/refs/heads/main.zip)
 [![WorkBuddy](https://img.shields.io/badge/WorkBuddy-MCP%20App-536BF0)](https://www.codebuddy.cn/docs/cli/mcp-apps)
 [![License](https://img.shields.io/badge/License-MIT-28564F)](LICENSE)
 
-[一键安装](#30-秒安装) · [25 份提示词](#25-份可直接复制的提示词) · [功能说明](#不是一张看板而是一套财务闭环) · [使用边界](#数据与专业边界) · [开发文档](#开发与验证)
+[使用说明书](docs/USER_GUIDE.md) · [测试报告](docs/TEST_REPORT_2.7.1.md) · [下载安装](#下载安装) · [25 份提示词](#25-份可直接复制的提示词) · [功能说明](#不是一张看板而是一套财务闭环) · [使用边界](#数据与专业边界) · [开发文档](#开发与验证)
 
-<img src="docs/images/readme-hero.png" width="1080" alt="WorkBuddy 财务工作台桌面总览">
+<img src="docs/images/zy-desktop.png" width="1080" alt="WorkBuddy 财务工作台桌面总览">
 
 </div>
 
@@ -392,12 +396,12 @@ SHA-256: b220b1f751e8fca78f0335cf61bdbe2bfbc4ea1ef9b70c50f887e5ccb1cd8620
 
 > 三种方式共用同一套财务口径和工作流。图形界面的承载方式不同：WorkBuddy 使用 MCP App Widget，DeepSeek Harness 使用原生 UI 插件，其他 Agent 使用 Markdown/JSON Skill。
 
-## 30 秒安装
+## 下载安装
 
 ### macOS：WorkBuddy 完整版
 
-1. 下载 [WorkBuddy macOS 安装包](https://github.com/feng-liu-1994/workbuddy-finance-workbench/releases/latest/download/workbuddy-finance-workbench-macos.zip)。
-2. 解压，双击 **`安装 WorkBuddy 财务工作台.command`**。
+1. 下载 [个人版源码 ZIP](https://github.com/zy6666688/workbuddy-finance-workbench/archive/refs/heads/main.zip)。
+2. 解压并进入 `workbuddy-finance-workbench-main` 文件夹，双击 **`安装 WorkBuddy 财务工作台.command`**。
 3. 保存 WorkBuddy 中正在编辑的内容，完全退出后重新打开。
 4. 在 WorkBuddy 输入：**`打开财务工作台`**。
 
@@ -405,7 +409,7 @@ SHA-256: b220b1f751e8fca78f0335cf61bdbe2bfbc4ea1ef9b70c50f887e5ccb1cd8620
 
 ### Windows：WorkBuddy 完整版
 
-下载 [WorkBuddy Windows 安装包](https://github.com/feng-liu-1994/workbuddy-finance-workbench/releases/latest/download/workbuddy-finance-workbench-windows.zip)，解压后在目录中打开 PowerShell：
+下载 [个人版源码 ZIP](https://github.com/zy6666688/workbuddy-finance-workbench/archive/refs/heads/main.zip)，解压后进入 `workbuddy-finance-workbench-main` 文件夹，在该目录中打开 PowerShell：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install-workbuddy-app.ps1
@@ -414,7 +418,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install-workbuddy-app.ps1
 ### 从源码安装
 
 ```bash
-git clone https://github.com/feng-liu-1994/workbuddy-finance-workbench.git
+git clone https://github.com/zy6666688/workbuddy-finance-workbench.git
 cd workbuddy-finance-workbench
 ./scripts/install-workbuddy-app.sh
 ```
@@ -508,6 +512,9 @@ npm run audit:deps
 
 ## 文档
 
+- [ZY 财务工作台使用说明书（从安装到第一次预算分析）](docs/USER_GUIDE.md)
+- [个人版 2.7.1 测试报告](docs/TEST_REPORT_2.7.1.md)
+
 - [WorkBuddy 完整应用安装](docs/INSTALL_WORKBUDDY.md)
 - [DeepSeek Harness 完整界面安装](docs/INSTALL_DSH.md)
 - [Codex / Claude / 通用 Agent Skill](docs/INSTALL_AGENT.md)
@@ -519,17 +526,15 @@ npm run audit:deps
 
 代码采用 [MIT License](LICENSE)。欢迎提交 Issue 和 Pull Request；财务处理结果请由具备权限和专业判断能力的人员复核。
 
-## 联系方式
+## 维护与来源
 
-欢迎扫码添加微信：weihuiaccounting，注明来意进一步交流学习
-
-<img src="docs/images/筱亭微信.jpg" width="540" alt="欢迎交流，共同进步">
+本分支由 [zy6666688](https://github.com/zy6666688) 维护，基于 [feng-liu-1994/workbuddy-finance-workbench](https://github.com/feng-liu-1994/workbuddy-finance-workbench) 二次修改。保留 MIT 许可证及原项目贡献者版权。个人版主要调整品牌、文档和依赖；原始功能设计与历史更新记录保留。
 
 ~~~~~~
 
 ## SECURITY.md
 
-SHA-256: 5b0c865293c713fdbe1010223d84ef42e0c87b3e3fc87a79e92f92eb6eb9d23d
+SHA-256: 46be567b1dec7a66730dcb0b7504ebc71748b53d514b4fd23f333647b6dce5d3
 
 ~~~~~~text
 # 安全政策
@@ -555,7 +560,7 @@ SHA-256: 5b0c865293c713fdbe1010223d84ef42e0c87b3e3fc87a79e92f92eb6eb9d23d
 
 ## agents/finance-workbench/SKILL.md
 
-SHA-256: e4b2c2d9829377833138bd19259753a274ae224cf35deb003b693b6a92017b19
+SHA-256: 2451a75db2080599e30aa4b25d7d2ecfeb3cba070217490fc37121e1dc69e097
 
 ~~~~~~text
 ---
@@ -563,8 +568,8 @@ name: finance-workbench
 description: 面向财务人员的受控自动化工作流。用于收入、应收应付、报销、资金预算、资产、税务发票、工资、对账、成本、报表分析、投资、月结、审计与财务归档；要求字段口径、异常清单、结果校验、人工复核和处理留痕。
 license: MIT
 metadata:
-  version: "2.7.0"
-  repository: "https://github.com/feng-liu-1994/workbuddy-finance-workbench"
+  version: "2.7.1"
+  repository: "https://github.com/zy6666688/workbuddy-finance-workbench"
 ---
 
 # Finance Workbench Skill
@@ -2315,7 +2320,7 @@ SHA-256: f9476333f837ec0a58cede2f63abbda334101e4e682aea401f95761623408bba
 
 ## agents/finance-workbench/references/safety.md
 
-SHA-256: 886d24068e648bfd71837291eca580127408d766f3718e0d1fc694f6d1067cc3
+SHA-256: 5775186edd42b91af3d0403e3762d2e67e4d8b3bf6e6acc26e70c3531013d7e3
 
 ~~~~~~text
 # 财务自动化安全边界
@@ -2348,14 +2353,14 @@ SHA-256: 886d24068e648bfd71837291eca580127408d766f3718e0d1fc694f6d1067cc3
 
 ## agents/finance-workbench/references/workflows.json
 
-SHA-256: 672ad92d0f49539e843744c2b3d7b9029a8ec415265f22ead46d279e5f22e831
+SHA-256: 9b402b665e2d2207170e9ae5b1bb9f7daa7bf6e7d10de79c2c04439552e91ae5
 
 ~~~~~~text
 {
   "product": "workbuddy-finance-workbench",
   "version": 2,
-  "productVersion": "2.7.0",
-  "generatedAt": "2026-10-08",
+  "productVersion": "2.7.1",
+  "generatedAt": "2026-10-26",
   "sopSteps": [
     {
       "number": "01",
@@ -4258,7 +4263,7 @@ SHA-256: 199907e0cd43d12217c7c3c1c15189c46e6ccfbd17210cc249b78ea46f12b14c
 
 ## agents/finance-workbench/templates/task-brief.md
 
-SHA-256: 984b73d47ea2272c18ee9d0c44998e64e969f568d0665fcc818206a520bb1e0a
+SHA-256: 5ca3dceac008fa4e3d1bae43b809e0f14cbe07474a3cc85059c1dd038ba66202
 
 ~~~~~~text
 # 财务任务完成报告
@@ -4303,7 +4308,7 @@ SHA-256: 984b73d47ea2272c18ee9d0c44998e64e969f568d0665fcc818206a520bb1e0a
 
 ## build.mjs
 
-SHA-256: e313968eb25ad783a19cd588a34adac6805ee8aba90edfcb3049d7e0cc6500e7
+SHA-256: 2c7ccb00d37082b09cef3e6614cbe98919c7cf7b3a9f70d92a0c49d469c8f23f
 
 ~~~~~~text
 import { createRequire } from 'node:module'
@@ -4336,7 +4341,7 @@ console.log('built dsh-finance-workbench')
 
 ## cordis.patch.yml
 
-SHA-256: 8c734f39e7269fe8c74797d6f4b9c9d9e0376bf76650a3f68a513a08e415d315
+SHA-256: 47bad3d48ec9a0d76c26b0b85369c6929525399fd9d06bb88eb196a2b40dce04
 
 ~~~~~~text
 - insert:
@@ -4347,7 +4352,7 @@ SHA-256: 8c734f39e7269fe8c74797d6f4b9c9d9e0376bf76650a3f68a513a08e415d315
 
 ## docs/AUDIT_2026-10-08.md
 
-SHA-256: 3e6f7d2d8a6ecb3de3c0fb63d657fa8b66caa2989a9085a1171c1a2a7c780d23
+SHA-256: ec281c4744d3338bba22f3da2d746d9983708a9ec141a0fa77873922826b2f5a
 
 ~~~~~~text
 # 财务工作台全面检查与升级报告
@@ -4432,7 +4437,7 @@ DSH 的旧 Shell 安装器针对现有 Web profile 布局；官方 Desktop 使�
 
 ## docs/INSTALL_AGENT.md
 
-SHA-256: f9a0be36ab3ad5e558506b84d439f8c390f610ef8e47ba573448ed23760ecbd4
+SHA-256: 85581517f4c6b67fe92e3ead232a7c1f0504dba892dc719faa304e1de4929dda
 
 ~~~~~~text
 # AI Agent 安装指南
@@ -4450,7 +4455,7 @@ SHA-256: f9a0be36ab3ad5e558506b84d439f8c390f610ef8e47ba573448ed23760ecbd4
 ### macOS / Linux
 
 ```bash
-git clone https://github.com/feng-liu-1994/workbuddy-finance-workbench.git
+git clone https://github.com/zy6666688/workbuddy-finance-workbench.git
 cd workbuddy-finance-workbench
 ./scripts/install-agent.sh workbuddy
 ```
@@ -4460,7 +4465,7 @@ cd workbuddy-finance-workbench
 ### Windows PowerShell
 
 ```powershell
-git clone https://github.com/feng-liu-1994/workbuddy-finance-workbench.git
+git clone https://github.com/zy6666688/workbuddy-finance-workbench.git
 cd workbuddy-finance-workbench
 .\scripts\install-agent.ps1 workbuddy
 ```
@@ -4540,7 +4545,7 @@ Agent Skill 不会帮你配置模型账号，也不会读取 API Key。请在目
 
 ## docs/INSTALL_DSH.md
 
-SHA-256: 8c0465470ea9414b2899d2349468ff01a3dc6fafa1e6bafd85659806dfef8661
+SHA-256: a1885fa1ecce5ab0ad42e18fb331665d9de78b5c0e711b1274d698ded68d8e8e
 
 ~~~~~~text
 # DeepSeek Harness 完整工作台安装
@@ -4550,7 +4555,7 @@ SHA-256: 8c0465470ea9414b2899d2349468ff01a3dc6fafa1e6bafd85659806dfef8661
 ## 一键安装
 
 ```bash
-git clone https://github.com/feng-liu-1994/workbuddy-finance-workbench.git
+git clone https://github.com/zy6666688/workbuddy-finance-workbench.git
 cd workbuddy-finance-workbench
 ./scripts/install-dsh.sh
 ```
@@ -4636,10 +4641,12 @@ pnpm add /下载目录/dsh-finance-workbench-2.7.0.tgz
 
 ## docs/INSTALL_WORKBUDDY.md
 
-SHA-256: 3ed8270dc4ca4e827b28628116a7e199927856a5f7258468f6e7511ab4dad482
+SHA-256: b0302d1c3dd2ce8e79084a15046e17ad391250b3aafc64647f4b9c756095cb9a
 
 ~~~~~~text
-# WorkBuddy 完整财务工作台安装指南
+# ZY 财务工作台安装指南
+
+本指南适用于 zy6666688 个人维护版。首次使用请同时阅读[使用说明书](USER_GUIDE.md)。
 
 本指南安装的是 **可在 WorkBuddy 内打开的完整图形工作台**，同时安装配套的 `finance-workbench` Skill。只想给其他 AI Agent 安装规则库，请看 [通用 Skill 安装](INSTALL_AGENT.md)。
 
@@ -4657,7 +4664,7 @@ SHA-256: 3ed8270dc4ca4e827b28628116a7e199927856a5f7258468f6e7511ab4dad482
 
 ```mermaid
 flowchart LR
-  A[下载发布包] --> B[运行安装器]
+  A[下载个人版源码 ZIP] --> B[运行安装器]
   B --> C[保存并重开 WorkBuddy]
   C --> D[输入“打开财务工作台”]
 ```
@@ -4682,8 +4689,8 @@ node --version
 
 ## macOS：双击安装
 
-1. 打开 [最新发布页](https://github.com/feng-liu-1994/workbuddy-finance-workbench/releases/latest)。
-2. 下载 `workbuddy-finance-workbench-macos.zip` 并解压。
+1. 下载[个人版源码 ZIP](https://github.com/zy6666688/workbuddy-finance-workbench/archive/refs/heads/main.zip)。
+2. 解压并进入 `workbuddy-finance-workbench-main` 文件夹。
 3. 双击 `安装 WorkBuddy 财务工作台.command`。
 4. 看到“安装完成”后，完全退出 WorkBuddy，再重新打开。
 5. 输入 `打开财务工作台`。
@@ -4701,7 +4708,7 @@ node --version
 
 ## Windows：PowerShell 安装
 
-1. 下载并解压 `workbuddy-finance-workbench-windows.zip`。
+1. 下载[个人版源码 ZIP](https://github.com/zy6666688/workbuddy-finance-workbench/archive/refs/heads/main.zip)，解压并进入 `workbuddy-finance-workbench-main` 文件夹。
 2. 在解压目录空白处按住 Shift 并右键，选择“在此处打开 PowerShell”。
 3. 执行：
 
@@ -4716,7 +4723,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install-workbuddy-app.ps1
 ## macOS / Linux：命令行安装
 
 ```bash
-git clone https://github.com/feng-liu-1994/workbuddy-finance-workbench.git
+git clone https://github.com/zy6666688/workbuddy-finance-workbench.git
 cd workbuddy-finance-workbench
 ./scripts/install-workbuddy-app.sh
 ```
@@ -4819,7 +4826,7 @@ macOS 可在 Finder 按 `Command + Shift + G`，输入 `~/.workbuddy/` 后回车
 
 ### 页面空白或提示资源加载失败
 
-重新下载最新发布包并再安装一次。发布包内必须同时包含 `workbuddy/server.mjs` 和 `workbuddy/widget.html`；不要只复制 `.command` 文件。
+重新下载个人版源码 ZIP并再安装一次。发布包内必须同时包含 `workbuddy/server.mjs` 和 `workbuddy/widget.html`；不要只复制 `.command` 文件。
 
 ### 工作流按钮没有直接发送
 
@@ -4837,13 +4844,13 @@ macOS 可在 Finder 按 `Command + Shift + G`，输入 `~/.workbuddy/` 后回车
 - 你执行到哪一步、屏幕上出现的完整错误文字。
 - 是否已经完全退出并重新打开 WorkBuddy。
 
-请先遮盖姓名、公司名、本机用户名、文件路径、Token、Cookie、银行账号和任何真实财务数据，再提交到 [GitHub Issues](https://github.com/feng-liu-1994/workbuddy-finance-workbench/issues)。
+请先遮盖姓名、公司名、本机用户名、文件路径、Token、Cookie、银行账号和任何真实财务数据，再提交到 [GitHub Issues](https://github.com/zy6666688/workbuddy-finance-workbench/issues)。
 
 ~~~~~~
 
 ## docs/REPRODUCE.md
 
-SHA-256: 18905b3e73d52455555d42f1cdf3b3f8c513364b50aba441858f215eb9176b03
+SHA-256: 76c4966ec6d097518bb71851844ba6eee8406e4fdb87d6ab9c419f5d7bbb5fe9
 
 ~~~~~~text
 # 财务工作台：源码与 AI 复刻指南
@@ -4894,7 +4901,7 @@ SHA-256: 18905b3e73d52455555d42f1cdf3b3f8c513364b50aba441858f215eb9176b03
 ## 本地构建与文档更新
 
 ```bash
-git clone https://github.com/feng-liu-1994/workbuddy-finance-workbench.git
+git clone https://github.com/zy6666688/workbuddy-finance-workbench.git
 cd workbuddy-finance-workbench
 npm ci
 npm run verify:release
@@ -4929,9 +4936,72 @@ node scripts/generate-reproduction.mjs
 
 ~~~~~~
 
+## docs/TEST_REPORT_2.7.1.md
+
+SHA-256: 581096e999a779f112d240d0eeef9ada22bdf46ad32da77d746996cb8323b7d0
+
+~~~~~~text
+# ZY 财务工作台 2.7.1 测试报告
+
+测试日期：2026-10-26。环境：Windows、Node.js 24.19.0、Microsoft Edge。使用虚构数据。
+
+## 结论
+
+个人版的生产构建、54 项自动测试、MCP 协议调用、隔离目录安装/卸载与浏览器交互验证通过。依赖审计为 0 项已知漏洞。可以作为财务任务组织与 AI 工作流入口使用。
+
+**本次没有在真实 WorkBuddy 会话里完成“添加附件—模型分析—生成财务文件”的全链路验收，也没有验证 DeepSeek Harness 的真实宿主集成。** 这部分需要安装后按[使用说明书](USER_GUIDE.md)试跑。独立预览成功不代表 AI 已经完成预算计算。
+
+## 自动验证
+
+| 项目 | 实际结果 |
+|---|---|
+| `npm ci` | 依赖按锁文件安装成功 |
+| `npm run verify:release` | 通过，包含构建、目录生成、测试、安全扫描和发布清单检查 |
+| 自动测试 | 54 通过，0 失败，0 跳过 |
+| MCP 调用 | 可列举工具、读取 Widget、调用 `show_finance_workbench`；返回 20 模块、25 工作流、25 提示词 |
+| 安装/更新/卸载 | 隔离目录验证通过；保留其他 MCP 配置，覆盖失败和回滚场景；包含 Windows PowerShell 包装器测试 |
+| 备份和金额逻辑 | 备份往返、损坏数据拒绝、写入回滚、金额精度和异常关闭证据检查通过 |
+| Widget 大小 | 230,701 字节，小于 256 KiB 上限 |
+| 公开资料扫描 | 通过 |
+| `npm run audit:deps` | 0 项已知漏洞；审计结果仅代表测试时的依赖数据库 |
+
+Windows 完整发布校验通过 Git Bash 执行；本机 npm 只有 Windows 命令入口，因此验证时使用了临时 npm 启动桥接。该桥接不包含在项目或安装包中。普通用户运行 PowerShell 安装器即可。
+
+## 实际浏览器验证
+
+| 操作 | 观察到的结果 |
+|---|---|
+| 桌面首页 | 显示 ZY 财务工作台、版本 2.7.1，导航可操作 |
+| 经营快照 | 输入收入 100,000、支出 60,000，保存后利润为 40,000；重新加载后保留 |
+| 工作流搜索 | 25 个工作流中搜索“预算”返回 5 个相关场景，可打开 17 号预算执行与偏差分析 |
+| 任务发起 | 填写虚构主体和期间后点击带入对话；独立预览将 1,102 字符的任务指令复制到剪贴板，包含主体、预算场景和校验要求 |
+| 主题 | 夜航深色与雾光靛蓝切换成功 |
+| 390 × 844 窄屏 | 导航可关闭；预算任务表单按单列显示，页面宽度 390，无整页横向溢出 |
+| 浏览器日志 | 检查期间未捕获 warning/error |
+
+测试发现原 WorkBuddy 构建未包含 `WORKBENCH_POLISH_CSS`，导致任务表单和筛选按钮缺少样式。个人版已将样式拆成共享模块并同时打入 WorkBuddy 与 DSH 构建，修复后重新验证。
+
+### 桌面截图
+
+![桌面首页，金额为虚构测试数据](images/zy-desktop.png)
+
+### 窄屏截图
+
+![390 像素预算任务表单](images/zy-mobile.png)
+
+## 修改范围与保留事项
+
+- 首页标题、工作台标识、插件维护者、仓库和下载入口改为 zy6666688 个人版。
+- 删除 README 底部微信推广和二维码文件；历史提交仍由 Git 保存。
+- 新增中文使用说明书、测试报告；保留原 MIT 许可、上游来源和原始财务复核要求。
+- 内部应用标识、存储键和安装目录保持兼容，避免影响原有数据和配置。
+- 此次没有新增预算计算引擎；工作流计算与实际财务交付需要宿主 AI 执行并由人复核。
+
+~~~~~~
+
 ## docs/TROUBLESHOOTING.md
 
-SHA-256: 3699d2cf93c09a1b7d2e41b855fafc2958960820dada0f65bad56d404f13fc56
+SHA-256: 838c46c4aa0cc326d74182ac6c6108282dcda5008a0c9fc0acb28e04fe6aea2b
 
 ~~~~~~text
 # 常见问题与排障
@@ -5006,9 +5076,104 @@ npm run preview
 
 ~~~~~~
 
+## docs/USER_GUIDE.md
+
+SHA-256: 21ec2ea6b398e5a455d41594ad48f2750ba57f83449b13a481d588239f105359
+
+~~~~~~text
+# ZY 财务工作台使用说明书
+
+适用版本：2.7.1 · 维护者：zy6666688
+
+## 1. 先了解它能做什么
+
+这是一个财务工作台，包含 20 个业务模块、25 个 AI 工作流、资料索引、待办、异常管理和本机备份。工作台负责组织任务和复核要求；实际读取附件、分析财务数据、制作报表由 WorkBuddy 中的 AI 执行。
+
+**它还不是一套内置确定性预算计算引擎。** 工作流中的预算规则、金额核对和交付要求是给 AI 的指令，不代表程序已经完成计算。界面上的经营快照来自你手工录入的汇总数。需要自动填表、公式计算或凭证生成时，应在任务中明确要求 AI 提供实际文件、计算过程和校验结果。
+
+## 2. Windows 安装
+
+1. 确认 WorkBuddy 可以打开，安装 Node.js 20 或更高版本。
+2. 下载[本账号仓库的源码 ZIP](https://github.com/zy6666688/workbuddy-finance-workbench/archive/refs/heads/main.zip)。
+3. 解压并进入 `workbuddy-finance-workbench-main`，确认能看到 `scripts`、`workbuddy` 和 `agents` 文件夹。
+4. 在该文件夹打开 PowerShell，运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install-workbuddy-app.ps1
+```
+
+5. 看到“安装完成”后，保存正在编辑的内容，完全退出并重新打开 WorkBuddy。
+6. 输入：**打开财务工作台**。
+
+仓库包含预构建文件，普通安装不要求执行 npm 安装依赖。安装器会备份原有配置与同名应用，保留其他 MCP 服务。Mac、Linux、更新和卸载详见[安装指南](INSTALL_WORKBUDDY.md)。
+
+如果只是独立浏览界面，在源码目录执行 `npm ci`、`npm run preview`，打开终端提供的本机地址。独立预览不会连接 AI；工作流指令需要复制到 AI 对话执行。
+
+## 3. 第一次使用的顺序
+
+1. 打开“系统设置”，填写主体、期间和重要性阈值，选择主题。
+2. 在“财务总览”填写本期汇总指标。先用虚构数据熟悉界面。
+3. 在“资料库”选择文件，检查名称、分类、筛选和置顶。
+4. 在“工作流”选择相应业务，先看输入要求、执行步骤和验收清单。
+5. 点击“带入对话，确认发送”，检查主体、期间和任务要求，**在 WorkBuddy 对话中再次添加原始附件**，然后发送。
+6. 检查 AI 是否交付了真实文件、来源定位和校验记录，再进行业务复核。
+
+资料库选择文件只建立当前会话索引，不等于附件已发送给 AI，也不等于 Excel 已被解析。独立预览与 WorkBuddy 的本机存储互相独立。
+
+## 4. 用预算场景试跑一次
+
+进入预算模块或在“工作流”搜索“预算”，选择预算执行相关工作流。准备预算与实际明细，至少写清期间、部门/项目、科目和金额。若涉及销量、单价或产品结构，补充对应数量和单价字段；没有字段时不要要求 AI 凭空归因。
+
+可在 WorkBuddy 中使用下面这段话，并附上你准备的 Excel 或 CSV：
+
+> 请按财务工作台的预算分析工作流处理这些附件。先列出文件、工作表、字段映射和缺失信息，再用 20–50 行试跑。金额按人民币，列明单位和正负号约定。预算偏差先按“实际－预算”计算，收入与费用分别解释有利或不利；预算为零时差异率标为“不适用”。不要补造缺失数据。请交付预算对比表、计算公式或脚本、校验清单和异常明细，说明各项金额能否与原表汇总一致。待我复核样本后再处理全量。
+
+复核时至少检查：
+
+| 检查项 | 应看到的证据 |
+|---|---|
+| 范围一致 | 相同主体、期间、币种、单位、含税口径；排除预算和实际重复行 |
+| 金额一致 | 预算、实际、差额分别与来源汇总一致，注明舍入容差 |
+| 计算可重做 | 输出中的公式或脚本能用同一输入重复得到结果 |
+| 归因有依据 | 单价/数量等归因指向来源字段；缺失时明确无法归因 |
+| 异常可追踪 | 异常有来源行、责任人、处理期限和处置证据 |
+
+试跑可以使用仓库 `examples/demo/` 的虚构材料；先阅读其中的 README 确认文件适合所选场景。测试界面并不能证明你自己的预算口径正确。
+
+## 5. 日常操作与备份
+
+- **工作流**：搜索场景、查看完整提示词、收藏、带入对话。
+- **资料库**：选择文件、搜索、筛选、引用、下载和置顶；原始文件应另行妥善保存。
+- **待办/月结**：记录责任和期限，按实际完成情况更新状态。
+- **异常管理**：补齐来源、责任人和处置证据；不能只因为 AI 给出解释就关闭异常。
+- **数据备份**：定期导出 JSON。备份包含工作台台账与设置，不含原始附件。恢复前保留当前备份，确认导入文件来源。
+
+## 6. 常见问题
+
+| 情况 | 处理方式 |
+|---|---|
+| 只回复文字，未打开界面 | 确认安装完成并完全重开 WorkBuddy；检查 MCP 中是否有 `finance-workbench` |
+| 找不到 Node.js | 安装 Node.js 20+，重开 PowerShell 后运行 `node --version` |
+| 文件已选，但 AI 没有读取 | 在 WorkBuddy 输入框重新附上原文件；索引不等于上传 |
+| 预览点击后没有 AI 结果 | 独立预览只复制指令；需粘贴到有模型的 AI 对话 |
+| 更新后数据似乎消失 | 确认打开的是同一宿主/地址；不同浏览器存储不共享，用之前导出的 JSON 恢复 |
+| 页面空白 | 确认下载完整，存在 `workbuddy/server.mjs` 和 `workbuddy/widget.html`；按安装指南重新安装 |
+
+更多问题见[排障指南](TROUBLESHOOTING.md)。
+
+## 7. 测试范围、维护与来源
+
+个人版测试记录见[2.7.1 测试报告](TEST_REPORT_2.7.1.md)。本机界面、协议和隔离安装验证，与真实 WorkBuddy 会话中的 AI 附件分析是不同验收步骤；报告会分别标明。
+
+个人版仓库：[zy6666688/workbuddy-finance-workbench](https://github.com/zy6666688/workbuddy-finance-workbench)。基于 [feng-liu-1994 的原项目](https://github.com/feng-liu-1994/workbuddy-finance-workbench) 修改，遵循 [MIT 许可证](../LICENSE)。
+
+付款、入账、纳税申报、薪资发放和重大判断仍需人工复核。向公开仓库反馈问题时，只提供脱敏错误信息，不提交真实财务附件或访问凭据。
+
+~~~~~~
+
 ## docs/releases/v2.0.0.md
 
-SHA-256: 985b416df7afc70cf017b6cc717231d763976e761232eea774648320dda58917
+SHA-256: 928b54628c490337345924a8ba6d6ca58761eee8159810338b8c9605d56957f1
 
 ~~~~~~text
 # WorkBuddy 财务工作台 v2.0.0
@@ -5043,7 +5208,7 @@ SHA-256: 985b416df7afc70cf017b6cc717231d763976e761232eea774648320dda58917
 
 ## docs/releases/v2.1.0.md
 
-SHA-256: 3bbdae40266144df8e6c8d1df8a6b86a9f055c8e728b9f1bc8e9b6594e4d0af4
+SHA-256: 513f3d29d044cfd77b380d6252a3234e960d7c28f94ec70a962dc7097bbcc2ac
 
 ~~~~~~text
 # WorkBuddy 财务工作台 v2.1.0
@@ -5077,7 +5242,7 @@ SHA-256: 3bbdae40266144df8e6c8d1df8a6b86a9f055c8e728b9f1bc8e9b6594e4d0af4
 
 ## docs/releases/v2.2.0.md
 
-SHA-256: 84b30425a94f2f59d88347793e45773447ef9b3f3f74c905ed03cbdea60fc301
+SHA-256: b29f68ff59a8cac9d348a2343f249406f74b7e4b31a09b15d8fedc2e45b409a0
 
 ~~~~~~text
 # WorkBuddy 财务工作台 v2.2.0
@@ -5111,7 +5276,7 @@ SHA-256: 84b30425a94f2f59d88347793e45773447ef9b3f3f74c905ed03cbdea60fc301
 
 ## docs/releases/v2.3.0.md
 
-SHA-256: b6c6bb64423c5e211ca5871827f4e7c1bd93ecf062616e216c893b5e9cea91e1
+SHA-256: ca949935e48fe50bbc46018ca961f82b44d80fd7d85c25acd67636ea0d215e6c
 
 ~~~~~~text
 # WorkBuddy 财务工作台 v2.3.0
@@ -5147,7 +5312,7 @@ SHA-256: b6c6bb64423c5e211ca5871827f4e7c1bd93ecf062616e216c893b5e9cea91e1
 
 ## docs/releases/v2.4.0.md
 
-SHA-256: 91cf0e6bd2897f65ecd393dcbf2d7ed3dbfdc0ae31f1129bd2547943c97b2e4f
+SHA-256: ea11e800aaadf81ac63d598c07d1502623370bef08e9e80a9812830c0f617e7f
 
 ~~~~~~text
 # v2.4.0 · WorkBuddy 完整可视化应用
@@ -5174,7 +5339,7 @@ SHA-256: 91cf0e6bd2897f65ecd393dcbf2d7ed3dbfdc0ae31f1129bd2547943c97b2e4f
 
 ## docs/releases/v2.5.0.md
 
-SHA-256: 88017a60d17754df91cd4a1819ff402dee691a73fda270307635adc1c791297a
+SHA-256: 8fce8008ca3226aa56b805fa292ce99408d24506f1dcb1221c631f499b87990f
 
 ~~~~~~text
 # v2.5.0 · 新手可见的 25 份提示词
@@ -5196,7 +5361,7 @@ SHA-256: 88017a60d17754df91cd4a1819ff402dee691a73fda270307635adc1c791297a
 
 ## docs/releases/v2.7.0.md
 
-SHA-256: 891ede3506eb8c7d6b036b3f9647d9a09741500fe588575633c370dc27f3eff7
+SHA-256: 206bc1655fcb95d8e59361ff2fc7c012fb65d3a088b33043e68d2959d86292ee
 
 ~~~~~~text
 # v2.7.0 · 安装与数据可靠性升级
@@ -5249,18 +5414,18 @@ CI 覆盖 Linux Node.js 20、22、24 和 Windows Node.js 24 / PowerShell。浏�
 
 ## package-lock.json
 
-SHA-256: a2beb9f3b8079a573d4ecff9f1a8da218bc0eba490af1e67e123ceb0fcbbb07f
+SHA-256: 70e3e1fe0f164742e32f66a051762533dcb91a384daee79c053d80898f8674e4
 
 ~~~~~~text
 {
   "name": "dsh-finance-workbench",
-  "version": "2.7.0",
+  "version": "2.7.1",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
       "name": "dsh-finance-workbench",
-      "version": "2.7.0",
+      "version": "2.7.1",
       "license": "MIT",
       "dependencies": {
         "@deepseek-ai/dsh-typert-protocol": "^0.1.0-rc.7",
@@ -5899,19 +6064,19 @@ SHA-256: a2beb9f3b8079a573d4ecff9f1a8da218bc0eba490af1e67e123ceb0fcbbb07f
       }
     },
     "node_modules/body-parser": {
-      "version": "2.3.0",
-      "resolved": "https://registry.npmmirror.com/body-parser/-/body-parser-2.3.0.tgz",
-      "integrity": "sha512-2cGmJupaNgg+QUwVLAucDuWuoMZ6EX9iHDRswZ5lsNYEmwPaRknMPCLZz07yTzVq/83p4o/wzbDZbBrTvGGTIw==",
+      "version": "2.4.0",
+      "resolved": "https://registry.npmjs.org/body-parser/-/body-parser-2.4.0.tgz",
+      "integrity": "sha512-Ifk1KcLrxaGt1occQagQNFNNOqRt1LFuehEnHHzB8Z6cRgIxRU1TBaiIsUiCdA+gy5PL7Y1IX31DNKkRmxtXjQ==",
       "dev": true,
       "license": "MIT",
       "dependencies": {
         "bytes": "^3.1.2",
-        "content-type": "^2.0.0",
+        "content-type": "^2.1.0",
         "debug": "^4.4.3",
         "http-errors": "^2.0.1",
-        "iconv-lite": "^0.7.2",
+        "iconv-lite": "^0.7.3",
         "on-finished": "^2.4.1",
-        "qs": "^6.15.2",
+        "qs": "^6.16.1",
         "raw-body": "^3.0.2",
         "type-is": "^2.1.0"
       },
@@ -6301,9 +6466,9 @@ SHA-256: a2beb9f3b8079a573d4ecff9f1a8da218bc0eba490af1e67e123ceb0fcbbb07f
       "license": "MIT"
     },
     "node_modules/fast-uri": {
-      "version": "3.1.8",
-      "resolved": "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.8.tgz",
-      "integrity": "sha512-GZMtZUTNRpOVIECoXwLNZS5xUGE+mVNbTB8h/7Rwh2TFWcBQiPzTgyZi05BF9UMZKkLJv8XBRJTlU7zg8+ZfMg==",
+      "version": "3.1.9",
+      "resolved": "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.9.tgz",
+      "integrity": "sha512-hS/0Wt3Ya043oKXs0sIxrMpKQITXhMLIrVAKKXi4gozGC9v7YRWVnXIZzjNPTO02M9BdxLCWqK1yRXgNziVyJQ==",
       "dev": true,
       "funding": [
         {
@@ -6503,9 +6668,9 @@ SHA-256: a2beb9f3b8079a573d4ecff9f1a8da218bc0eba490af1e67e123ceb0fcbbb07f
       "license": "ISC"
     },
     "node_modules/ip-address": {
-      "version": "10.7.3",
-      "resolved": "https://registry.npmjs.org/ip-address/-/ip-address-10.7.3.tgz",
-      "integrity": "sha512-A1kdq/tSb5QjvKvAMgIoEvDBIgL7qaqVP/jkvSwYYRZ9iEzvPpopxp2wQfu3SuZRHtpHNxMn8Fs0bS+gf5Xmwg==",
+      "version": "10.7.5",
+      "resolved": "https://registry.npmjs.org/ip-address/-/ip-address-10.7.5.tgz",
+      "integrity": "sha512-t2v0rkILYv9WXmSL7TpAaU3HXgaFYOPUcH3QHgwQ++gpJuH3bqyMy4Fvt/DJCTKwzH3Cf+bAp5W/mFL39KPLzA==",
       "dev": true,
       "license": "MIT",
       "engines": {
@@ -6787,9 +6952,9 @@ SHA-256: a2beb9f3b8079a573d4ecff9f1a8da218bc0eba490af1e67e123ceb0fcbbb07f
       }
     },
     "node_modules/qs": {
-      "version": "6.16.0",
-      "resolved": "https://registry.npmjs.org/qs/-/qs-6.16.0.tgz",
-      "integrity": "sha512-h6fhOIaRrID2CbEY2fqs+7t+UXZo+MLAnU5gRIq85uFtdiUPCdsApMlHhXogKVM4HM2DVbIjGNTTYH2OcmP1vA==",
+      "version": "6.16.1",
+      "resolved": "https://registry.npmjs.org/qs/-/qs-6.16.1.tgz",
+      "integrity": "sha512-5Px6J7rfHBAGUhNQ3es4YzcOdBBw0SDcVtThJml4RdnKw4tKs2epA0kPZ+K8X+WiHktT93RHVcQ/3ym5aTCgtg==",
       "dev": true,
       "license": "BSD-3-Clause",
       "dependencies": {
@@ -7117,9 +7282,9 @@ SHA-256: a2beb9f3b8079a573d4ecff9f1a8da218bc0eba490af1e67e123ceb0fcbbb07f
       "license": "ISC"
     },
     "node_modules/zod": {
-      "version": "4.6.5",
-      "resolved": "https://registry.npmjs.org/zod/-/zod-4.6.5.tgz",
-      "integrity": "sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==",
+      "version": "4.6.7",
+      "resolved": "https://registry.npmjs.org/zod/-/zod-4.6.7.tgz",
+      "integrity": "sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==",
       "license": "MIT",
       "funding": {
         "url": "https://github.com/sponsors/colinhacks"
@@ -7142,21 +7307,21 @@ SHA-256: a2beb9f3b8079a573d4ecff9f1a8da218bc0eba490af1e67e123ceb0fcbbb07f
 
 ## package.json
 
-SHA-256: 1550d3b74917fc62e59731cd471a66f2b4658544173f09625797de03450a104c
+SHA-256: 4b0adcc0907ec086ed236ea06d0dd76e96982d4b3115b1baffcc3c4fe29505d7
 
 ~~~~~~text
 {
   "name": "dsh-finance-workbench",
-  "version": "2.7.0",
-  "description": "WorkBuddy 与 DeepSeek Harness 可视化财务工作台 — 20 个模块、异常闭环和 25 个 AI 工作流",
+  "version": "2.7.1",
+  "description": "ZY 财务工作台 — zy6666688 个人维护版，支持 WorkBuddy 和 DeepSeek Harness",
   "license": "MIT",
-  "homepage": "https://github.com/feng-liu-1994/workbuddy-finance-workbench#readme",
+  "homepage": "https://github.com/zy6666688/workbuddy-finance-workbench#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/feng-liu-1994/workbuddy-finance-workbench.git"
+    "url": "git+https://github.com/zy6666688/workbuddy-finance-workbench.git"
   },
   "bugs": {
-    "url": "https://github.com/feng-liu-1994/workbuddy-finance-workbench/issues"
+    "url": "https://github.com/zy6666688/workbuddy-finance-workbench/issues"
   },
   "keywords": [
     "workbuddy",
@@ -7233,20 +7398,21 @@ SHA-256: 1550d3b74917fc62e59731cd471a66f2b4658544173f09625797de03450a104c
     "@modelcontextprotocol/sdk": "1.32.1",
     "preact": "^10.29.8"
   },
-  "releaseDate": "2026-10-08"
+  "releaseDate": "2026-10-26"
 }
 
 ~~~~~~
 
 ## scripts/build-workbuddy-app.mjs
 
-SHA-256: 6dd99eea0bd509de87b6ed55b68a33c2022e5dc4901a30f276d8a807a4a4be56
+SHA-256: bc689c4e98ec415c0b884f04d4f27ac431b15f40915217cf2099429d95266776
 
 ~~~~~~text
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
 import { FINANCE_DASHBOARD_STYLES } from '../src/finance-dashboard-styles.js'
+import { WORKBENCH_POLISH_CSS } from '../src/workflow-tools-styles.js'
 
 const root = new URL('../', import.meta.url)
 const output = new URL('./workbuddy/', root)
@@ -7274,10 +7440,10 @@ const baseStyles = `
 html[data-host-theme="dark"]{--dsw-alias-bg-base:#121826;--dsw-alias-bg-layer-1:#182033;--dsw-alias-bg-layer-2:#202a40;--dsw-alias-bg-hover:#263149;--dsw-alias-border-l1:#293650;--dsw-alias-border-l2:#35425d;--dsw-alias-label-primary:#eff3fb;--dsw-alias-label-secondary:#b6c0d2;--dsw-alias-label-tertiary:#8f9bb0;--dsw-alias-interactive-bg-hover:#263149;--dsw-specific-sidebar-nav-item-hover:#263149;--dsw-specific-sidebar-nav-item-active:#303c57}
 html,body,#root{width:100%;height:100%;min-height:720px;margin:0}body{overflow:hidden;background:var(--dsw-alias-bg-base);font-family:var(--dsw-font-family)}#root{container:finance-workbench / inline-size}#root>.dfinance_panel{height:100%!important;min-height:720px}
 `
-const packedStyles = gzipSync(baseStyles + FINANCE_DASHBOARD_STYLES, { level: 9 }).toString('base64')
+const packedStyles = gzipSync(baseStyles + FINANCE_DASHBOARD_STYLES + WORKBENCH_POLISH_CSS, { level: 9 }).toString('base64')
 const packedWidget = gzipSync(widgetCode, { level: 9 }).toString('base64')
 const html = `<!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'"><title>WorkBuddy 财务工作台</title></head><body><div id="root"></div><script>(()=>{const u=async s=>{const b=Uint8Array.from(atob(s),c=>c.charCodeAt(0));return new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).text()};Promise.all([u('${packedStyles}'),u('${packedWidget}')]).then(([c,j])=>{const y=document.createElement('style');y.textContent=c;document.head.append(y);const x=document.createElement('script');x.textContent=j;document.body.append(x)}).catch(e=>{document.body.textContent='工作台资源加载失败，请重新打开：'+e.message})})()</script></body></html>`
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'"><title>ZY 财务工作台 · WorkBuddy 财务工作台</title></head><body><div id="root"></div><script>(()=>{const u=async s=>{const b=Uint8Array.from(atob(s),c=>c.charCodeAt(0));return new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).text()};Promise.all([u('${packedStyles}'),u('${packedWidget}')]).then(([c,j])=>{const y=document.createElement('style');y.textContent=c;document.head.append(y);const x=document.createElement('script');x.textContent=j;document.body.append(x)}).catch(e=>{document.body.textContent='工作台资源加载失败，请重新打开：'+e.message})})()</script></body></html>`
 const bytes = Buffer.byteLength(html)
 if (bytes >= 256 * 1024) throw new Error(`WorkBuddy Widget 为 ${bytes} 字节，超过 MCP Apps 256 KB 预取上限`)
 await writeFile(new URL('./widget.html', output), html)
@@ -7299,7 +7465,7 @@ console.log(`built WorkBuddy MCP App · widget ${bytes} B packed (${Buffer.byteL
 
 ## scripts/generate-agent-catalog.mjs
 
-SHA-256: 9f4c41fcf2e2ed88d2a61a9f20030e566b2b8368fb26a26c757fab9a05f22d72
+SHA-256: 5b2c17ba856b1e5fe2a65794fbaae628c37c0bdae2d8cbfac64530fa657fa801
 
 ~~~~~~text
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -7372,7 +7538,7 @@ console.log(`generated ${FINANCE_WORKFLOWS.length} agent workflows and ${FINANCE
 
 ## scripts/generate-reproduction.mjs
 
-SHA-256: 058b1643c517038cf2ef5d3f46fec4bbe2826a6e76735162290a4005f0abb038
+SHA-256: 1877f7b85c1f368b2cfcbc4672790e6ebee96a8ffd94c7368c4475b3977d3868
 
 ~~~~~~text
 import { readdir, readFile, mkdir, writeFile } from 'node:fs/promises'
@@ -7383,7 +7549,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
 const teacher = pkg.name.includes('teacher')
 const title = teacher ? '教师工作台' : '财务工作台'
-const repo = teacher ? 'deepseek-harness-teacher-workbench' : 'workbuddy-finance-workbench'
+const repositoryUrl = pkg.repository.url.replace(/^git\+/, '').replace(/\.git$/, '')
 const data = await import(pathToFileURL(path.join(root, teacher ? 'src/teacher-workflows.js' : 'src/finance-data.js')))
 const composers = await import(pathToFileURL(path.join(root, 'src/task-prompt.js')))
 const workflows = (teacher ? data.TEACHER_WORKFLOWS : data.FINANCE_WORKFLOWS).map(w => ({id:w.id, title:w.title, prompt:teacher ? composers.composeTeacherTask(w) : composers.composeFinanceTask(w)}))
@@ -7411,7 +7577,7 @@ const master = [
 '# '+title+' '+pkg.version+'：源码级精确复刻总提示词',
 '你是负责交付可运行软件的 AI 工程师。请完整复刻本仓库工作台，不要用静态看板、功能缩水示例或重新设计的界面替代。',
 '## 1. 获取基准',
-'仓库：https://github.com/feng-liu-1994/'+repo,
+'仓库：'+repositoryUrl,
 teacher ? '本仓库为私密仓库。由用户通过 GitHub 登录、授权连接器或本地源码提供访问；不要索取、输出或硬编码令牌。' : '这是现有开源仓库的增量版本；保留已有 WorkBuddy、DSH 和通用 Agent 三种入口。',
 '优先读取已有本地仓库。否则克隆到新的目录，不覆盖用户工作。若没有仓库访问能力，请使用用户附带的 source-context.md，按文件标题恢复相对路径。',
 '## 2. 完整读取',
@@ -7444,7 +7610,7 @@ console.log(title+': '+workflows.length+' prompts, '+files.length+' source files
 
 ## scripts/install-agent.ps1
 
-SHA-256: cc7fbb1b4f8cd3b8d2dbcef786b4761e7062d8af9aa0633269f70b927afc0d08
+SHA-256: 5219e4e79ed8da1760fdaa2e1ff9081ed4046c8c3413c9301df4158f75f95f8c
 
 ~~~~~~text
 param(
@@ -7487,7 +7653,7 @@ Write-Host "请重新打开 $Target，然后明确说：请使用 finance-workbe
 
 ## scripts/install-agent.sh
 
-SHA-256: e428eb8b6a168aba8b47c6d6e82088fa58651fd219ebed50ea0d241e6ca75e50
+SHA-256: 65fb4811c87e0e18f22cca5ed38f16f360a6e2ebd77ad1d93590b7d1d90a9407
 
 ~~~~~~text
 #!/usr/bin/env bash
@@ -7540,7 +7706,7 @@ echo "请重新打开 ${target}，然后明确说：请使用 finance-workbench�
 
 ## scripts/install-dsh.sh
 
-SHA-256: 1be66a030b93f8284eb05f27b8ba10018e0bc2ab9c3fbfe10c60236be2afecfa
+SHA-256: d151f58db071d1f78667424cd76d93a0065f0de40dd09643cb17c3f9043dc353
 
 ~~~~~~text
 #!/usr/bin/env bash
@@ -7621,7 +7787,7 @@ echo "财务工作台已安装。请先保存当前工作，再重启 DeepSeek H
 
 ## scripts/install-workbuddy-app.ps1
 
-SHA-256: 72d655adcfc33309de776088315cc62b152215338685fa50f9f2953e14fb88b9
+SHA-256: d32020de5b7da27b54fc5cae8b9cff3bdf969b75aa96616428df084cfb3560dd
 
 ~~~~~~text
 ﻿param([switch]$DryRun)
@@ -7639,7 +7805,7 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 ## scripts/install-workbuddy-app.sh
 
-SHA-256: 0a8296b0db4a3ff8db3063a02a0355fb0c0c5dbb21dda7131b2da4e1b343e404
+SHA-256: 0ebb6d48368924da84be05d744843ecb152c62af7ccc149db059860af037dded
 
 ~~~~~~text
 #!/usr/bin/env bash
@@ -7653,7 +7819,7 @@ exec "$node_bin" "$script_dir/workbuddy-install.mjs" install "$@"
 
 ## scripts/package-release.sh
 
-SHA-256: 98aa7b8612150e13927310121c1d52fb89b259875587af53cb04314d1fa21b47
+SHA-256: d1e10dadcfe73b2704447394d56eb642b8031f8315854c921a7a15d62faa5c7d
 
 ~~~~~~text
 #!/usr/bin/env bash
@@ -7706,7 +7872,7 @@ ls -lh release
 
 ## scripts/preview.mjs
 
-SHA-256: 0cc9d350221d803bf17938071c0129490741720207f81c83555068113f1c72f2
+SHA-256: ba180df4d6f34c55d9bbbdd54ac86e9151a6e16f48146a48edbb94574aad5c14
 
 ~~~~~~text
 import { createServer } from 'node:http'
@@ -7729,7 +7895,7 @@ createServer(async (request, response) => {
 
 ## scripts/security-scan.mjs
 
-SHA-256: 85bc7e4ebdbdb3af56fa407670ad59741d30582afce4b34bc45da5de75383e10
+SHA-256: e7fa000d89920020be49c639d1b536d5cf010b5fbbfb5b8cef34b67714fe0a94
 
 ~~~~~~text
 import { readdir, readFile } from 'node:fs/promises'
@@ -7778,7 +7944,7 @@ console.log('public release security scan passed')
 
 ## scripts/sync-version.mjs
 
-SHA-256: bb23d9cba775424ce62eaac1850f42ee81ed2f0371fae41ad7f65314aa2ea86c
+SHA-256: d35137ead91cb7b962ff4f6fe3bf92c10230e12698aa6a4fd81d1ac278403a06
 
 ~~~~~~text
 import { readFile, writeFile } from 'node:fs/promises'
@@ -7797,7 +7963,7 @@ await writeFile(skillFile, skill.replace(/version: "[^"]+"/, `version: "${pkg.ve
 
 ## scripts/uninstall-agent.sh
 
-SHA-256: faf2efa9195942d4814e03f624c96d98a8da084574e571d1d633396dbb152b14
+SHA-256: 735e7976cc75c8b8db39c7acddc7f70e007fd550ba9db018e51bd4c319faa7e7
 
 ~~~~~~text
 #!/usr/bin/env bash
@@ -7833,7 +7999,7 @@ echo "已从技能目录移出，保留在: $backup"
 
 ## scripts/uninstall-workbuddy-app.ps1
 
-SHA-256: 3f293f7aeb2fff1e84c9233b3a20d91cd5c787f30755e6dd1ed72f823154a0d8
+SHA-256: 38012fb7dd12577654caa0bab00a2d7743df469a01c9195545de70b3f91c9563
 
 ~~~~~~text
 ﻿param([switch]$DryRun)
@@ -7851,7 +8017,7 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 ## scripts/uninstall-workbuddy-app.sh
 
-SHA-256: 0a37999c980b3234150ff747077c0530be8f606a7be11d7d49717d1725f52225
+SHA-256: 02dac6ac5acb4654fccb09f57a38a7ef1c673d82ca209a441dd987db5a14dfaa
 
 ~~~~~~text
 #!/usr/bin/env bash
@@ -7865,7 +8031,7 @@ exec "$node_bin" "$script_dir/workbuddy-install.mjs" uninstall "$@"
 
 ## scripts/verify-release.sh
 
-SHA-256: 8b3c68ac5b064f1db48cd95607a34fd9dab7b3f9fce933fe68040a6c1699c779
+SHA-256: ffd4117cfbfd839fd4bce2cee182609f9c4bb3c0cd9dfd7f39e06f4a4bf02576
 
 ~~~~~~text
 #!/usr/bin/env bash
@@ -7913,7 +8079,7 @@ echo "release verification passed"
 
 ## scripts/workbuddy-install.mjs
 
-SHA-256: 0e69ed863abb6f13d3ba3d25c11918baa7ffaae7d09a8725077666e9a239f5dc
+SHA-256: 3fa1f8be11c47bb47a19ed15c09f25e3ec5fe0b1214a7fd62e649a8474cd512a
 
 ~~~~~~text
 import { randomUUID } from 'node:crypto'
@@ -8019,7 +8185,7 @@ run().catch(error => { console.error(error.message); process.exitCode = 1 })
 
 ## src/client.jsx
 
-SHA-256: 64e7cbbea3478d4965d169501d75b199d3bb411fa818cbf15020101e0a5d986f
+SHA-256: eb939d52e0ab4f941e721de4ffc1f4a0cb97a342fc0d4840274070269c9cca98
 
 ~~~~~~text
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
@@ -8575,7 +8741,7 @@ export function apply(ctx) {
 
 ## src/clipboard.js
 
-SHA-256: 94252e0d3393304d7700a397f4018c88f829dda482cc378900f4df967dcd086f
+SHA-256: 2cdd00be529b2e9430c553ff77ee8dc4b7cc65fd7474c6ca5a587c71b8d5c213
 
 ~~~~~~text
 export async function copyText(value) {
@@ -8602,7 +8768,7 @@ export async function copyText(value) {
 
 ## src/contract.js
 
-SHA-256: 70636f9a8f4601b3edbb0b193ccb20f65761a19bb97f9a456dc2f65262cb5323
+SHA-256: 0e5546d912158a80f68a701d24363c917128b6187c7fcdd3b6a7269d4bec6b28
 
 ~~~~~~text
 import { z } from 'zod'
@@ -8725,7 +8891,7 @@ export const TYPERT_REMOTE = {
 
 ## src/finance-dashboard-helpers.js
 
-SHA-256: 3c5ac4cea972eff7ec8ab56430100bded71849e2af5ba7844902609f0edcf5ea
+SHA-256: 9147ddb0a0fa7c0230018346f130da4c8f4e42307dc8d1de29f8aa1682edd83b
 
 ~~~~~~text
 export function localDateKey(date = new Date()) {
@@ -8999,7 +9165,7 @@ export function workflowsForView(workflows, view) {
 
 ## src/finance-dashboard-styles.js
 
-SHA-256: 27361879cc2fc28a89cf6fe3c85fcfcead9f718efa1276356cb598c981c96724
+SHA-256: f45cb95b7571fcab5e434bfe1372bbfe58656e17f160e3560ce253c49c09d5ad
 
 ~~~~~~text
 export const FINANCE_DASHBOARD_STYLES = `
@@ -9044,7 +9210,7 @@ export const FINANCE_DASHBOARD_STYLES = `
 
 ## src/finance-dashboard.jsx
 
-SHA-256: 29032dbc72812d851913b5237078b53309e083049662815142c8412eeae1f00e
+SHA-256: 07ec50035d0e4aefcd54978b819b846ce6d3845e228f4cf64fa5e5565e95281a
 
 ~~~~~~text
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
@@ -9286,14 +9452,14 @@ export function FinanceDashboard({ sessionId, files, workspace, status, onStatus
 
 function FinanceDashboardFrame({ storageIssue, onExportBackup, view, profile, status, mobileNav, setMobileNav, changeView, theme, setTheme, onRefresh, onOpenWorkspace, onClose, children }) {
   const meta = PAGE_META[view] || ['财务工作台', '专业财务自动化与经营管理']; const utility = [['todos', '待办'], ['exceptions', '异常'], ['workflows', '工作流'], ['files', '资料库'], ['close', '月结']]
-  return <section className="dfinance_panel dfinance_embedded fdDesk_root" data-theme={theme} aria-label="财务工作台"><WorkbenchPolish/><aside className={`fdDesk_sidebar ${mobileNav ? 'is-open' : ''}`}><div className="fdDesk_identity"><span>财</span><div><strong>财务管理工作台</strong><small>{profile.entity}</small></div><button type="button" onClick={() => setMobileNav(false)} aria-label="关闭导航">×</button></div><nav aria-label="财务工作台导航">{NAV_GROUPS.map((group, index) => <div className="fdDesk_navGroup" key={group.label || index}>{group.label && <small>{group.label}</small>}{group.items.map(([key, label, icon]) => <button type="button" key={key} className={view === key ? 'is-active' : ''} onClick={() => changeView(key)}><span>{icon}</span><strong>{label}</strong></button>)}</div>)}</nav><footer><strong>{profile.period} · v{VERSION}</strong><span><i/>数据与设置保存在本机</span></footer></aside>{mobileNav && <button type="button" className="fdDesk_mobileMask" aria-label="关闭导航蒙层" onClick={() => setMobileNav(false)}/>}<div className="fdDesk_main"><header className="fdDesk_topbar"><button type="button" className="fdDesk_menu" onClick={() => setMobileNav(true)} aria-label="打开导航">☰</button><div><h2>{meta[0]}</h2><p>{meta[1]}</p></div><div className="fdDesk_toolNav">{utility.map(([key, label]) => <button type="button" key={key} className={view === key ? 'is-active' : ''} onClick={() => changeView(key)}>{label}</button>)}</div><div className="fdDesk_themeMiniWrap"><small>主题</small><ThemePicker theme={theme} onChange={setTheme} compact/></div><span>{new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' })}</span><button type="button" className="fdDesk_return" onClick={onClose}>返回对话</button></header><div className="fdDesk_status"><i/><span>{status}</span><button type="button" onClick={onOpenWorkspace}>打开目录</button><button type="button" onClick={onRefresh}>刷新</button></div><main className="fdDesk_content">{storageIssue && <div className="fdDesk_storageWarning" role="alert"><span>{storageIssue}</span><button type="button" onClick={onExportBackup}>导出 JSON 备份</button></div>}{children}</main></div></section>
+  return <section className="dfinance_panel dfinance_embedded fdDesk_root" data-theme={theme} aria-label="财务工作台"><WorkbenchPolish/><aside className={`fdDesk_sidebar ${mobileNav ? 'is-open' : ''}`}><div className="fdDesk_identity"><span>财</span><div><strong>ZY 财务工作台</strong><small>{profile.entity}</small></div><button type="button" onClick={() => setMobileNav(false)} aria-label="关闭导航">×</button></div><nav aria-label="财务工作台导航">{NAV_GROUPS.map((group, index) => <div className="fdDesk_navGroup" key={group.label || index}>{group.label && <small>{group.label}</small>}{group.items.map(([key, label, icon]) => <button type="button" key={key} className={view === key ? 'is-active' : ''} onClick={() => changeView(key)}><span>{icon}</span><strong>{label}</strong></button>)}</div>)}</nav><footer><strong>{profile.period} · v{VERSION}</strong><span><i/>数据与设置保存在本机</span></footer></aside>{mobileNav && <button type="button" className="fdDesk_mobileMask" aria-label="关闭导航蒙层" onClick={() => setMobileNav(false)}/>}<div className="fdDesk_main"><header className="fdDesk_topbar"><button type="button" className="fdDesk_menu" onClick={() => setMobileNav(true)} aria-label="打开导航">☰</button><div><h2>{meta[0]}</h2><p>{meta[1]}</p></div><div className="fdDesk_toolNav">{utility.map(([key, label]) => <button type="button" key={key} className={view === key ? 'is-active' : ''} onClick={() => changeView(key)}>{label}</button>)}</div><div className="fdDesk_themeMiniWrap"><small>主题</small><ThemePicker theme={theme} onChange={setTheme} compact/></div><span>{new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' })}</span><button type="button" className="fdDesk_return" onClick={onClose}>返回对话</button></header><div className="fdDesk_status"><i/><span>{status}</span><button type="button" onClick={onOpenWorkspace}>打开目录</button><button type="button" onClick={onRefresh}>刷新</button></div><main className="fdDesk_content">{storageIssue && <div className="fdDesk_storageWarning" role="alert"><span>{storageIssue}</span><button type="button" onClick={onExportBackup}>导出 JSON 备份</button></div>}{children}</main></div></section>
 }
 
 ~~~~~~
 
 ## src/finance-data.js
 
-SHA-256: ed1551a5d70770ef53a81bda0309953caed1b5b24b17e26ea61a827350f6345c
+SHA-256: 810d43dd0c7d1551af9090444f494299ab470c23d3d7aa832328a827f58041f1
 
 ~~~~~~text
 const COMMON_OUTPUTS = ['主结果表', '异常明细表', '金额/行数校验表', '处理日志与规则版本']
@@ -9724,7 +9890,7 @@ export const SOP_STEPS = [
 
 ## src/finance-storage.js
 
-SHA-256: 0deed85672294424ea19a8e6642d6f5ec7e08bf0ff5375115f9673c2d51bc794
+SHA-256: 49db4ea9b9007bc8bd427f3fa05af2f92adcd5f98cff7f2675258bc8f755b218
 
 ~~~~~~text
 import { validateFinanceState } from './finance-dashboard-helpers.js'
@@ -9808,7 +9974,7 @@ export function commitFinanceRestore(current, restored, storage) {
 
 ## src/index.js
 
-SHA-256: 5f2860ab7f83012b8313ca37cb57c391e4f770c097feb231eb7340d1548ce9e2
+SHA-256: dbebc88d6df2bd698f3a861acf31244d2520427cdca81559d7335d94eb93f29c
 
 ~~~~~~text
 import { randomUUID } from 'node:crypto'
@@ -10153,7 +10319,7 @@ export function apply(ctx) {
 
 ## src/task-prompt.js
 
-SHA-256: f954ba3f1342b6bf192447a9209a42d2466715844f8a32ed7e37e492b2005fdd
+SHA-256: 6b568497be581dffcebd9c22dfb1a73f7cfe631bcfdc529aa5a40b522123c340
 
 ~~~~~~text
 import { formatTaskBrief } from './workflow-tools.js'
@@ -10219,7 +10385,7 @@ export function mergeFinanceLaunchDraft(current, launch) {
 
 ## src/ui-helpers.js
 
-SHA-256: 08b8b246d04673af348d745ba88c4cd678110efafa38ac0e4cff52965205d546
+SHA-256: 10370b07706a43fb87d1dd70f10d612498029079abf0d3124b75ae42f130bd25
 
 ~~~~~~text
 const TYPES = {
@@ -10308,17 +10474,17 @@ export function matchScenarioFiles(files, scenario, limit = 8) {
 
 ## src/version.js
 
-SHA-256: 3f2a8a366fa14149df2cd698102436742276b9568b57c88fb5362a3925cdc42c
+SHA-256: 437f4f46f29cf709aba42d8de428b9c8ceb49880009befd76951b0a5f78e5b43
 
 ~~~~~~text
 // Generated from package.json by scripts/sync-version.mjs.
-export const VERSION = '2.7.0'
+export const VERSION = '2.7.1'
 
 ~~~~~~
 
 ## src/workbuddy-mcp-server.mjs
 
-SHA-256: 6d6468fe29b57e254c5018f40aa94f8be64b0b868b858b07dd95458666c72456
+SHA-256: 30b35cebab3e6e63ed12c5bbe89308cb7a7e2de00e3443ba152e0f7de8bc2de8
 
 ~~~~~~text
 import { readFileSync } from 'node:fs'
@@ -10337,18 +10503,18 @@ const widgetHtml = readFileSync(join(currentDirectory, 'widget.html'), 'utf8')
 const server = new McpServer({ name: 'workbuddy-finance-workbench', version: VERSION })
 
 server.registerTool('show_finance_workbench', {
-  title: '打开 WorkBuddy 财务工作台',
+  title: '打开 ZY 财务工作台（WorkBuddy 财务工作台）',
   description: '打开完整的交互式财务工作台，包含总览、往来、核算、异常、月结、资料索引、备份和 25 个财务工作流。用户说“打开财务工作台”或需要财务控制面板时使用。',
   annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
   _meta: { ui: { resourceUri: APP_URI } },
 }, async () => ({
-  content: [{ type: 'text', text: 'WorkBuddy 财务工作台已打开。终端环境会自动降级为本段文字；Web UI 会渲染完整交互界面。' }],
+  content: [{ type: 'text', text: 'ZY 财务工作台（WorkBuddy 财务工作台）已打开。终端环境会自动降级为本段文字；Web UI 会渲染完整交互界面。' }],
   structuredContent: { version: VERSION, modules: 20, workflows: 25, prompts: 25, mode: 'interactive-widget' },
   _meta: { ui: { resourceUri: APP_URI } },
 }))
 
 server.registerResource('finance-workbench-dashboard', APP_URI, {
-  title: 'WorkBuddy 财务工作台',
+  title: 'ZY 财务工作台（WorkBuddy 财务工作台）',
   description: '本机运行的交互式财务工作台 Widget',
   mimeType: APP_MIME,
   _meta: {
@@ -10379,7 +10545,7 @@ await server.connect(new StdioServerTransport())
 
 ## src/workbuddy-widget.jsx
 
-SHA-256: cf762eddf7c809b4ca07e361d25a1f92924f13c6448dae774cedf375be34d4ad
+SHA-256: c753758f749d11bd880a4779414f6208d7e3d03d37e27fb542fb18eb48c1f7b9
 
 ~~~~~~text
 import React, { useEffect, useRef, useState } from 'react'
@@ -10515,9 +10681,37 @@ createRoot(document.getElementById('root')).render(<WorkBuddyFinanceApp/>)
 
 ~~~~~~
 
+## src/workflow-tools-styles.js
+
+SHA-256: b8f5b5a1a7b0f4feac27e2eb60f62a902699d5a270fa2e6b0a2ae1711f5587c2
+
+~~~~~~text
+export const WORKBENCH_POLISH_CSS = `
+.dshDesk_root{--wb-accent:var(--desk-accent-strong);--wb-line:var(--desk-line);--wb-panel:var(--desk-panel);--wb-muted:var(--desk-muted);--wb-soft:var(--desk-soft)}
+.fdDesk_root{--wb-accent:var(--fin-accent-strong);--wb-line:var(--fin-line);--wb-panel:var(--fin-panel);--wb-muted:var(--fin-muted);--wb-soft:var(--fin-soft)}
+.dshDesk_root[data-theme=night]{--desk-accent:#91a6ff;--desk-accent-strong:#acbaff;--desk-soft:#26354d;--desk-bg:#111b2a;--desk-panel:#1a273a;--desk-ink:#e9eef7;--desk-muted:#aebed1;--desk-line:#34465f;color:var(--desk-ink);background:var(--desk-bg);color-scheme:dark}
+.dshDesk_root[data-theme=night] :is(.dshDesk_sidebar,.dshDesk_topbar,.dshDesk_sidebar footer){background:var(--desk-panel);color:var(--desk-ink);border-color:var(--desk-line)}
+.dshDesk_root[data-theme=night] :is(input,textarea,select){background:var(--desk-panel);color:var(--desk-ink);border-color:var(--desk-line)}
+.dshDesk_root .dshDesk_workflowGrid,.fdDesk_root .fdDesk_workflowGrid{grid-template-columns:repeat(auto-fit,minmax(min(225px,100%),1fr));gap:12px}
+.dshDesk_root .dshDesk_workflowGrid strong,.fdDesk_root .fdDesk_workflowGrid strong{font-size:14px;line-height:1.55}.dshDesk_root .dshDesk_workflowGrid small,.fdDesk_root .fdDesk_workflowGrid small{font-size:12px;line-height:1.65}.dshDesk_root .dshDesk_workflowGrid button>span,.fdDesk_root .fdDesk_workflowGrid button>span{font-size:11px}
+.dshDesk_root .dshDesk_panelHead h3,.fdDesk_root .fdDesk_panelHead h3{font-size:16px}.dshDesk_root .dshDesk_panelHead p,.fdDesk_root .fdDesk_panelHead p{font-size:12px;line-height:1.6}
+.wbPro_brief{border:1px solid var(--wb-line);border-left:3px solid var(--wb-accent);background:var(--wb-panel);border-radius:14px;padding:20px;margin:14px 0;min-width:0}
+.wbPro_brief header{display:flex;align-items:flex-start;gap:12px;justify-content:space-between}.wbPro_brief header small{font-size:10px;letter-spacing:1px;color:var(--wb-accent);font-weight:700}.wbPro_brief h3{font-size:18px!important;margin:5px 0!important}.wbPro_brief p,.wbPro_brief footer{font-size:12px!important;line-height:1.7;color:var(--wb-muted)}.wbPro_brief p{margin:0 0 12px}.wbPro_brief footer{margin-top:12px}
+.wbPro_briefGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wbPro_briefGrid label{display:grid;gap:7px;font-size:12px;font-weight:600;min-width:0}.wbPro_briefGrid .is-wide{grid-column:1/-1}.wbPro_briefGrid input,.wbPro_briefGrid textarea{box-sizing:border-box;width:100%;min-width:0;border:1px solid var(--wb-line);background:var(--wb-panel);border-radius:8px;padding:10px 12px;font:inherit;font-size:13px;color:inherit;outline:none}.wbPro_briefGrid textarea{min-height:88px;resize:vertical}.wbPro_briefGrid :is(input,textarea):focus{border-color:var(--wb-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--wb-accent) 12%,transparent)}
+.wbPro_brief header button,.wbPro_filters button{border:1px solid var(--wb-line);border-radius:8px;padding:8px 12px;font-size:12px!important;background:var(--wb-panel);color:inherit;white-space:nowrap;cursor:pointer}.wbPro_filters{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.wbPro_filters button[aria-pressed=true]{background:var(--wb-soft);border-color:var(--wb-accent);color:var(--wb-accent);font-weight:700}.wbPro_search{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0}.wbPro_search input{flex:1;min-width:120px;border:1px solid var(--wb-line);border-radius:9px;padding:11px 12px;background:var(--wb-panel);color:inherit;font-size:13px}.wbPro_search small{font-size:12px;color:var(--wb-muted)}
+.dshDesk_root :focus-visible,.fdDesk_root :focus-visible{outline:2px solid var(--wb-accent);outline-offset:3px}
+.dshDesk_root .dshDesk_workflowGrid button,.fdDesk_root .fdDesk_workflowGrid button{transition:transform .15s,border-color .15s;min-height:116px}.dshDesk_root .dshDesk_workflowGrid button:hover,.fdDesk_root .fdDesk_workflowGrid button:hover{transform:translateY(-2px);border-color:var(--wb-accent)}
+.dshDesk_root .dshDesk_promptBlock pre,.fdDesk_root .fdDesk_promptPreview{font-size:13px;line-height:1.85;max-height:480px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+@container teacher-workbench (max-width:600px){.wbPro_briefGrid{grid-template-columns:1fr}.wbPro_brief{padding:14px}.wbPro_brief header{flex-wrap:wrap}}
+@container finance-workbench (max-width:600px){.wbPro_briefGrid{grid-template-columns:1fr}.wbPro_brief{padding:14px}.wbPro_brief header{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){.dshDesk_root *,.fdDesk_root *{transition:none!important;animation:none!important}}
+`
+
+~~~~~~
+
 ## src/workflow-tools.js
 
-SHA-256: a29380da1cb5e6b98dfb053e56a73ca9ba0727f9299d1b0de79213ca1c54db47
+SHA-256: a5b02088d41494811c4ecf2122236957eb3a6b271281fbf78bae605c086c87bf
 
 ~~~~~~text
 export const BRIEF_FIELDS = [
@@ -10553,7 +10747,7 @@ export function filterWorkflowList(rows, { query = '', filter = 'all', favorites
 
 ## src/workflow-tools.jsx
 
-SHA-256: c3868c7430a502defc8a98c07ff368f91d71fbe26456a07f909d8e23d9144d54
+SHA-256: b7808fbe7053784f3530e48e2c65fef471010c3017f63db71ef1f1b1712d8083
 
 ~~~~~~text
 import React from 'react'
@@ -10572,32 +10766,13 @@ export function WorkflowFilter({ value, onChange }) {
 export function WorkbenchPolish() {
   return null
 }
-export const WORKBENCH_POLISH_CSS = `
-.dshDesk_root{--wb-accent:var(--desk-accent-strong);--wb-line:var(--desk-line);--wb-panel:var(--desk-panel);--wb-muted:var(--desk-muted);--wb-soft:var(--desk-soft)}
-.fdDesk_root{--wb-accent:var(--fin-accent-strong);--wb-line:var(--fin-line);--wb-panel:var(--fin-panel);--wb-muted:var(--fin-muted);--wb-soft:var(--fin-soft)}
-.dshDesk_root[data-theme=night]{--desk-accent:#91a6ff;--desk-accent-strong:#acbaff;--desk-soft:#26354d;--desk-bg:#111b2a;--desk-panel:#1a273a;--desk-ink:#e9eef7;--desk-muted:#aebed1;--desk-line:#34465f;color:var(--desk-ink);background:var(--desk-bg);color-scheme:dark}
-.dshDesk_root[data-theme=night] :is(.dshDesk_sidebar,.dshDesk_topbar,.dshDesk_sidebar footer){background:var(--desk-panel);color:var(--desk-ink);border-color:var(--desk-line)}
-.dshDesk_root[data-theme=night] :is(input,textarea,select){background:var(--desk-panel);color:var(--desk-ink);border-color:var(--desk-line)}
-.dshDesk_root .dshDesk_workflowGrid,.fdDesk_root .fdDesk_workflowGrid{grid-template-columns:repeat(auto-fit,minmax(min(225px,100%),1fr));gap:12px}
-.dshDesk_root .dshDesk_workflowGrid strong,.fdDesk_root .fdDesk_workflowGrid strong{font-size:14px;line-height:1.55}.dshDesk_root .dshDesk_workflowGrid small,.fdDesk_root .fdDesk_workflowGrid small{font-size:12px;line-height:1.65}.dshDesk_root .dshDesk_workflowGrid button>span,.fdDesk_root .fdDesk_workflowGrid button>span{font-size:11px}
-.dshDesk_root .dshDesk_panelHead h3,.fdDesk_root .fdDesk_panelHead h3{font-size:16px}.dshDesk_root .dshDesk_panelHead p,.fdDesk_root .fdDesk_panelHead p{font-size:12px;line-height:1.6}
-.wbPro_brief{border:1px solid var(--wb-line);border-left:3px solid var(--wb-accent);background:var(--wb-panel);border-radius:14px;padding:20px;margin:14px 0;min-width:0}
-.wbPro_brief header{display:flex;align-items:flex-start;gap:12px;justify-content:space-between}.wbPro_brief header small{font-size:10px;letter-spacing:1px;color:var(--wb-accent);font-weight:700}.wbPro_brief h3{font-size:18px!important;margin:5px 0!important}.wbPro_brief p,.wbPro_brief footer{font-size:12px!important;line-height:1.7;color:var(--wb-muted)}.wbPro_brief p{margin:0 0 12px}.wbPro_brief footer{margin-top:12px}
-.wbPro_briefGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wbPro_briefGrid label{display:grid;gap:7px;font-size:12px;font-weight:600;min-width:0}.wbPro_briefGrid .is-wide{grid-column:1/-1}.wbPro_briefGrid input,.wbPro_briefGrid textarea{box-sizing:border-box;width:100%;min-width:0;border:1px solid var(--wb-line);background:var(--wb-panel);border-radius:8px;padding:10px 12px;font:inherit;font-size:13px;color:inherit;outline:none}.wbPro_briefGrid textarea{min-height:88px;resize:vertical}.wbPro_briefGrid :is(input,textarea):focus{border-color:var(--wb-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--wb-accent) 12%,transparent)}
-.wbPro_brief header button,.wbPro_filters button{border:1px solid var(--wb-line);border-radius:8px;padding:8px 12px;font-size:12px!important;background:var(--wb-panel);color:inherit;white-space:nowrap;cursor:pointer}.wbPro_filters{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.wbPro_filters button[aria-pressed=true]{background:var(--wb-soft);border-color:var(--wb-accent);color:var(--wb-accent);font-weight:700}.wbPro_search{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0}.wbPro_search input{flex:1;min-width:120px;border:1px solid var(--wb-line);border-radius:9px;padding:11px 12px;background:var(--wb-panel);color:inherit;font-size:13px}.wbPro_search small{font-size:12px;color:var(--wb-muted)}
-.dshDesk_root :focus-visible,.fdDesk_root :focus-visible{outline:2px solid var(--wb-accent);outline-offset:3px}
-.dshDesk_root .dshDesk_workflowGrid button,.fdDesk_root .fdDesk_workflowGrid button{transition:transform .15s,border-color .15s;min-height:116px}.dshDesk_root .dshDesk_workflowGrid button:hover,.fdDesk_root .fdDesk_workflowGrid button:hover{transform:translateY(-2px);border-color:var(--wb-accent)}
-.dshDesk_root .dshDesk_promptBlock pre,.fdDesk_root .fdDesk_promptPreview{font-size:13px;line-height:1.85;max-height:480px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
-@container teacher-workbench (max-width:600px){.wbPro_briefGrid{grid-template-columns:1fr}.wbPro_brief{padding:14px}.wbPro_brief header{flex-wrap:wrap}}
-@container finance-workbench (max-width:600px){.wbPro_briefGrid{grid-template-columns:1fr}.wbPro_brief{padding:14px}.wbPro_brief header{flex-wrap:wrap}}
-@media(prefers-reduced-motion:reduce){.dshDesk_root *,.fdDesk_root *{transition:none!important;animation:none!important}}
-`
+export { WORKBENCH_POLISH_CSS } from './workflow-tools-styles.js'
 
 ~~~~~~
 
 ## test/clipboard.test.mjs
 
-SHA-256: 210c5ca7c93a0e5fd4096cdee4acc9cb2158a9a35a87bf8f769d6146e64cd561
+SHA-256: 90caf24cafa69eadefdf23d54d533785e5ce8d4c094ecb2bc73da09104f93e3b
 
 ~~~~~~text
 import test from 'node:test'
@@ -10642,7 +10817,7 @@ test('failure of both clipboard methods is reported instead of claiming success'
 
 ## test/finance-dashboard-helpers.test.mjs
 
-SHA-256: c4022f3e6af9103d8fc284ec9867fb3c06f86b77baa48a87ee5177bf82fab82a
+SHA-256: 1da8f4ab3ccd9a7af97e0c741cf651e42521adb069e1efb70041a9c3fb0dd9d5
 
 ~~~~~~text
 import test from 'node:test'
@@ -10745,7 +10920,7 @@ test('CSV export neutralizes formula cells while retaining ordinary Chinese text
 
 ## test/finance-data.test.mjs
 
-SHA-256: d66887509af22272175b63f7f798e9f1a4139aa61adf13f398bd0cc0d7d49aac
+SHA-256: 21489254723263240b26dd6ebf118160aa2a61c553961e0752bcde5cb502abd1
 
 ~~~~~~text
 import test from 'node:test'
@@ -10801,7 +10976,7 @@ test('each professional module has a complete process and valid workflow links',
 
 ## test/finance-storage.test.mjs
 
-SHA-256: d5cd92a047131277d7c138804352c7b7459902944bde0d394c2bb955a6ac6630
+SHA-256: a9223bdbc59f2affc507803d83d6eda16798fb5c4c77edd24d1c40932efb8a52
 
 ~~~~~~text
 import test from 'node:test'
@@ -10871,7 +11046,7 @@ test('partial restore write failure rolls back every already changed storage key
 
 ## test/helpers.test.mjs
 
-SHA-256: a72d672bcb54ca8529610cbd0b9e5160ad576b9c1055c21a83432b5cc3d8478b
+SHA-256: 99cf30a573e92b15ecb6c47dda4a734c61e0065f21105b772cdbaf499522c76b
 
 ~~~~~~text
 import test from 'node:test'
@@ -10913,7 +11088,7 @@ test('safeWorkflowId only accepts deterministic internal names', () => {
 
 ## test/installers.test.mjs
 
-SHA-256: 3b68ebf7d074f3c83e7f5ba1ba05de5da6a107d3c7d76b72ca53ffc3596f0922
+SHA-256: 8b8d73b6d88180480d358501b0dc3ae8a83424fbde4a7e7b86f8481d3191f922
 
 ~~~~~~text
 import test from 'node:test'
@@ -10987,7 +11162,7 @@ test('native Shell or PowerShell wrapper invokes the shared installer and propag
 
 ## test/public-release.test.mjs
 
-SHA-256: f9765fabdd8c08e2577a0c5ba859d67aa00bec7c342075e5043e33ec6a3e7f39
+SHA-256: efa42a5cfeb89e70e9959e9d1b55c163e65d897d740484d5ae9fadfaebc1a03f
 
 ~~~~~~text
 import test from 'node:test'
@@ -11063,7 +11238,7 @@ test('package, lock, MCP App, plugin metadata and Skill share the same version',
 
 ## test/reproduction.test.mjs
 
-SHA-256: 91ae4c7bf1ff2ae7dbfe56f0dc9c873b21b530f3708dfeaf2a82701cfebd0f97
+SHA-256: e8931bdbe7a9a02dc640b8234cd4c53106e4dd006d970147c622319b28e263d2
 
 ~~~~~~text
 import test from 'node:test'
@@ -11094,7 +11269,7 @@ test('offline reproduction package preserves every source hash and full workflow
 
 ## test/task-prompt.test.mjs
 
-SHA-256: 3ff26b29de46ce72222ba57100e7ce970f887ab9b394ca134e6ece889b4e9bcb
+SHA-256: 7e224883a6dc152906144c426ccbcc854ac4866088a6f386af91aafd89a72b27
 
 ~~~~~~text
 import test from 'node:test'
@@ -11147,7 +11322,7 @@ test('mergeFinanceLaunchDraft replaces old generated packages but keeps user not
 
 ## test/ui-helpers.test.mjs
 
-SHA-256: cd43e817436d450cd505672ab347160e5fe8dd754207ea9fbf25735c85595d69
+SHA-256: ad340d1efbc27198ee766735f31345d9b117e56edae20c40bacf786e259831f9
 
 ~~~~~~text
 import test from 'node:test'
@@ -11187,7 +11362,7 @@ test('matchScenarioFiles prefers filename relevance and limits noise', () => {
 
 ## test/upload.test.mjs
 
-SHA-256: 14d7189c57fc5ca8a25f11dbce025b83e31cf2f10b8caf62ec4bd537feb43490
+SHA-256: a752cd8f07af264481ef70b881a79e4c115161e08ba8ae30f02ac06948615c33
 
 ~~~~~~text
 import test from 'node:test'
@@ -11296,7 +11471,7 @@ test('invalid chunks, cross-workspace IDs, traversal and download offsets are re
 
 ## test/workbuddy-app.test.mjs
 
-SHA-256: b66289cad12b4b57a274e8e7774d0b29eea66e24a5c422ff1d834673f9a261da
+SHA-256: 538231d0663d310c3101c63b8b4b822b050427bcd5227064dedd4a2809b191e8
 
 ~~~~~~text
 import test from 'node:test'
@@ -11354,7 +11529,7 @@ test('WorkBuddy MCP server exposes and serves the interactive dashboard', async 
 
 ## test/workflow-snapshot.test.mjs
 
-SHA-256: ee05286f21d8c046167f20b6f651d1b6af17bc0095bb3611f60834a60bc3e63a
+SHA-256: 0bf3b9275ee04e87c1cb7d30443ad41df10f1218a38b4a395e5b714b93be9085
 
 ~~~~~~text
 import test from 'node:test'
@@ -11372,7 +11547,7 @@ test('task snapshots stay independent and reject unsafe names', () => {
 
 ## test/workflow-tools.test.mjs
 
-SHA-256: 1fbb7ec3418702208cc12c723be464d8760db58f3e2c9ae52cd744ec2292e282
+SHA-256: 65bacac696f2b1526912192274410680b83bf75b3e08668eeab30ee0adfe9ed5
 
 ~~~~~~text
 import test from 'node:test'
@@ -11403,7 +11578,7 @@ test('search, favorites and recent ordering compose without mutating catalog', (
 
 ## 卸载 WorkBuddy 财务工作台.command
 
-SHA-256: 7a886994bae7cd0fd3e13a495e21a266edabfec4223078710defd6c0f32054d8
+SHA-256: 2eba84eb063f3abc3046c87c271268d924ce68bf60583265b9af94f11c0de74d
 
 ~~~~~~text
 #!/bin/bash
@@ -11420,7 +11595,7 @@ read -r -p "按回车键关闭窗口…" _
 
 ## 安装 WorkBuddy 财务工作台.command
 
-SHA-256: 56c17c1fe9a7633e1585794e16bc511a5c4f798b2b925571e0b9c3f53e940982
+SHA-256: 7390aa9b89d1c3e7caf7cdbeb35e772818cb37f063656425d41b4931426b0bf3
 
 ~~~~~~text
 #!/bin/bash

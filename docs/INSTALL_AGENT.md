@@ -13,7 +13,7 @@
 ### macOS / Linux
 
 ```bash
-git clone https://github.com/feng-liu-1994/workbuddy-finance-workbench.git
+git clone https://github.com/zy6666688/workbuddy-finance-workbench.git
 cd workbuddy-finance-workbench
 ./scripts/install-agent.sh workbuddy
 ```
@@ -23,7 +23,7 @@ cd workbuddy-finance-workbench
 ### Windows PowerShell
 
 ```powershell
-git clone https://github.com/feng-liu-1994/workbuddy-finance-workbench.git
+git clone https://github.com/zy6666688/workbuddy-finance-workbench.git
 cd workbuddy-finance-workbench
 .\scripts\install-agent.ps1 workbuddy
 ```

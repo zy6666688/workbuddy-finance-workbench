@@ -1,10 +1,10 @@
-# 财务工作台 2.7.0：源码级精确复刻总提示词
+# 财务工作台 2.7.1：源码级精确复刻总提示词
 
 你是负责交付可运行软件的 AI 工程师。请完整复刻本仓库工作台，不要用静态看板、功能缩水示例或重新设计的界面替代。
 
 ## 1. 获取基准
 
-仓库：https://github.com/feng-liu-1994/workbuddy-finance-workbench
+仓库：https://github.com/zy6666688/workbuddy-finance-workbench
 
 这是现有开源仓库的增量版本；保留已有 WorkBuddy、DSH 和通用 Agent 三种入口。
 

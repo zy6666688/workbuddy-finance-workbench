@@ -1,23 +1,19 @@
 <div align="center">
 
-> **源码版本 2.7.0**：修复安装回滚、备份完整性、目录越界和依赖漏洞，增加本机预览。见 [升级说明](docs/releases/v2.7.0.md)。下载包版本以 GitHub Releases 为准。
+> **个人版 2.7.1** · zy6666688 维护。已移除二维码与微信推广，更新依赖并新增中文说明书。
 
-[查看本次全面检查报告与界面验证](docs/AUDIT_2026-10-08.md)。
-
-> **2026-09-09 源码同步 · 2.6.0（公开仓库）**：新增 [AI 精确复刻指南](docs/REPRODUCE.md)、[总提示词](docs/reproduce/MASTER_PROMPT.md)、[25 套完整工作流](docs/reproduce/WORKFLOWS.md) 和 [离线一键复制页面](docs/reproduce/index.html)（下载后双击打开）。复刻包包含源码上下文与 SHA-256 清单；保留原界面源码和锁文件，避免仅凭文字重新设计。
-
-# AI智能体财务工作台
+# ZY 财务工作台
 
 **把收入、往来、报销、资金、核算、税务、报表和经营分析，整理成可执行、可复核、可留痕的标准流程。界面采用现代雾光背景、清晰信息层级和克制卡片体系，提供 4 套专业主题；正文、表单和按钮按长时间办公重新放大，适合财务人员持续录入与复核，兼顾使用财务自动化的新手。**
 
-[![CI](https://github.com/feng-liu-1994/workbuddy-finance-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/feng-liu-1994/workbuddy-finance-workbench/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/feng-liu-1994/workbuddy-finance-workbench?display_name=tag)](https://github.com/feng-liu-1994/workbuddy-finance-workbench/releases/latest)
+[![CI](https://github.com/zy6666688/workbuddy-finance-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/zy6666688/workbuddy-finance-workbench/actions/workflows/ci.yml)
+[![Source](https://img.shields.io/badge/下载-个人版源码-28564F)](https://github.com/zy6666688/workbuddy-finance-workbench/archive/refs/heads/main.zip)
 [![WorkBuddy](https://img.shields.io/badge/WorkBuddy-MCP%20App-536BF0)](https://www.codebuddy.cn/docs/cli/mcp-apps)
 [![License](https://img.shields.io/badge/License-MIT-28564F)](LICENSE)
 
-[一键安装](#30-秒安装) · [25 份提示词](#25-份可直接复制的提示词) · [功能说明](#不是一张看板而是一套财务闭环) · [使用边界](#数据与专业边界) · [开发文档](#开发与验证)
+[使用说明书](docs/USER_GUIDE.md) · [测试报告](docs/TEST_REPORT_2.7.1.md) · [下载安装](#下载安装) · [25 份提示词](#25-份可直接复制的提示词) · [功能说明](#不是一张看板而是一套财务闭环) · [使用边界](#数据与专业边界) · [开发文档](#开发与验证)
 
-<img src="docs/images/readme-hero.png" width="1080" alt="WorkBuddy 财务工作台桌面总览">
+<img src="docs/images/zy-desktop.png" width="1080" alt="WorkBuddy 财务工作台桌面总览">
 
 </div>
 
@@ -35,12 +31,12 @@
 
 > 三种方式共用同一套财务口径和工作流。图形界面的承载方式不同：WorkBuddy 使用 MCP App Widget，DeepSeek Harness 使用原生 UI 插件，其他 Agent 使用 Markdown/JSON Skill。
 
-## 30 秒安装
+## 下载安装
 
 ### macOS：WorkBuddy 完整版
 
-1. 下载 [WorkBuddy macOS 安装包](https://github.com/feng-liu-1994/workbuddy-finance-workbench/releases/latest/download/workbuddy-finance-workbench-macos.zip)。
-2. 解压，双击 **`安装 WorkBuddy 财务工作台.command`**。
+1. 下载 [个人版源码 ZIP](https://github.com/zy6666688/workbuddy-finance-workbench/archive/refs/heads/main.zip)。
+2. 解压并进入 `workbuddy-finance-workbench-main` 文件夹，双击 **`安装 WorkBuddy 财务工作台.command`**。
 3. 保存 WorkBuddy 中正在编辑的内容，完全退出后重新打开。
 4. 在 WorkBuddy 输入：**`打开财务工作台`**。
 
@@ -48,7 +44,7 @@
 
 ### Windows：WorkBuddy 完整版
 
-下载 [WorkBuddy Windows 安装包](https://github.com/feng-liu-1994/workbuddy-finance-workbench/releases/latest/download/workbuddy-finance-workbench-windows.zip)，解压后在目录中打开 PowerShell：
+下载 [个人版源码 ZIP](https://github.com/zy6666688/workbuddy-finance-workbench/archive/refs/heads/main.zip)，解压后进入 `workbuddy-finance-workbench-main` 文件夹，在该目录中打开 PowerShell：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install-workbuddy-app.ps1
@@ -57,7 +53,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install-workbuddy-app.ps1
 ### 从源码安装
 
 ```bash
-git clone https://github.com/feng-liu-1994/workbuddy-finance-workbench.git
+git clone https://github.com/zy6666688/workbuddy-finance-workbench.git
 cd workbuddy-finance-workbench
 ./scripts/install-workbuddy-app.sh
 ```
@@ -151,6 +147,9 @@ npm run audit:deps
 
 ## 文档
 
+- [ZY 财务工作台使用说明书（从安装到第一次预算分析）](docs/USER_GUIDE.md)
+- [个人版 2.7.1 测试报告](docs/TEST_REPORT_2.7.1.md)
+
 - [WorkBuddy 完整应用安装](docs/INSTALL_WORKBUDDY.md)
 - [DeepSeek Harness 完整界面安装](docs/INSTALL_DSH.md)
 - [Codex / Claude / 通用 Agent Skill](docs/INSTALL_AGENT.md)
@@ -162,8 +161,6 @@ npm run audit:deps
 
 代码采用 [MIT License](LICENSE)。欢迎提交 Issue 和 Pull Request；财务处理结果请由具备权限和专业判断能力的人员复核。
 
-## 联系方式
+## 维护与来源
 
-欢迎扫码添加微信：weihuiaccounting，注明来意进一步交流学习
-
-<img src="docs/images/筱亭微信.jpg" width="540" alt="欢迎交流，共同进步">
+本分支由 [zy6666688](https://github.com/zy6666688) 维护，基于 [feng-liu-1994/workbuddy-finance-workbench](https://github.com/feng-liu-1994/workbuddy-finance-workbench) 二次修改。保留 MIT 许可证及原项目贡献者版权。个人版主要调整品牌、文档和依赖；原始功能设计与历史更新记录保留。

@@ -46,7 +46,7 @@
 ## 本地构建与文档更新
 
 ```bash
-git clone https://github.com/feng-liu-1994/workbuddy-finance-workbench.git
+git clone https://github.com/zy6666688/workbuddy-finance-workbench.git
 cd workbuddy-finance-workbench
 npm ci
 npm run verify:release

@@ -1,15 +1,15 @@
 {
   "name": "dsh-finance-workbench",
-  "version": "2.7.0",
-  "description": "WorkBuddy 与 DeepSeek Harness 可视化财务工作台 — 20 个模块、异常闭环和 25 个 AI 工作流",
+  "version": "2.7.1",
+  "description": "ZY 财务工作台 — zy6666688 个人维护版，支持 WorkBuddy 和 DeepSeek Harness",
   "license": "MIT",
-  "homepage": "https://github.com/feng-liu-1994/workbuddy-finance-workbench#readme",
+  "homepage": "https://github.com/zy6666688/workbuddy-finance-workbench#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/feng-liu-1994/workbuddy-finance-workbench.git"
+    "url": "git+https://github.com/zy6666688/workbuddy-finance-workbench.git"
   },
   "bugs": {
-    "url": "https://github.com/feng-liu-1994/workbuddy-finance-workbench/issues"
+    "url": "https://github.com/zy6666688/workbuddy-finance-workbench/issues"
   },
   "keywords": [
     "workbuddy",
@@ -86,5 +86,5 @@
     "@modelcontextprotocol/sdk": "1.32.1",
     "preact": "^10.29.8"
   },
-  "releaseDate": "2026-10-08"
+  "releaseDate": "2026-10-26"
 }

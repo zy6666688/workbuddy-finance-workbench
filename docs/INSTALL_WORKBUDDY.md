@@ -1,4 +1,6 @@
-# WorkBuddy 完整财务工作台安装指南
+# ZY 财务工作台安装指南
+
+本指南适用于 zy6666688 个人维护版。首次使用请同时阅读[使用说明书](USER_GUIDE.md)。
 
 本指南安装的是 **可在 WorkBuddy 内打开的完整图形工作台**，同时安装配套的 `finance-workbench` Skill。只想给其他 AI Agent 安装规则库，请看 [通用 Skill 安装](INSTALL_AGENT.md)。
 
@@ -16,7 +18,7 @@
 
 ```mermaid
 flowchart LR
-  A[下载发布包] --> B[运行安装器]
+  A[下载个人版源码 ZIP] --> B[运行安装器]
   B --> C[保存并重开 WorkBuddy]
   C --> D[输入“打开财务工作台”]
 ```
@@ -41,8 +43,8 @@ node --version
 
 ## macOS：双击安装
 
-1. 打开 [最新发布页](https://github.com/feng-liu-1994/workbuddy-finance-workbench/releases/latest)。
-2. 下载 `workbuddy-finance-workbench-macos.zip` 并解压。
+1. 下载[个人版源码 ZIP](https://github.com/zy6666688/workbuddy-finance-workbench/archive/refs/heads/main.zip)。
+2. 解压并进入 `workbuddy-finance-workbench-main` 文件夹。
 3. 双击 `安装 WorkBuddy 财务工作台.command`。
 4. 看到“安装完成”后，完全退出 WorkBuddy，再重新打开。
 5. 输入 `打开财务工作台`。
@@ -60,7 +62,7 @@ node --version
 
 ## Windows：PowerShell 安装
 
-1. 下载并解压 `workbuddy-finance-workbench-windows.zip`。
+1. 下载[个人版源码 ZIP](https://github.com/zy6666688/workbuddy-finance-workbench/archive/refs/heads/main.zip)，解压并进入 `workbuddy-finance-workbench-main` 文件夹。
 2. 在解压目录空白处按住 Shift 并右键，选择“在此处打开 PowerShell”。
 3. 执行：
 
@@ -75,7 +77,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install-workbuddy-app.ps1
 ## macOS / Linux：命令行安装
 
 ```bash
-git clone https://github.com/feng-liu-1994/workbuddy-finance-workbench.git
+git clone https://github.com/zy6666688/workbuddy-finance-workbench.git
 cd workbuddy-finance-workbench
 ./scripts/install-workbuddy-app.sh
 ```
@@ -178,7 +180,7 @@ macOS 可在 Finder 按 `Command + Shift + G`，输入 `~/.workbuddy/` 后回车
 
 ### 页面空白或提示资源加载失败
 
-重新下载最新发布包并再安装一次。发布包内必须同时包含 `workbuddy/server.mjs` 和 `workbuddy/widget.html`；不要只复制 `.command` 文件。
+重新下载个人版源码 ZIP并再安装一次。发布包内必须同时包含 `workbuddy/server.mjs` 和 `workbuddy/widget.html`；不要只复制 `.command` 文件。
 
 ### 工作流按钮没有直接发送
 
@@ -196,4 +198,4 @@ macOS 可在 Finder 按 `Command + Shift + G`，输入 `~/.workbuddy/` 后回车
 - 你执行到哪一步、屏幕上出现的完整错误文字。
 - 是否已经完全退出并重新打开 WorkBuddy。
 
-请先遮盖姓名、公司名、本机用户名、文件路径、Token、Cookie、银行账号和任何真实财务数据，再提交到 [GitHub Issues](https://github.com/feng-liu-1994/workbuddy-finance-workbench/issues)。
+请先遮盖姓名、公司名、本机用户名、文件路径、Token、Cookie、银行账号和任何真实财务数据，再提交到 [GitHub Issues](https://github.com/zy6666688/workbuddy-finance-workbench/issues)。

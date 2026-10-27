@@ -5,7 +5,7 @@
 ## 一键安装
 
 ```bash
-git clone https://github.com/feng-liu-1994/workbuddy-finance-workbench.git
+git clone https://github.com/zy6666688/workbuddy-finance-workbench.git
 cd workbuddy-finance-workbench
 ./scripts/install-dsh.sh
 ```

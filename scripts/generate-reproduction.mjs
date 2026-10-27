@@ -6,7 +6,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
 const teacher = pkg.name.includes('teacher')
 const title = teacher ? '教师工作台' : '财务工作台'
-const repo = teacher ? 'deepseek-harness-teacher-workbench' : 'workbuddy-finance-workbench'
+const repositoryUrl = pkg.repository.url.replace(/^git\+/, '').replace(/\.git$/, '')
 const data = await import(pathToFileURL(path.join(root, teacher ? 'src/teacher-workflows.js' : 'src/finance-data.js')))
 const composers = await import(pathToFileURL(path.join(root, 'src/task-prompt.js')))
 const workflows = (teacher ? data.TEACHER_WORKFLOWS : data.FINANCE_WORKFLOWS).map(w => ({id:w.id, title:w.title, prompt:teacher ? composers.composeTeacherTask(w) : composers.composeFinanceTask(w)}))
@@ -34,7 +34,7 @@ const master = [
 '# '+title+' '+pkg.version+'：源码级精确复刻总提示词',
 '你是负责交付可运行软件的 AI 工程师。请完整复刻本仓库工作台，不要用静态看板、功能缩水示例或重新设计的界面替代。',
 '## 1. 获取基准',
-'仓库：https://github.com/feng-liu-1994/'+repo,
+'仓库：'+repositoryUrl,
 teacher ? '本仓库为私密仓库。由用户通过 GitHub 登录、授权连接器或本地源码提供访问；不要索取、输出或硬编码令牌。' : '这是现有开源仓库的增量版本；保留已有 WorkBuddy、DSH 和通用 Agent 三种入口。',
 '优先读取已有本地仓库。否则克隆到新的目录，不覆盖用户工作。若没有仓库访问能力，请使用用户附带的 source-context.md，按文件标题恢复相对路径。',
 '## 2. 完整读取',
