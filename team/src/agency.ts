@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
+import { literalContains } from "./search.js";
 import {
   tx,
   one,
@@ -103,7 +104,7 @@ export function agencyRoutes(get: any, post: any, createOrder: any) {
       const base = `WITH base AS (${baseClients}),filtered AS(SELECT * FROM base WHERE ($4='all' OR ($4='unstaffed' AND NOT staffed) OR ($4='unstarted' AND order_id IS NULL)))`;
       const p = [
         q.period,
-        "%" + q.search + "%",
+        literalContains(q.search),
         q.companyId || null,
         q.attention,
       ];
@@ -125,6 +126,7 @@ export function agencyRoutes(get: any, post: any, createOrder: any) {
   get("/api/v1/clients/:id", "客户档案、人员与月份记录", async (r: any) =>
     tx(r.actor, async (db) => {
       const c = await company(db, r.params.id);
+      const selectedPeriod = period.optional().parse(r.query?.period);
       const members = (
         await db.query(
           "SELECT u.id,u.name,u.role,u.active FROM users u WHERE u.role='owner' OR EXISTS(SELECT 1 FROM memberships m WHERE m.company_id=$1 AND m.user_id=u.id) ORDER BY u.name",
@@ -137,6 +139,16 @@ export function agencyRoutes(get: any, post: any, createOrder: any) {
           [c.id],
         )
       ).rows;
+      const currentOrder = selectedPeriod
+        ? orders.find((o) => o.period === selectedPeriod) ||
+          (
+            await db.query(
+              "SELECT id,period,status,due_date FROM work_orders WHERE company_id=$1 AND period=$2",
+              [c.id, selectedPeriod],
+            )
+          ).rows[0] ||
+          null
+        : null;
       const staffed =
         members.some(
           (u) =>
@@ -148,7 +160,7 @@ export function agencyRoutes(get: any, post: any, createOrder: any) {
             u.active &&
             ["owner", "reviewer"].includes(u.role),
         );
-      return { ...c, members, orders, staffed };
+      return { ...c, members, orders, current_order: currentOrder, staffed };
     }),
   );
   post(
@@ -303,7 +315,7 @@ export function agencyRoutes(get: any, post: any, createOrder: any) {
   filtered AS(SELECT * FROM base WHERE ($6='actionable' AND status='review' AND independent) OR ($6='review' AND status='review') OR ($6='returned' AND status='processing' AND last_review_action='reject') OR ($6='delivery' AND status='delivery') OR ($6='reopen' AND status='archived' AND reopen_request IS NOT NULL))`;
         const p = [
           q.period,
-          "%" + q.search + "%",
+          literalContains(q.search),
           q.companyId || null,
           r.actor.id,
           r.actor.role,

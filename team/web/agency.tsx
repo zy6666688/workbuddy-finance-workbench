@@ -315,6 +315,9 @@ export function ClientWorkspace({
     [error, setError] = useState(""),
     [message, setMessage] = useState("");
   const generation = useRef(0);
+  const detailGeneration = useRef(0);
+  const currentScope = useRef("");
+  currentScope.current = companyId + "|" + period;
   const workspaceRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     workspaceRef.current?.scrollIntoView({ block: "start" });
@@ -335,7 +338,11 @@ export function ClientWorkspace({
             offset: String(offset),
           }),
       );
-      if (g === generation.current) setData(d);
+      if (g === generation.current) {
+        setData(d);
+        if (offset && offset >= d.filtered_total)
+          setOffset(Math.max(0, Math.ceil(d.filtered_total / 30) - 1) * 30);
+      }
     } catch (e: any) {
       if (g === generation.current) setError(e.message);
     } finally {
@@ -349,32 +356,57 @@ export function ClientWorkspace({
     };
   }, [period, companyId, search, attention, offset]);
   useEffect(() => {
+    detailGeneration.current++;
     setClient(null);
     setCreating(false);
     setEditing(false);
     setOffset(0);
   }, [period, companyId]);
+  useEffect(
+    () => () => {
+      detailGeneration.current++;
+    },
+    [],
+  );
   const execute = async (fn: any) => {
+    const g = detailGeneration.current;
     setBusy(true);
     setError("");
     setMessage("");
     try {
       await fn();
     } catch (e: any) {
-      setError(e.message);
+      if (g === detailGeneration.current) setError(e.message);
     } finally {
-      setBusy(false);
+      if (g === detailGeneration.current) setBusy(false);
     }
   };
   const open = async (id: string) => {
+    const g = ++detailGeneration.current;
+    const scope = currentScope.current;
     await execute(async () => {
-      setClient(await api("/clients/" + id));
+      const next = await api(
+        `/clients/${id}?period=${encodeURIComponent(period)}`,
+      );
+      if (g !== detailGeneration.current || scope !== currentScope.current)
+        return;
+      setClient(next);
       setEditing(false);
       setCreating(false);
     });
   };
-  const refreshClient = async () =>
-    setClient(await api("/clients/" + client.id));
+  const refreshClient = async () => {
+    const g = detailGeneration.current;
+    const scope = currentScope.current;
+    const next = await api(
+      `/clients/${client.id}?period=${encodeURIComponent(period)}`,
+    );
+    if (g === detailGeneration.current && scope === currentScope.current)
+      setClient(next);
+  };
+  const currentOrder =
+    client?.current_order ||
+    client?.orders.find((o: any) => o.period === period);
   if (creating || editing)
     return (
       <>
@@ -389,12 +421,22 @@ export function ClientWorkspace({
             setEditing(false);
           }}
           onSave={async (b: any) => {
+            const g = detailGeneration.current;
+            const scope = currentScope.current;
             const result = await api(
               editing ? `/clients/${client.id}/profile` : "/clients/onboard",
               b,
             );
             await onChanged();
-            setClient(await api("/clients/" + result.id));
+            const next = await api(
+              `/clients/${result.id}?period=${encodeURIComponent(period)}`,
+            );
+            if (
+              g !== detailGeneration.current ||
+              scope !== currentScope.current
+            )
+              return;
+            setClient(next);
             setCreating(false);
             setEditing(false);
             setMessage(
@@ -413,6 +455,8 @@ export function ClientWorkspace({
         <button
           className="secondary"
           onClick={() => {
+            detailGeneration.current++;
+            setBusy(false);
             setClient(null);
             setMessage("");
             void refresh();
@@ -475,23 +519,10 @@ export function ClientWorkspace({
           </section>
           <section className="panel">
             <h2>{period} 月度工作</h2>
-            {client.orders.find((o: any) => o.period === period) ? (
+            {currentOrder ? (
               <>
-                <p>
-                  本月已建立 ·{" "}
-                  {
-                    stages[
-                      client.orders.find((o: any) => o.period === period).status
-                    ]
-                  }
-                </p>
-                <button
-                  onClick={() =>
-                    onOpen(
-                      client.orders.find((o: any) => o.period === period).id,
-                    )
-                  }
-                >
+                <p>本月已建立 · {stages[currentOrder.status]}</p>
+                <button onClick={() => onOpen(currentOrder.id)}>
                   进入本月工作
                 </button>
               </>
@@ -684,6 +715,8 @@ export function ClientWorkspace({
         {owner && (
           <button
             onClick={() => {
+              detailGeneration.current++;
+              setBusy(false);
               setCreating(true);
               setClient(null);
             }}
@@ -723,6 +756,7 @@ export function ClientWorkspace({
         >
           <input
             aria-label="搜索客户档案"
+            maxLength={100}
             placeholder="搜索客户名称或内部编号"
             value={query}
             onInput={(e) => setQuery(e.currentTarget.value)}
@@ -827,7 +861,11 @@ export function ReviewCenter({
         }),
     )
       .then((d: any) => {
-        if (current) setData(d);
+        if (current) {
+          setData(d);
+          if (offset && offset >= d.total)
+            setOffset(Math.max(0, Math.ceil(d.total / 30) - 1) * 30);
+        }
       })
       .catch((e: any) => {
         if (current) setError(e.message);
@@ -892,6 +930,7 @@ export function ReviewCenter({
         >
           <input
             aria-label="搜索审核客户"
+            maxLength={100}
             placeholder="客户名称或编号"
             value={query}
             onInput={(e) => setQuery(e.currentTarget.value)}

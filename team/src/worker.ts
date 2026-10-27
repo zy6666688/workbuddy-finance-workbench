@@ -161,6 +161,12 @@ export async function processJob(actor: Actor, id: string) {
         o = await order(db, j.payload.orderId);
         if (!["delivery", "archived"].includes(o.status))
           fail(409, "只有通过复核的成果可以打包交付");
+        if (
+          j.payload.revision !== o.revision ||
+          !j.payload.submittedAt ||
+          j.payload.submittedAt !== o.submission?.at
+        )
+          fail(409, "交付版本已变化或任务缺少版本信息，请重新生成交付包");
         files = (
           await db.query(
             "SELECT * FROM files WHERE id=ANY($1::uuid[]) AND order_id=$2",

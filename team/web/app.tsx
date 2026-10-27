@@ -22,7 +22,6 @@ import {
   flushStore,
   clearStore,
   getDraft,
-  storageIssueSnapshot,
 } from "./server-store.js";
 
 const statusNames: Record<string, string> = {
@@ -134,6 +133,9 @@ function App() {
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false);
   const [companies, setCompanies] = useState<any[]>([]),
+    [selectedCompany, setSelectedCompany] = useState<any>(null),
+    [companySearch, setCompanySearch] = useState(""),
+    [companySearchDone, setCompanySearchDone] = useState(false),
     [cid, setCid] = useState(""),
     [period, setPeriod] = useState(
       new Intl.DateTimeFormat("en-CA", {
@@ -162,13 +164,20 @@ function App() {
     [batchMode, setBatchMode] = useState(false),
     [detailTab, setDetailTab] = useState("materials");
   const pendingOpen = useRef("");
+  const activeView = useRef("home");
+  const companyRequest = useRef(0),
+    pendingActions = useRef(0);
+  const selectedCompanyId = useRef(cid);
+  selectedCompanyId.current = cid;
   const generation = useRef(0),
     fileRef = useRef<HTMLInputElement>(null),
     [members, setMembers] = useState<any[]>([]);
   const owner = user?.role === "owner",
     reviewer = owner || user?.role === "reviewer",
     write = user?.role !== "viewer";
-  const current = companies.find((c) => c.id === cid);
+  const current =
+    companies.find((c) => c.id === cid) ||
+    (selectedCompany?.id === cid ? selectedCompany : null);
   const canReviewDetail =
     reviewer &&
     detail &&
@@ -177,15 +186,18 @@ function App() {
     detail.submission?.submittedBy !== user?.id &&
     (owner || detail.reviewer_id === user?.id);
   const run = async (fn: () => Promise<any>, message = "已保存") => {
+    const startedIn = activeDeskKey.current;
+    pendingActions.current++;
     setBusy(true);
     setNotice("");
     try {
       await fn();
-      if (message) setNotice(message);
+      if (message && activeDeskKey.current === startedIn) setNotice(message);
     } catch (e: any) {
-      setNotice(e.message);
+      if (activeDeskKey.current === startedIn) setNotice(e.message);
     } finally {
-      setBusy(false);
+      pendingActions.current--;
+      setBusy(pendingActions.current > 0);
     }
   };
   async function loadMe() {
@@ -203,8 +215,17 @@ function App() {
     void loadMe();
   }, []);
   async function loadCompanies(q = "") {
-    const c = await api("/companies?limit=100&search=" + encodeURIComponent(q));
+    const request = ++companyRequest.current;
+    const c = await api(
+      "/companies?limit=100&search=" + encodeURIComponent(q.trim()),
+    );
+    if (request !== companyRequest.current) return;
     setCompanies(c);
+    const selected = c.find(
+      (item: any) => item.id === selectedCompanyId.current,
+    );
+    if (selected) setSelectedCompany(selected);
+    setCompanySearchDone(true);
   }
   useEffect(() => {
     if (!user || user.must_change_password) return;
@@ -292,6 +313,8 @@ function App() {
     const d = await api("/orders/" + id);
     if (gen === generation.current) {
       if (d.period !== period) {
+        await flushStore();
+        if (gen !== generation.current) return;
         pendingOpen.current = id;
         setViewRequest({ id: Date.now(), view: "team:" + page });
         setPeriod(d.period);
@@ -319,7 +342,7 @@ function App() {
       action,
       ...extra,
     });
-    await openOrder(detail.id);
+    await refreshOrder(detail.id);
   }
   async function enqueue(kind: string, payload: any, companyId = cid) {
     await api("/jobs", {
@@ -328,6 +351,7 @@ function App() {
       companyId: companyId || undefined,
       key: crypto.randomUUID(),
     });
+    if (activeDeskKey.current !== deskKey) return;
     setPage("jobs");
     setDetail(null);
   }
@@ -342,20 +366,28 @@ function App() {
   }
   const deskKey =
     user && !user.must_change_password ? `${user.id}/${cid}/${period}` : "";
+  const activeDeskKey = useRef(deskKey);
+  activeDeskKey.current = deskKey;
+  const [deskLoadAttempt, setDeskLoadAttempt] = useState(0);
+  const [deskLoadError, setDeskLoadError] = useState("");
   useEffect(() => {
     let cancelled = false;
     setDeskReady("");
     setWorkspaceFiles([]);
     setReferences([]);
+    setDeskLoadError("");
     if (!deskKey) return;
     void (async () => {
       try {
         await flushStore();
-        const [saved, prefs] = await Promise.all([
+        const [saved, prefs, files] = await Promise.all([
           cid
             ? api(`/companies/${cid}/workspace/${period}`)
             : Promise.resolve({ version: 0, state: {} }),
           api("/preferences"),
+          cid
+            ? api(`/companies/${cid}/files?period=${period}`)
+            : Promise.resolve([]),
         ]);
         if (cancelled) return;
         configureStore({
@@ -374,26 +406,27 @@ function App() {
           request: api,
           onNotice: setNotice,
         });
-        if (cid)
-          setWorkspaceFiles(
-            await api(`/companies/${cid}/files?period=${period}`),
-          );
+        setWorkspaceFiles(files);
         setDeskEpoch((x) => x + 1);
         setDeskReady(deskKey);
       } catch (e: any) {
-        if (!cancelled) setNotice(e.message);
+        if (!cancelled) {
+          setNotice(e.message);
+          setDeskLoadError(e.message);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [deskKey]);
+  }, [deskKey, deskLoadAttempt]);
   async function uploadToMonth(selected: File[]) {
     if (!cid) throw new Error("请先选择客户公司");
     const orders = await api(`/orders?companyId=${cid}&period=${period}`);
     if (!orders.length) throw new Error("请先到月度交付创建本月工作单");
     let order = await api("/orders/" + orders[0].id);
     for (const f of selected) {
+      if (activeDeskKey.current !== deskKey) return;
       const body = new FormData();
       body.set("file", f);
       await api(
@@ -402,7 +435,8 @@ function App() {
       );
       order = await api("/orders/" + order.id);
     }
-    setWorkspaceFiles(await api(`/companies/${cid}/files?period=${period}`));
+    const files = await api(`/companies/${cid}/files?period=${period}`);
+    if (activeDeskKey.current === deskKey) setWorkspaceFiles(files);
   }
   if (loading)
     return (
@@ -786,7 +820,7 @@ function App() {
                             `/orders/${detail.id}/files?kind=source&version=${detail.version}&materialIndex=${i}&category=${encodeURIComponent(item.name)}`,
                             data,
                           );
-                          await openOrder(detail.id);
+                          await refreshOrder(detail.id);
                         }, "原件已上传并关联到资料清单");
                       }}
                     >
@@ -813,7 +847,7 @@ function App() {
                             action: "receive",
                             fileId: b.fileId,
                           });
-                          await openOrder(detail.id);
+                          await refreshOrder(detail.id);
                         });
                       }}
                     >
@@ -851,7 +885,7 @@ function App() {
                               action: "waive",
                               reason: b.reason,
                             });
-                            await openOrder(detail.id);
+                            await refreshOrder(detail.id);
                           });
                         }}
                       >
@@ -1186,7 +1220,7 @@ function App() {
                         version: detail.version,
                         ...b,
                       });
-                      await openOrder(detail.id);
+                      await refreshOrder(detail.id);
                     });
                   }}
                 >
@@ -1483,11 +1517,9 @@ function App() {
                       const next = favorites.includes(w.id)
                         ? favorites.filter((x) => x !== w.id)
                         : [...favorites, w.id];
-                      await api("/preferences", {
-                        theme,
-                        favorites: next,
-                        recent,
-                      });
+                      if (!writeFinanceStore("favorites", next))
+                        throw new Error("收藏未保存，请检查页面提示");
+                      await flushStore();
                       setFavorites(next);
                     }, "")
                   }
@@ -1724,6 +1756,26 @@ function App() {
       <AuthLayout>
         <h2>正在加载公司工作台</h2>
         <p role="status">{notice || "正在读取服务端资料与业务记录…"}</p>
+        {deskLoadError && (
+          <div className="agency-actions">
+            <button onClick={() => setDeskLoadAttempt((n) => n + 1)}>
+              重新加载
+            </button>
+            {cid && (
+              <button
+                className="secondary"
+                onClick={() => {
+                  generation.current++;
+                  setCid("");
+                  setSelectedCompany(null);
+                  setDetail(null);
+                }}
+              >
+                返回公司选择
+              </button>
+            )}
+          </div>
+        )}
       </AuthLayout>
     );
   return (
@@ -1744,41 +1796,21 @@ function App() {
         onStatus={setNotice}
         onRefresh={() =>
           void run(async () => {
-            if (
-              storageIssueSnapshot().startsWith("保存") &&
-              !window.confirm(
-                "刷新会放弃当前未保存的草稿。请先导出草稿，确认继续刷新？",
+            try {
+              await flushStore();
+            } catch {
+              if (
+                !window.confirm(
+                  "刷新会放弃当前未保存的草稿。请先导出草稿，确认继续刷新？",
+                )
               )
-            )
-              return;
-            setDeskReady("");
-            const saved = cid
-              ? await api(`/companies/${cid}/workspace/${period}`)
-              : { version: 0, state: {} };
-            const prefs = await api("/preferences");
-            configureStore({
-              key: deskKey,
-              companyId: cid,
-              period,
-              saved,
-              prefs,
-              profile: {
-                name: user.name,
-                entity: current?.name || "请选择公司",
-                role: roleNames[user.role],
-                period,
-              },
-              readOnly: !write || !cid,
-              request: api,
-              onNotice: setNotice,
-            });
-            if (cid)
-              setWorkspaceFiles(
-                await api(`/companies/${cid}/files?period=${period}`),
-              );
-            setDeskEpoch((x) => x + 1);
-            setDeskReady(deskKey);
-          }, "已从服务器刷新")
+                return;
+              clearStore();
+            }
+            if (activeDeskKey.current !== deskKey) return;
+            setViewRequest({ id: Date.now(), view: activeView.current });
+            setDeskLoadAttempt((n) => n + 1);
+          }, "")
         }
         onOpenWorkspace={() => navigate("orders")}
         onChooseFiles={() => uploadPicker.current?.click()}
@@ -1802,6 +1834,7 @@ function App() {
             if (!orders.length)
               throw new Error("请先建立本月工作单并完成资料核对");
             const order = await api("/orders/" + orders[0].id);
+            if (activeDeskKey.current !== deskKey) return;
             const ids = references;
             if (!ids.length)
               throw new Error(
@@ -1812,9 +1845,12 @@ function App() {
               workflowId: workflow.id,
               taskBrief: workflow.taskBrief || {},
               fileIds: ids,
+              key: crypto.randomUUID(),
             });
+            if (activeDeskKey.current !== deskKey) return;
             await enqueue("run_export", { runId: r.id }, cid);
-            setViewRequest({ id: Date.now(), view: "team:jobs" });
+            if (activeDeskKey.current === deskKey)
+              setViewRequest({ id: Date.now(), view: "team:jobs" });
           }, "执行记录已建立，任务包生成中")
         }
         launching={busy}
@@ -1825,6 +1861,14 @@ function App() {
             clearStore();
             csrf = "";
             setUser(null);
+            activeView.current = "home";
+            setViewRequest(null);
+            setPage("finance");
+            companyRequest.current++;
+            setCompanies([]);
+            setSelectedCompany(null);
+            setCompanySearch("");
+            setCompanySearchDone(false);
             setCid("");
             setDetail(null);
             setRows([]);
@@ -1861,6 +1905,7 @@ function App() {
             backup: owner ? "team:health" : "team:account",
           },
           onViewChange: (v: string) => {
+            activeView.current = v;
             const nextPage = v.startsWith("team:") ? v.slice(5) : "finance";
             // Restoring the same view after a company/period refresh must not
             // cancel an in-flight request to open that month's work order.
@@ -1883,7 +1928,10 @@ function App() {
                   查找客户
                   <input
                     aria-label="查找客户"
-                    placeholder="输入名称后按回车"
+                    placeholder="名称或编号，回车搜索"
+                    maxLength={100}
+                    value={companySearch}
+                    onInput={(e) => setCompanySearch(e.currentTarget.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter")
                         void run(
@@ -1892,6 +1940,13 @@ function App() {
                         );
                     }}
                   />
+                  {companySearchDone && companySearch.trim() && (
+                    <small role="status">
+                      找到 {companies.length} 家
+                      {companies.length === 100 ? "（最多显示100家）" : ""}
+                      ；当前公司保持不变
+                    </small>
+                  )}
                 </label>
                 <label>
                   当前公司
@@ -1903,12 +1958,15 @@ function App() {
                       void run(async () => {
                         await flushStore();
                         generation.current++;
-                        if (page !== "finance")
-                          setViewRequest({
-                            id: Date.now(),
-                            view: "team:" + page,
-                          });
+                        setViewRequest({
+                          id: Date.now(),
+                          view: activeView.current,
+                        });
                         setCid(next);
+                        setSelectedCompany(
+                          companies.find((c) => c.id === next) ||
+                            (current?.id === next ? current : null),
+                        );
                         setDetail(null);
                         setPreview(null);
                         setOffset(0);
@@ -1916,6 +1974,11 @@ function App() {
                     }}
                   >
                     <option value="">全部授权公司</option>
+                    {current && !companies.some((c) => c.id === current.id) && (
+                      <option value={current.id}>
+                        {current.name}（当前公司）
+                      </option>
+                    )}
                     {companies.map((c) => (
                       <option value={c.id}>{c.name}</option>
                     ))}
@@ -1929,13 +1992,13 @@ function App() {
                     value={period}
                     onChange={(e) => {
                       const next = e.currentTarget.value;
+                      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(next)) return;
                       void run(async () => {
                         await flushStore();
-                        if (page !== "finance")
-                          setViewRequest({
-                            id: Date.now(),
-                            view: "team:" + page,
-                          });
+                        setViewRequest({
+                          id: Date.now(),
+                          view: activeView.current,
+                        });
                         setPeriod(next);
                       }, "");
                     }}

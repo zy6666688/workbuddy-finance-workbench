@@ -1,5 +1,6 @@
 import { workspaceRoutes } from "./workspace.js";
 import { deliveryRead } from "./delivery.js";
+import { literalContains } from "./search.js";
 import { agencyRoutes, submissionReadiness } from "./agency.js";
 import Fastify, { type FastifyRequest } from "fastify";
 import cookie from "@fastify/cookie";
@@ -372,7 +373,7 @@ export async function buildServer() {
       return (
         await db.query(
           "SELECT *,count(*) OVER() AS total FROM companies WHERE name ILIKE $1 OR code ILIKE $1 ORDER BY name,id LIMIT $2 OFFSET $3",
-          ["%" + q.search + "%", q.limit, q.offset],
+          [literalContains(q.search.trim()), q.limit, q.offset],
         )
       ).rows;
     }),
@@ -946,12 +947,17 @@ export async function buildServer() {
           fail(400, "输入清单与原任务不一致");
         const fs = (
           await db.query(
-            "SELECT f.id FROM files f WHERE f.order_id=$1 AND f.kind='result' AND f.id=ANY($2::uuid[]) AND NOT EXISTS(SELECT 1 FROM files newer WHERE newer.order_id=f.order_id AND newer.kind=f.kind AND newer.name=f.name AND newer.version>f.version)",
-            [o.id, b.resultFileIds],
+            // Compare database timestamps directly, preserving microsecond
+            // precision. A new execution cannot claim a previous round's output.
+            "SELECT f.id FROM files f WHERE f.order_id=$1 AND f.kind='result' AND f.id=ANY($2::uuid[]) AND f.created_at>(SELECT created_at FROM runs WHERE id=$3) AND NOT EXISTS(SELECT 1 FROM files newer WHERE newer.order_id=f.order_id AND newer.kind=f.kind AND newer.name=f.name AND newer.version>f.version)",
+            [o.id, b.resultFileIds, run.id],
           )
         ).rows;
         if (fs.length !== new Set(b.resultFileIds).size)
-          fail(400, "请选择本工作单的最新成果版本，不能回传历史版本");
+          fail(
+            400,
+            "请上传本次任务的成果并选择最新版本，不能沿用任务创建前的成果或历史版本",
+          );
         await db.query(
           "UPDATE runs SET status='returned',result_files=$1,check_result=$2,version=version+1 WHERE id=$3",
           [
@@ -1152,6 +1158,17 @@ export async function buildServer() {
               : { order_id: payload.orderId };
           const w = await order(db, o.order_id);
           if (w.company_id !== b.companyId) fail(400, "公司不匹配");
+          if (b.kind === "delivery_export") {
+            if (
+              !["delivery", "archived"].includes(w.status) ||
+              !w.submission?.at
+            )
+              fail(409, "只有通过复核的成果可以打包交付");
+            // Bind the queued request to the approved submission visible now.
+            // The worker must never silently export a later approved correction.
+            payload.revision = w.revision;
+            payload.submittedAt = w.submission.at;
+          }
         }
         if (b.kind === "import_commit") {
           const p = await one(
@@ -1288,18 +1305,40 @@ export async function buildServer() {
   post(
     "/api/v1/preferences",
     z.object({
-      theme: z.enum(["indigo", "night"]),
+      version: z.number().int().min(0),
+      theme: z.enum(["indigo", "jade", "sand", "night"]),
       favorites: z.array(z.string().max(100)).max(25),
       recent: z.array(uuid).max(10).default([]),
     }),
     "保存个人偏好",
     async (r, b) =>
       tx(r.actor, async (db) => {
-        await db.query(
-          "INSERT INTO user_preferences(user_id,value) VALUES($1,$2) ON CONFLICT(user_id) DO UPDATE SET value=EXCLUDED.value",
-          [r.actor.id, JSON.stringify(b)],
-        );
-        return { ok: true };
+        const old = (
+          await db.query(
+            "SELECT * FROM user_preferences WHERE user_id=$1 FOR UPDATE",
+            [r.actor.id],
+          )
+        ).rows[0];
+        if ((old?.version || 0) !== b.version)
+          fail(409, "个人设置已被其他页面修改");
+        const value = {
+          ...old?.value,
+          theme: b.theme,
+          favorites: b.favorites,
+          recent: b.recent,
+          desk: { ...old?.value?.desk, theme: b.theme, favorites: b.favorites },
+        };
+        const saved = old
+          ? await db.query(
+              "UPDATE user_preferences SET value=$1,version=version+1 WHERE user_id=$2 RETURNING version",
+              [JSON.stringify(value), r.actor.id],
+            )
+          : await db.query(
+              "INSERT INTO user_preferences(user_id,value) VALUES($1,$2) ON CONFLICT DO NOTHING RETURNING version",
+              [r.actor.id, JSON.stringify(value)],
+            );
+        if (!saved.rows[0]) fail(409, "个人设置已被其他页面修改");
+        return { ok: true, version: saved.rows[0].version };
       }),
   );
   get("/api/v1/admin/health", "运行、备份和存储状态", async (r) => {

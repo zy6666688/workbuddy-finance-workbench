@@ -417,6 +417,12 @@ test(
             fileIds: [source.id],
           });
           const rd = (await detail()).runs.find((x: any) => x.id === r.id);
+          result = await upload(
+            "op",
+            "result",
+            "result.csv",
+            "reference,amount\nA,1.00\n",
+          );
           await req("op", `/runs/${r.id}/return`, {
             version: rd.version,
             resultFileIds: [result.id],

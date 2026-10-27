@@ -20,7 +20,7 @@
     },
     {
       "path": ".github/workflows/team.yml",
-      "sha256": "cbc095da5ccb0e3a21c8be3dbaab7c8e9d814646940cf28bb53d7083740580db"
+      "sha256": "ba11f7bea963fad6ee39c32413607d3c074dc1e533ef15591879a2f97f786ead"
     },
     {
       "path": ".gitignore",
@@ -344,7 +344,7 @@
     },
     {
       "path": "src/finance-dashboard.jsx",
-      "sha256": "a4b3e4c9f4ba8b4dc25964612d4bf80d8e1da51352bd7f91a36172af227f7109"
+      "sha256": "0c49ce55e8c9cde7e537ffd10b0051e1f78eed193d069de0f2d02d141a9858ef"
     },
     {
       "path": "src/finance-data.js",

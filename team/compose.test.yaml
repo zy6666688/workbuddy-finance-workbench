@@ -25,6 +25,7 @@ services:
     volumes:
       - files:/data/files
       - ./src:/app/team/src:ro
+      - ./web:/app/team/web:ro
       - ../src:/app/src:ro
       - ./test:/app/team/test:ro
       - ./.test/results:/results

@@ -153,7 +153,7 @@ jobs:
 
 ## .github/workflows/team.yml
 
-SHA-256: cbc095da5ccb0e3a21c8be3dbaab7c8e9d814646940cf28bb53d7083740580db
+SHA-256: ba11f7bea963fad6ee39c32413607d3c074dc1e533ef15591879a2f97f786ead
 
 ~~~~~~text
 name: Team workbench
@@ -180,6 +180,7 @@ jobs:
       - run: docker compose build
       - run: docker compose -p zy-finance-test -f compose.yaml -f compose.test.yaml up -d db migrate app worker gateway
       - run: docker compose -p zy-finance-test -f compose.yaml -f compose.test.yaml run --rm acceptance
+      - run: docker compose -p zy-finance-test -f compose.yaml -f compose.test.yaml run --rm acceptance node test/collection-lifecycle.mjs
       - run: node ops/test-worker.mjs
       - run: node ops/test-recovery.mjs
 
@@ -9246,7 +9247,7 @@ export const FINANCE_DASHBOARD_STYLES = `
 
 ## src/finance-dashboard.jsx
 
-SHA-256: a4b3e4c9f4ba8b4dc25964612d4bf80d8e1da51352bd7f91a36172af227f7109
+SHA-256: 0c49ce55e8c9cde7e537ffd10b0051e1f78eed193d069de0f2d02d141a9858ef
 
 ~~~~~~text
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
@@ -9490,7 +9491,7 @@ export function FinanceDashboard({ sessionId, files, workspace, status, onStatus
 
 function FinanceDashboardFrame({ team, storageIssue, onExportBackup, view, profile, status, mobileNav, setMobileNav, changeView, theme, setTheme, onRefresh, onOpenWorkspace, onClose, children }) {
   const meta = team?.metadata?.[view] || PAGE_META[view] || ['财务工作台', '专业财务自动化与经营管理']; const utility = [['todos', '待办'], ['exceptions', '异常'], ['workflows', '工作流'], ['files', '资料库'], ['close', '月结']]
-  return <section className="dfinance_panel dfinance_embedded fdDesk_root" data-theme={theme} aria-label="财务工作台">{!team && <WorkbenchPolish/>}<aside className={`fdDesk_sidebar ${mobileNav ? 'is-open' : ''}`}><div className="fdDesk_identity"><span>财</span><div><strong>ZY 财务工作台</strong><small>{profile.entity}</small></div><button type="button" onClick={() => setMobileNav(false)} aria-label="关闭导航">×</button></div><nav aria-label="财务工作台导航">{[...NAV_GROUPS.slice(0,1),...(team?.groups?.slice(0,1)||[]),...NAV_GROUPS.slice(1),...(team?.groups?.slice(1)||[])].map((group, index) => <div className="fdDesk_navGroup" key={group.label || index}>{group.label && <small>{group.label}</small>}{group.items.map(([key, label, icon]) => <button type="button" key={key} className={view === key ? 'is-active' : ''} onClick={() => changeView(key)}><span>{icon}</span><strong>{label}</strong></button>)}</div>)}</nav><footer><strong>{profile.period} · v{team ? '3.0 / 个人版 '+VERSION : VERSION}</strong><span><i/>{team ? '团队数据保存在服务器' : '数据与设置保存在本机'}</span></footer></aside>{mobileNav && <button type="button" className="fdDesk_mobileMask" aria-label="关闭导航蒙层" onClick={() => setMobileNav(false)}/>}<div className="fdDesk_main">{team?.contextBar}<header className="fdDesk_topbar"><button type="button" className="fdDesk_menu" onClick={() => setMobileNav(true)} aria-label="打开导航">☰</button><div><h2>{meta[0]}</h2><p>{meta[1]}</p></div><div className="fdDesk_toolNav">{utility.map(([key, label]) => <button type="button" key={key} className={view === key ? 'is-active' : ''} onClick={() => changeView(key)}>{label}</button>)}</div><div className="fdDesk_themeMiniWrap"><small>主题</small><ThemePicker theme={theme} onChange={setTheme} compact/></div><span>{new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' })}</span><button type="button" className="fdDesk_return" onClick={onClose}>{team ? '退出登录' : '返回对话'}</button></header><div className="fdDesk_status"><i/><span>{status}</span><button type="button" onClick={onOpenWorkspace}>{team ? '月度交付' : '打开目录'}</button><button type="button" onClick={onRefresh}>刷新</button></div><main className="fdDesk_content">{storageIssue && <div className="fdDesk_storageWarning" role="alert"><span>{storageIssue}</span><button type="button" onClick={onExportBackup}>导出 JSON 备份</button></div>}{children}</main></div></section>
+  return <section className="dfinance_panel dfinance_embedded fdDesk_root" data-theme={theme} aria-label="财务工作台">{!team && <WorkbenchPolish/>}<aside className={`fdDesk_sidebar ${mobileNav ? 'is-open' : ''}`}><div className="fdDesk_identity"><span>财</span><div><strong>ZY 财务工作台</strong><small>{profile.entity}</small></div><button type="button" onClick={() => setMobileNav(false)} aria-label="关闭导航">×</button></div><nav aria-label="财务工作台导航">{[...NAV_GROUPS.slice(0,1),...(team?.groups?.slice(0,1)||[]),...NAV_GROUPS.slice(1),...(team?.groups?.slice(1)||[])].map((group, index) => <div className="fdDesk_navGroup" key={group.label || index}>{group.label && <small>{group.label}</small>}{group.items.map(([key, label, icon]) => <button type="button" key={key} className={view === key ? 'is-active' : ''} onClick={() => changeView(key)}><span>{icon}</span><strong>{label}</strong></button>)}</div>)}</nav><footer><strong>{profile.period} · v{team ? '3.0 / 个人版 '+VERSION : VERSION}</strong><span><i/>{team ? '团队数据保存在服务器' : '数据与设置保存在本机'}</span></footer></aside>{mobileNav && <button type="button" className="fdDesk_mobileMask" aria-label="关闭导航蒙层" onClick={() => setMobileNav(false)}/>}<div className="fdDesk_main">{team?.contextBar}<header className="fdDesk_topbar"><button type="button" className="fdDesk_menu" onClick={() => setMobileNav(true)} aria-label="打开导航">☰</button><div><h2>{meta[0]}</h2><p>{meta[1]}</p></div><div className="fdDesk_toolNav">{utility.map(([key, label]) => <button type="button" key={key} className={view === key ? 'is-active' : ''} onClick={() => changeView(key)}>{label}</button>)}</div><div className="fdDesk_themeMiniWrap"><small>主题</small><ThemePicker theme={theme} onChange={setTheme} compact/></div><span>{new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' })}</span><button type="button" className="fdDesk_return" onClick={onClose}>{team ? '退出登录' : '返回对话'}</button></header><div className="fdDesk_status"><i/><span>{status}</span><button type="button" onClick={onOpenWorkspace}>{team ? '月度交付' : '打开目录'}</button><button type="button" onClick={onRefresh}>刷新</button></div><main className="fdDesk_content">{storageIssue && <div key="storage-warning" className="fdDesk_storageWarning" role="alert"><span>{storageIssue}</span><button type="button" onClick={onExportBackup}>导出 JSON 备份</button></div>}<React.Fragment key="workspace-content">{children}</React.Fragment></main></div></section>
 }
 
 ~~~~~~

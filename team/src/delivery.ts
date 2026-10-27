@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { uuid, period, type Actor } from "./core.js";
 import type { PoolClient } from "pg";
+import { literalContains } from "./search.js";
 
 const stages = [
   "collecting",
@@ -38,7 +39,7 @@ export async function deliveryRead(
     q.period || "",
     q.scope,
     actor.id,
-    `%${q.search.trim()}%`,
+    literalContains(q.search.trim()),
     q.status,
     attention,
   ];

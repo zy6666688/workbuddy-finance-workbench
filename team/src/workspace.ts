@@ -192,7 +192,7 @@ export function workspaceRoutes(app: any) {
       const p = period.parse(r.query.period);
       return (
         await db.query(
-          "SELECT f.id,f.name,f.kind,f.size,f.version,(extract(epoch FROM f.created_at)*1000)::double precision AS \"modifiedAt\",f.category||'/v'||f.version||'/'||f.name AS relative FROM files f JOIN work_orders w ON w.id=f.order_id WHERE f.company_id=$1 AND w.period=$2 ORDER BY f.created_at DESC LIMIT 1000",
+          "SELECT f.id,f.name,f.kind,f.size,f.version,(extract(epoch FROM f.created_at)*1000)::double precision AS \"modifiedAt\",f.category||'/'||f.id||'/v'||f.version||'/'||f.name AS relative FROM files f JOIN work_orders w ON w.id=f.order_id WHERE f.company_id=$1 AND w.period=$2 ORDER BY f.created_at DESC LIMIT 1000",
           [cid, p],
         )
       ).rows;
@@ -220,7 +220,8 @@ export function workspaceRoutes(app: any) {
         ...old?.value,
         desk: { ...old?.value?.desk, [b.key]: b.value },
       };
-      if (b.key === "theme") value.theme = b.value;
+      if (b.key === "theme" || b.key === "favorites") value[b.key] = b.value;
+      if (b.key === "recentOrders") value.recent = b.value;
       const saved = old
         ? await db.query(
             "UPDATE user_preferences SET value=$1,version=version+1 WHERE user_id=$2 RETURNING version",

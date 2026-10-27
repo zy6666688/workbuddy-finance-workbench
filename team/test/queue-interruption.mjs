@@ -10,9 +10,12 @@ const lock = await db.connect();
 const id = randomUUID();
 try {
   await lock.query("BEGIN");
-  await lock.query("SELECT id FROM work_orders WHERE id=$1 FOR UPDATE", [
-    fixture.order,
-  ]);
+  const order = (
+    await lock.query(
+      "SELECT id,revision,submission FROM work_orders WHERE id=$1 FOR UPDATE",
+      [fixture.order],
+    )
+  ).rows[0];
   await db.query(
     "INSERT INTO jobs(id,org_id,company_id,actor_id,kind,idempotency_key,payload) VALUES($1,$2,$3,$4,'delivery_export',($1::uuid)::text,$5)",
     [
@@ -20,7 +23,11 @@ try {
       fixture.org,
       fixture.company,
       fixture.actors.op,
-      JSON.stringify({ orderId: fixture.order }),
+      JSON.stringify({
+        orderId: fixture.order,
+        revision: order.revision,
+        submittedAt: order.submission.at,
+      }),
     ],
   );
   const until = Date.now() + 60000;
