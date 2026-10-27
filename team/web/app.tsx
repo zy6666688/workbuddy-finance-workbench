@@ -1,6 +1,7 @@
 import { render } from "preact";
 import { useState, useEffect, useRef } from "preact/hooks";
 import "./style.css";
+import { AuthLayout, AuthPassword } from "./auth.js";
 import { FinanceDashboard } from "../../src/finance-dashboard.jsx";
 import {
   writeFinanceStore,
@@ -332,67 +333,96 @@ function App() {
   }
   if (loading)
     return (
-      <main className="login">
-        <p>正在连接工作台…</p>
-      </main>
+      <AuthLayout>
+        <h2>正在连接工作台</h2>
+        <p role="status">请稍候，正在确认登录状态…</p>
+      </AuthLayout>
     );
   if (!user)
     return (
-      <main className="login">
-        <section>
-          <div className="brandmark">ZY</div>
-          <p className="eyebrow">FINANCE · TEAM WORKSPACE</p>
-          <h1>
-            每家公司，
-            <br />
-            都有清楚的交付。
-          </h1>
-          <p>资料有归属，流程有责任，成果有复核。</p>
-          <form
-            onSubmit={(e) => {
-              const b = values(e);
-              void run(async () => {
-                const r = await api("/auth/login", b);
-                csrf = r.csrf;
-                await loadMe();
-              }, "");
-            }}
-          >
-            <Field label="账号" name="username" />
-            <Field label="密码" name="password" type="password" />
-            <button disabled={busy}>登录工作台</button>
-          </form>
-          {notice && (
-            <p role="alert" className="notice">
-              {notice}
-            </p>
-          )}
-          <small>账号由团队负责人分配 · 无公开注册</small>
-        </section>
-      </main>
+      <AuthLayout>
+        <span className="zyAuth-entryTag">团队工作空间</span>
+        <h2>欢迎回来</h2>
+        <p>登录账号，继续今天的财务工作。</p>
+        <form
+          aria-busy={busy}
+          onSubmit={(e) => {
+            const b = values(e);
+            void run(async () => {
+              const r = await api("/auth/login", b);
+              csrf = r.csrf;
+              await loadMe();
+            }, "");
+          }}
+        >
+          <div className="zyAuth-field">
+            <label htmlFor="auth-username">账号</label>
+            <input
+              id="auth-username"
+              name="username"
+              required
+              autoComplete="username"
+              autoCapitalize="none"
+              spellcheck={false}
+              placeholder="请输入团队账号"
+            />
+          </div>
+          <AuthPassword />
+          <button className="zyAuth-submit" disabled={busy}>
+            {busy ? "正在登录…" : "登录工作台"}
+          </button>
+        </form>
+        {notice && (
+          <p role="alert" className="zyAuth-notice">
+            {notice}
+          </p>
+        )}
+        <p className="zyAuth-help">忘记密码？请联系团队负责人重置。</p>
+        <p className="zyAuth-accountNote">
+          账号由团队负责人统一分配。首次登录后，请按提示设置你的专属密码。
+        </p>
+      </AuthLayout>
     );
   if (user.must_change_password)
     return (
-      <main className="login">
-        <section>
-          <h1>设置你的专属密码</h1>
-          <p>初始密码仅用于首次登录。修改后请重新登录。</p>
-          <form
-            onSubmit={(e) => {
-              const b = values(e);
-              void run(async () => {
-                await api("/auth/password", b);
-                setUser(null);
-              }, "密码已修改，请重新登录");
-            }}
-          >
-            <Field label="初始密码" name="current" type="password" />
-            <Field label="新密码（至少12位）" name="password" type="password" />
-            <button disabled={busy}>保存新密码</button>
-          </form>
-          <p role="alert">{notice}</p>
-        </section>
-      </main>
+      <AuthLayout>
+        <span className="zyAuth-entryTag">首次登录</span>
+        <h2>设置你的专属密码</h2>
+        <p>初始密码仅用于首次登录。修改后请重新登录。</p>
+        <form
+          onSubmit={(e) => {
+            const b = values(e);
+            void run(async () => {
+              await api("/auth/password", b);
+              setUser(null);
+            }, "密码已修改，请重新登录");
+          }}
+        >
+          <AuthPassword label="初始密码" name="current" />
+          <AuthPassword label="新密码（至少 12 位）" fresh />
+          <button className="zyAuth-submit" disabled={busy}>
+            {busy ? "正在保存…" : "保存新密码"}
+          </button>
+        </form>
+        <button
+          className="zyAuth-back"
+          disabled={busy}
+          onClick={() =>
+            void run(async () => {
+              await api("/auth/logout", {});
+              setUser(null);
+              clearStore();
+            }, "")
+          }
+        >
+          返回登录
+        </button>
+        {notice && (
+          <p className="zyAuth-notice" role="alert">
+            {notice}
+          </p>
+        )}
+      </AuthLayout>
     );
   const teamPages = [
     ["orders", "月度交付"],
@@ -1753,12 +1783,10 @@ function App() {
   );
   if (deskReady !== deskKey)
     return (
-      <div className="login">
-        <section>
-          <h1>正在加载公司工作台</h1>
-          <p>{notice || "正在读取服务端资料与业务记录…"}</p>
-        </section>
-      </div>
+      <AuthLayout>
+        <h2>正在加载公司工作台</h2>
+        <p role="status">{notice || "正在读取服务端资料与业务记录…"}</p>
+      </AuthLayout>
     );
   return (
     <div className="team-host">

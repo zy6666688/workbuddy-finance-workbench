@@ -49,7 +49,8 @@ await writeFile(
   "dist/web/app.css",
   "@scope (.team-panels, .login) {\n" +
     (await readFile("dist/web/app.css", "utf8")) +
-    "\n}",
+    "\n}\n" +
+    (await readFile("web/auth.css", "utf8")),
 );
 await writeFile(
   "dist/web/original.css",
