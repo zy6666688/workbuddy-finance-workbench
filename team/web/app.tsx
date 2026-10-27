@@ -1,3 +1,9 @@
+import {
+  BatchUpload,
+  Followups,
+  WorkBuddyHandoff,
+  TeamManagement,
+} from "./operations.js";
 import { render } from "preact";
 import { useState, useEffect, useRef } from "preact/hooks";
 import "./style.css";
@@ -66,7 +72,10 @@ async function api(url: string, body?: any) {
           : JSON.stringify(body),
   });
   const data = await r.json();
-  if (!r.ok) throw new Error(data.error || "请求失败");
+  if (!r.ok)
+    throw Object.assign(new Error(data.error || "请求失败"), {
+      status: r.status,
+    });
   return data;
 }
 function values(e: Event) {
@@ -273,6 +282,11 @@ function App() {
     }, 5000);
     return () => clearInterval(timer);
   }, [page, user?.id]);
+  const activeOrder = useRef<string | undefined>(undefined);
+  activeOrder.current = detail?.id;
+  async function refreshOrder(id: string) {
+    if (activeOrder.current === id) await openOrder(id);
+  }
   async function openOrder(id: string) {
     const gen = ++generation.current;
     const d = await api("/orders/" + id);
@@ -659,6 +673,37 @@ function App() {
               void run(refresh, "");
             }}
           />
+          <div className="delivery-section" hidden={detailTab === "history"}>
+            {write && detail.status !== "archived" && (
+              <Panel title="资料上传">
+                {" "}
+                {write && detail.status !== "archived" && (
+                  <BatchUpload
+                    key={detail.id}
+                    detail={detail}
+                    api={api}
+                    onRefresh={() => refreshOrder(detail.id)}
+                    defaultKind={
+                      detailTab === "processing"
+                        ? "result"
+                        : detailTab === "review"
+                          ? "evidence"
+                          : "source"
+                    }
+                  />
+                )}
+              </Panel>
+            )}
+            {detailTab === "materials" && (
+              <Followups
+                key={"follow-" + detail.id}
+                detail={detail}
+                api={api}
+                onRefresh={() => refreshOrder(detail.id)}
+                write={write}
+              />
+            )}
+          </div>
           <div className="delivery-section" hidden={detailTab !== "materials"}>
             <Panel
               title="资料清单"
@@ -1083,179 +1128,18 @@ function App() {
                   </div>
                 ))}
               </div>
-              {write && detail.status !== "archived" && (
-                <form
-                  className="formgrid"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const form = e.currentTarget;
-                    const b = new FormData(form);
-                    const file = b.get("file") as File;
-                    void run(async () => {
-                      const upload = new FormData();
-                      upload.set("file", file);
-                      await api(
-                        `/orders/${detail.id}/files?kind=${b.get("kind")}&category=${encodeURIComponent(String(b.get("category")))}&version=${detail.version}`,
-                        upload,
-                      );
-                      form.reset();
-                      await openOrder(detail.id);
-                    }, "文件已保存");
-                  }}
-                >
-                  <Field label="文件用途">
-                    <select
-                      name="kind"
-                      key={detailTab}
-                      defaultValue={
-                        detailTab === "processing"
-                          ? "result"
-                          : detailTab === "review"
-                            ? "evidence"
-                            : "source"
-                      }
-                    >
-                      <option value="source">原始资料</option>
-                      <option value="result">处理成果</option>
-                      <option value="evidence">交付证据</option>
-                    </select>
-                  </Field>
-                  <Field label="资料类别" name="category" value="其他" />
-                  <Field label="选择文件（单个50MB以内）">
-                    <input
-                      name="file"
-                      type="file"
-                      required
-                      accept=".csv,.xlsx,.pdf,.png,.jpg,.jpeg,.txt,.docx"
-                    />
-                  </Field>
-                  <button disabled={busy}>上传并保存版本</button>
-                </form>
-              )}
             </Panel>
           </div>
           <div className="delivery-section" hidden={detailTab !== "processing"}>
-            <Panel
-              title="WorkBuddy 任务交接"
-              note="下载任务包 → 在 WorkBuddy 处理 → 上传成果 → 回传任务。复制提示词不代表任务完成。"
-            >
-              {!detail.runs.length && (
-                <p className="muted">
-                  暂无外部执行记录。进入经办处理阶段后，选择工作流和输入文件建立任务。
-                </p>
-              )}
-              {detail.status === "processing" && write && (
-                <form
-                  className="formgrid"
-                  onSubmit={(e) => {
-                    const b = values(e),
-                      inputIds = new FormData(
-                        e.currentTarget as HTMLFormElement,
-                      ).getAll("inputFile");
-                    void run(async () => {
-                      await api(`/orders/${detail.id}/runs`, {
-                        version: detail.version,
-                        workflowId: b.workflowId,
-                        fileIds: inputIds,
-                      });
-                      await openOrder(detail.id);
-                    });
-                  }}
-                >
-                  <Field label="选择工作流">
-                    <select name="workflowId">
-                      {workflows.map((w) => (
-                        <option value={w.id}>{w.title}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  <fieldset>
-                    <legend>选择本次输入版本</legend>
-                    {detail.files
-                      .filter((f: any) => f.kind === "source")
-                      .map((f: any) => (
-                        <label className="check">
-                          <input
-                            type="checkbox"
-                            name="inputFile"
-                            value={f.id}
-                          />
-                          {f.name} · v{f.version}
-                        </label>
-                      ))}
-                  </fieldset>
-                  <button
-                    disabled={
-                      busy ||
-                      !detail.files.some((f: any) => f.kind === "source")
-                    }
-                  >
-                    建立执行记录
-                  </button>
-                </form>
-              )}
-              {detail.runs.map((r: any) => (
-                <div className="run">
-                  <div>
-                    <strong>
-                      {workflows.find((w) => w.id === r.workflow_id)?.title}
-                    </strong>{" "}
-                    <Badge value={r.status} />
-                  </div>
-                  <small>任务编号 {r.id}</small>
-                  {r.status === "external" && write && (
-                    <>
-                      <button
-                        className="secondary"
-                        onClick={() =>
-                          void run(
-                            () =>
-                              enqueue(
-                                "run_export",
-                                { runId: r.id },
-                                detail.company_id,
-                              ),
-                            "任务包生成中",
-                          )
-                        }
-                      >
-                        生成 WorkBuddy 任务包
-                      </button>
-                      <form
-                        onSubmit={(e) => {
-                          const b = values(e);
-                          void run(async () => {
-                            const manifest = JSON.parse(String(b.manifest));
-                            if (manifest.runId !== r.id)
-                              throw new Error("回传清单不属于此任务");
-                            await api("/runs/" + r.id + "/return", {
-                              version: r.version,
-                              inputHashes: manifest.inputHashes,
-                              resultFileIds: detail.files
-                                .filter((f: any) => f.kind === "result")
-                                .map((f: any) => f.id),
-                              summary: b.summary,
-                            });
-                            await openOrder(detail.id);
-                          });
-                        }}
-                      >
-                        <Field label="任务包中的 return-manifest.json">
-                          <textarea
-                            name="manifest"
-                            required
-                            placeholder="粘贴任务包里的回传清单"
-                          />
-                        </Field>
-                        <Field label="成果与校验说明">
-                          <textarea name="summary" required />
-                        </Field>
-                        <button disabled={busy}>关联已上传成果并回传</button>
-                      </form>
-                    </>
-                  )}
-                </div>
-              ))}
+            <Panel title="外部处理与成果回传">
+              <WorkBuddyHandoff
+                key={detail.id}
+                detail={detail}
+                api={api}
+                onRefresh={() => refreshOrder(detail.id)}
+                write={write}
+                workflows={workflows}
+              />
             </Panel>
           </div>
           <div className="delivery-section" hidden={detailTab !== "history"}>
@@ -1627,7 +1511,17 @@ function App() {
                   重试
                 </button>
               )}
-              {j.result && <pre>{JSON.stringify(j.result, null, 2)}</pre>}
+              {j.result && (
+                <p>
+                  {j.kind === "monthly_batch"
+                    ? `已创建 ${j.result.created || 0} / ${j.result.total || 0} 个月份，其余已存在`
+                    : j.kind === "import_commit"
+                      ? "资料导入已完成"
+                      : j.result.fileId
+                        ? "文件已生成，可下载保存"
+                        : "处理已完成"}
+                </p>
+              )}
               {j.result?.fileId && (
                 <a
                   className="button"
@@ -1641,145 +1535,14 @@ function App() {
           {!rows.length && <div className="empty">暂无后台任务</div>}
         </>
       )}
-      {page === "users" && (
-        <>
-          <h1>团队成员</h1>
-          <div className="tablewrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>姓名</th>
-                  <th>账号</th>
-                  <th>角色</th>
-                  <th>状态</th>
-                  <th>管理</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((u) => (
-                  <tr>
-                    <td>{u.name}</td>
-                    <td>{u.username}</td>
-                    <td>{roleNames[u.role]}</td>
-                    <td>{u.active ? "启用" : "停用"}</td>
-                    <td>
-                      {owner && u.id !== user.id && (
-                        <button
-                          className="ghost"
-                          onClick={() =>
-                            void run(async () => {
-                              await api("/users/" + u.id, {
-                                version: u.version,
-                                active: !u.active,
-                                role: u.role,
-                              });
-                              await refresh();
-                            })
-                          }
-                        >
-                          {u.active ? "停用账号" : "启用账号"}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {owner && (
-            <>
-              <Panel title="创建员工账号">
-                <form
-                  className="formgrid"
-                  onSubmit={(e) => {
-                    const b = values(e);
-                    const form = e.currentTarget;
-                    void run(async () => {
-                      await api("/users", b);
-                      form.reset();
-                      await refresh();
-                      setUsers(await api("/users"));
-                    });
-                  }}
-                >
-                  <Field label="姓名" name="name" />
-                  <Field label="登录账号" name="username" />
-                  <Field
-                    label="初始密码（至少12位）"
-                    name="password"
-                    type="password"
-                  />
-                  <Field label="角色">
-                    <select name="role">
-                      {Object.entries(roleNames).map(([k, v]) => (
-                        <option value={k}>{v}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  <button disabled={busy}>创建账号</button>
-                </form>
-              </Panel>
-              <Panel title="角色与密码管理">
-                <form
-                  className="formgrid"
-                  onSubmit={(e) => {
-                    const b = values(e);
-                    void run(async () => {
-                      const u = rows.find((x) => x.id === b.userId);
-                      await api("/users/" + u.id, {
-                        version: u.version,
-                        active: u.active,
-                        role: b.role,
-                      });
-                      await refresh();
-                    });
-                  }}
-                >
-                  <Field label="员工">
-                    <select name="userId">
-                      {rows
-                        .filter((u) => u.id !== user.id)
-                        .map((u) => (
-                          <option value={u.id}>{u.name}</option>
-                        ))}
-                    </select>
-                  </Field>
-                  <Field label="新角色">
-                    <select name="role">
-                      {Object.entries(roleNames).map(([k, v]) => (
-                        <option value={k}>{v}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  <button disabled={busy}>变更角色</button>
-                </form>
-                <form
-                  className="formgrid"
-                  onSubmit={(e) => {
-                    const b = values(e);
-                    void run(() =>
-                      api("/users/" + b.userId + "/reset-password", {
-                        password: b.password,
-                      }),
-                    );
-                  }}
-                >
-                  <Field label="员工">
-                    <select name="userId">
-                      {rows.map((u) => (
-                        <option value={u.id}>{u.name}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="新初始密码" name="password" type="password" />
-                  <button className="secondary" disabled={busy}>
-                    重置并撤销旧会话
-                  </button>
-                </form>
-              </Panel>
-            </>
-          )}
-        </>
+      {page === "users" && owner && (
+        <TeamManagement
+          api={api}
+          user={user}
+          onChanged={async () => {
+            setUsers(await api("/users"));
+          }}
+        />
       )}
       {page === "audit" && (
         <>
@@ -1812,12 +1575,44 @@ function App() {
               <p>可用空间</p>
             </Panel>
             <Panel title="最近备份">
-              <pre>{JSON.stringify(health.backup, null, 2)}</pre>
+              <strong>
+                {health.backup.status === "completed"
+                  ? "备份成功"
+                  : health.backup.status === "failed"
+                    ? "备份失败"
+                    : "暂无备份记录"}
+              </strong>
+              <p>
+                {health.backup.at
+                  ? new Date(health.backup.at).toLocaleString()
+                  : "请检查备份服务"}
+              </p>
+              <small>数据库与附件共同备份，默认保留 30 个每日恢复点。</small>
             </Panel>
           </div>
-          <Panel title="失败任务">
+          <Panel title="当前账号的失败任务">
             {health.failedJobs?.length ? (
-              <pre>{JSON.stringify(health.failedJobs, null, 2)}</pre>
+              <>
+                {health.failedJobs.map((j: any) => (
+                  <div className="ops-history">
+                    <strong>
+                      {(
+                        {
+                          monthly_batch: "批量建月",
+                          run_export: "WorkBuddy 任务包",
+                          delivery_export: "审核交付包",
+                          import_commit: "资料导入",
+                        } as any
+                      )[j.kind] || "后台任务"}
+                    </strong>
+                    <p>{j.error}</p>
+                    <small>{new Date(j.updated_at).toLocaleString()}</small>
+                  </div>
+                ))}
+                <button className="secondary" onClick={() => navigate("jobs")}>
+                  前往任务中心重试
+                </button>
+              </>
             ) : (
               <p>暂无失败任务</p>
             )}

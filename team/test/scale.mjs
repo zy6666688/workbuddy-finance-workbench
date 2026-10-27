@@ -135,6 +135,28 @@ try {
       }
     }),
   );
+  await admin.query("UPDATE users SET role='owner' WHERE id=$1", [users[0].id]);
+  const management = [];
+  for (const url of [
+    "/team/directory",
+    "/team/users/" + users[50].id + "/workload",
+  ]) {
+    const started = performance.now();
+    const response =
+      process.env.SCALE_HTTP === "1"
+        ? await fetch("http://gateway/api/v1" + url, { headers: sessions[0] })
+        : null;
+    const injected = response
+      ? null
+      : await app.inject({ url: "/api/v1" + url, headers: sessions[0] });
+    assert.equal(response?.status || injected.statusCode, 200);
+    const data = response ? await response.json() : injected.json();
+    if (url === "/team/directory") assert.equal(data.length, 100);
+    management.push({
+      path: url.includes("/users/") ? "/team/users/:id/workload" : url,
+      ms: performance.now() - started,
+    });
+  }
   samples.sort((a, b) => a - b);
   const result = {
     at: new Date().toISOString(),
@@ -155,6 +177,7 @@ try {
       fileIndexes: 100000,
       fileContents: "index-only synthetic rows, not actual uploaded files",
     },
+    management,
     concurrency: 50,
     requests: samples.length,
     elapsedMs: performance.now() - start,

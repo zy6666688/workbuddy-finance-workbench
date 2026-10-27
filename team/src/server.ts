@@ -13,6 +13,7 @@ import { readFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import { operationsRoutes, assertStaffChange } from "./operations.js";
 import AdmZip from "adm-zip";
 import {
   pool,
@@ -336,6 +337,7 @@ export async function buildServer() {
         role(r.actor, "owner");
         const id = uuid.parse((r.params as any).id);
         if (id === r.actor.id) fail(400, "不能修改自己的角色或停用自己");
+        await assertStaffChange(db, id, b);
         await one(
           db,
           "UPDATE users SET role=$1,active=$2,version=version+1 WHERE id=$3 AND version=$4 RETURNING id",
@@ -479,6 +481,12 @@ export async function buildServer() {
       const o = await order(db, (r.params as any).id);
       return {
         ...o,
+        followups: (
+          await db.query(
+            "SELECT f.*,u.name AS actor_name FROM material_followups f JOIN users u ON u.id=f.actor_id WHERE f.order_id=$1 ORDER BY f.created_at DESC LIMIT 200",
+            [o.id],
+          )
+        ).rows,
         readiness: await submissionReadiness(db, o),
         assignable: (
           await db.query(
@@ -638,6 +646,7 @@ export async function buildServer() {
       const kind = z.enum(["source", "result", "evidence"]).parse(q.kind);
       const expected = z.coerce.number().int().positive().parse(q.version);
       const category = label.parse(q.category || "其他");
+      const uploadKey = q.key === undefined ? null : uuid.parse(q.key);
       const materialIndex =
         q.materialIndex === undefined
           ? undefined
@@ -662,8 +671,31 @@ export async function buildServer() {
       const bytes = await file.toBuffer();
       if (file.file.truncated) fail(413, "文件超过50MB");
       validateFile(bytes, ext);
+      const fingerprint = sha(
+        canonical({
+          name,
+          kind,
+          category,
+          materialIndex: materialIndex ?? null,
+          hash: sha(bytes),
+        }),
+      );
       return tx(r.actor, async (db) => {
-        const o = await order(db, (r.params as any).id, expected);
+        const o = await order(db, (r.params as any).id);
+        if (uploadKey) {
+          const previous = (
+            await db.query(
+              "SELECT id,upload_fingerprint FROM files WHERE order_id=$1 AND uploaded_by=$2 AND upload_key=$3",
+              [o.id, r.actor.id, uploadKey],
+            )
+          ).rows[0];
+          if (previous) {
+            if (previous.upload_fingerprint !== fingerprint)
+              fail(409, "上传标识已用于不同文件，请重新选择文件");
+            return { id: previous.id, orderVersion: o.version, replayed: true };
+          }
+        }
+        if (o.version !== expected) fail(409, "记录已被修改，请刷新后重试");
         editable(o);
         if (
           materialIndex !== undefined &&
@@ -685,7 +717,7 @@ export async function buildServer() {
             ).rows[0].v,
           );
           await db.query(
-            "INSERT INTO files(id,org_id,company_id,order_id,name,kind,category,size,sha256,storage_key,uploaded_by,version) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
+            "INSERT INTO files(id,org_id,company_id,order_id,name,kind,category,size,sha256,storage_key,uploaded_by,version,upload_key,upload_fingerprint) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)",
             [
               f.id,
               r.actor.org_id,
@@ -699,6 +731,8 @@ export async function buildServer() {
               f.key,
               r.actor.id,
               v,
+              uploadKey,
+              fingerprint,
             ],
           );
           if (kind === "result" && ["review", "delivery"].includes(o.status))
@@ -755,7 +789,7 @@ export async function buildServer() {
             { name: f.name, kind, sha256: f.hash },
             r.id,
           );
-          return { id: f.id };
+          return { id: f.id, orderVersion: o.version + 1 };
         } catch (e) {
           await unlink(path.join(dataRoot, f.key)).catch(() => {});
           throw e;
@@ -808,12 +842,34 @@ export async function buildServer() {
       workflowId: z.string().max(100),
       taskBrief: z.record(z.string().max(50), z.string().max(2000)).default({}),
       fileIds: z.array(uuid).min(1).max(100),
+      key: uuid.optional(),
     }),
     "建立WorkBuddy执行记录",
     async (r, b) =>
       tx(r.actor, async (db) => {
         writer(r.actor);
-        const o = await order(db, (r.params as any).id, b.version);
+        const o = await order(db, (r.params as any).id);
+        const fingerprint = sha(
+          canonical({
+            workflowId: b.workflowId,
+            taskBrief: b.taskBrief,
+            fileIds: [...b.fileIds].sort(),
+          }),
+        );
+        if (b.key) {
+          const previous = (
+            await db.query(
+              "SELECT id,client_fingerprint FROM runs WHERE order_id=$1 AND created_by=$2 AND client_key=$3",
+              [o.id, r.actor.id, b.key],
+            )
+          ).rows[0];
+          if (previous) {
+            if (previous.client_fingerprint !== fingerprint)
+              fail(409, "任务标识已用于不同输入");
+            return { id: previous.id };
+          }
+        }
+        if (o.version !== b.version) fail(409, "记录已被修改，请刷新后重试");
         if (o.status !== "processing") fail(409, "请先进入经办处理阶段");
         if (!FINANCE_WORKFLOWS.some((w: any) => w.id === b.workflowId))
           fail(400, "工作流不存在");
@@ -827,7 +883,7 @@ export async function buildServer() {
           fail(400, "输入文件不属于本工作单");
         const id = randomUUID();
         await db.query(
-          "INSERT INTO runs(id,org_id,company_id,order_id,workflow_id,input_files,revision,created_by,task_brief) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+          "INSERT INTO runs(id,org_id,company_id,order_id,workflow_id,input_files,revision,created_by,task_brief,client_key,client_fingerprint) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
           [
             id,
             r.actor.org_id,
@@ -838,6 +894,8 @@ export async function buildServer() {
             o.revision,
             r.actor.id,
             JSON.stringify(b.taskBrief),
+            b.key || null,
+            fingerprint,
           ],
         );
         await touch(db, o, r.actor);
@@ -856,10 +914,27 @@ export async function buildServer() {
     async (r, b) =>
       tx(r.actor, async (db) => {
         writer(r.actor);
+        const ref = await one(db, "SELECT order_id FROM runs WHERE id=$1", [
+          uuid.parse((r.params as any).id),
+        ]);
+        const o = await order(db, ref.order_id);
         const run = await one(db, "SELECT * FROM runs WHERE id=$1 FOR UPDATE", [
           uuid.parse((r.params as any).id),
         ]);
-        const o = await order(db, run.order_id);
+        const hashes = Object.fromEntries(
+          run.input_files.map((f: any) => [f.id, f.sha256]),
+        );
+        if (canonical(hashes) !== canonical(b.inputHashes))
+          fail(400, "输入清单与原任务不一致");
+        if (
+          run.status === "returned" &&
+          run.revision === o.revision &&
+          o.status === "processing" &&
+          canonical([...run.result_files].sort()) ===
+            canonical([...new Set(b.resultFileIds)].sort()) &&
+          run.check_result.summary === b.summary
+        )
+          return { ok: true, replayed: true };
         if (
           run.version !== b.version ||
           run.status !== "external" ||
@@ -871,12 +946,12 @@ export async function buildServer() {
           fail(400, "输入清单与原任务不一致");
         const fs = (
           await db.query(
-            "SELECT id FROM files WHERE order_id=$1 AND kind='result' AND id=ANY($2::uuid[])",
+            "SELECT f.id FROM files f WHERE f.order_id=$1 AND f.kind='result' AND f.id=ANY($2::uuid[]) AND NOT EXISTS(SELECT 1 FROM files newer WHERE newer.order_id=f.order_id AND newer.kind=f.kind AND newer.name=f.name AND newer.version>f.version)",
             [o.id, b.resultFileIds],
           )
         ).rows;
         if (fs.length !== new Set(b.resultFileIds).size)
-          fail(400, "成果必须属于同一工作单");
+          fail(400, "请选择本工作单的最新成果版本，不能回传历史版本");
         await db.query(
           "UPDATE runs SET status='returned',result_files=$1,check_result=$2,version=version+1 WHERE id=$3",
           [
@@ -1129,15 +1204,18 @@ export async function buildServer() {
     }),
   );
   get("/api/v1/jobs", "我的任务及处理状态", async (r) =>
-    tx(
-      r.actor,
-      async (db) =>
-        (
-          await db.query(
-            "SELECT id,kind,status,result,error,created_at,company_id FROM jobs ORDER BY created_at DESC LIMIT 100",
-          )
-        ).rows,
-    ),
+    tx(r.actor, async (db) => {
+      const id = (r.query as any).orderId
+        ? uuid.parse((r.query as any).orderId)
+        : null;
+      if (id) await one(db, "SELECT id FROM work_orders WHERE id=$1", [id]);
+      return (
+        await db.query(
+          "SELECT id,kind,status,result,error,created_at,company_id,payload->>'runId' AS run_id FROM jobs WHERE ($1::uuid IS NULL OR payload->>'runId' IN(SELECT id::text FROM runs WHERE order_id=$1)) ORDER BY created_at DESC LIMIT 100",
+          [id],
+        )
+      ).rows;
+    }),
   );
   app.get(
     "/api/v1/jobs/:id/download",
@@ -1247,6 +1325,7 @@ export async function buildServer() {
   });
   get("/api/v1/openapi.json", "接口文档", async () => app.swagger());
   agencyRoutes(get, post, createOrder);
+  operationsRoutes(get, post);
   workspaceRoutes(app);
   await app.register(staticFiles, {
     root: path.resolve(process.env.WEB_DIR || "dist/web"),
@@ -1328,8 +1407,8 @@ export async function transition(
     if (b.checks.unresolved.trim()) fail(400, "存在未解决事项，不能提交");
     const results = (
       await db.query(
-        "SELECT DISTINCT ON(name) id,name,sha256,version FROM files WHERE order_id=$1 AND kind='result' ORDER BY name,version DESC",
-        [o.id],
+        "SELECT DISTINCT ON(name) id,name,sha256,version FROM files WHERE order_id=$1 AND kind='result' AND (NOT EXISTS(SELECT 1 FROM runs WHERE order_id=$1) OR id IN(SELECT unnest(result_files) FROM runs WHERE order_id=$1 AND revision=$2 AND status='returned')) ORDER BY name,version DESC",
+        [o.id, o.revision],
       )
     ).rows;
     if (!results.length) fail(400, "缺少成果文件");

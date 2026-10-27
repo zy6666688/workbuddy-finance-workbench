@@ -20,6 +20,7 @@ try {
     "files",
     "runs",
     "reviews",
+    "material_followups",
     "audit_events",
     "jobs",
     "finance_workspaces",

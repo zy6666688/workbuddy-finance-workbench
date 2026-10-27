@@ -22,6 +22,7 @@ docker compose ps
 - [部署、升级、HTTPS 与恢复](docs/DEPLOYMENT.md)
 - [员工与负责人操作手册](docs/USER_GUIDE.md)
 - [权限、存储、任务和接口设计](docs/ARCHITECTURE.md)
+- [资料收集、WorkBuddy 与团队管理](docs/COLLECTION_WORKBUDDY_TEAM.md)
 - [验收方法与结果](docs/ACCEPTANCE.md)
 
 ## 本地开发与验收
@@ -39,6 +40,7 @@ npm audit --omit=dev
 ```sh
 docker compose -p zy-finance-test -f compose.yaml -f compose.test.yaml up -d db migrate app worker gateway
 docker compose -p zy-finance-test -f compose.yaml -f compose.test.yaml run --rm acceptance
+docker compose -p zy-finance-test -f compose.yaml -f compose.test.yaml run --rm acceptance node test/collection-lifecycle.mjs
 docker compose -p zy-finance-test -f compose.yaml -f compose.test.yaml run --rm acceptance node --import tsx test/scale.mjs
 node ops/test-worker.mjs
 node ops/test-recovery.mjs

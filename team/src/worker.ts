@@ -36,7 +36,7 @@ export async function processJob(actor: Actor, id: string) {
       let created = 0;
       for (const companyId of j.payload.companyIds) {
         const r = await createOrder(db, actor, { ...j.payload, companyId });
-        if (r.id) created++;
+        if (r.id && !r.existing) created++;
       }
       result = { created, total: j.payload.companyIds.length };
     } else if (j.kind === "import_commit") {

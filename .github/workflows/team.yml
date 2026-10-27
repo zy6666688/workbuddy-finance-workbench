@@ -22,5 +22,6 @@ jobs:
       - run: docker compose build
       - run: docker compose -p zy-finance-test -f compose.yaml -f compose.test.yaml up -d db migrate app worker gateway
       - run: docker compose -p zy-finance-test -f compose.yaml -f compose.test.yaml run --rm acceptance
+      - run: docker compose -p zy-finance-test -f compose.yaml -f compose.test.yaml run --rm acceptance node test/collection-lifecycle.mjs
       - run: node ops/test-worker.mjs
       - run: node ops/test-recovery.mjs
