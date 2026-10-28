@@ -43,6 +43,10 @@
       "sha256": "7b5894eb59b918d252d691eefa7a735bc334d3e47c465778071865a17c3a954a"
     },
     {
+      "path": "HANDOVER.md",
+      "sha256": "26eb4bbdefeca427f3305b24043c1ef7462f72d243c2c294cfb4cc06830007ce"
+    },
+    {
       "path": "LICENSE",
       "sha256": "109706a22980f1411c87fa4bc5a3b76830b42facd7ed0058f9116dce95f33026"
     },
@@ -340,11 +344,11 @@
     },
     {
       "path": "src/finance-dashboard-styles.js",
-      "sha256": "e580daef31419d83910e406141810368f3924c983a140eab1f42232fd519a312"
+      "sha256": "0937ddb8716878ac1f5ecea294d2b77a3d17aba9e6142cd4688bbfb4db13793e"
     },
     {
       "path": "src/finance-dashboard.jsx",
-      "sha256": "2c89adb86a931bec1e6b83881fa935a01772013f432cf0200ef643a5d905571b"
+      "sha256": "1b9e3ac676941cceae82b970661b2141554d9ee5f16461749e728091d83f0c06"
     },
     {
       "path": "src/finance-data.js",
@@ -361,6 +365,10 @@
     {
       "path": "src/index.js",
       "sha256": "dbebc88d6df2bd698f3a861acf31244d2520427cdca81559d7335d94eb93f29c"
+    },
+    {
+      "path": "src/sidebar-icons.jsx",
+      "sha256": "001c81a0cd48cc6fe8d67866c429512f5da0670705fbae677fa3ca3791ca58d6"
     },
     {
       "path": "src/task-prompt.js",

@@ -364,6 +364,64 @@ SHA-256: 7b5894eb59b918d252d691eefa7a735bc334d3e47c465778071865a17c3a954a
 
 ~~~~~~
 
+## HANDOVER.md
+
+SHA-256: 26eb4bbdefeca427f3305b24043c1ef7462f72d243c2c294cfb4cc06830007ce
+
+~~~~~~text
+# 无测试，仅接手：附件分页与 WorkBuddy 成果归属
+
+本分支保存当前开发状态，供后续人员接手。**本次上传没有重新运行测试，尚未完成全部验收，也没有更新正式环境。** 历史测试记录保留在仓库中，不能据此认定此分支已经达到正式发布条件。尤其是浏览器内的实际成果上传与回传仍待验证。
+
+## 本次改动目的
+
+原有资料列表在附件较多时存在截断和跨页操作不便的问题；多个 WorkBuddy 任务并行时，也需要明确每份成果属于哪个任务、哪个版本，避免同名文件混用或沿用旧审批。本分支同时处理服务端、数据库、团队页面及个人版资料库，保留原有工作流和个人版本地数据能力。
+
+## 一、附件资料库与分页
+
+- 团队版公司资料库和月度工作单新增统一的服务端分页查询，默认每页 50 份，最多 100 份。搜索、统计、类型与类别筛选、排序针对授权范围内的完整文件集合，而不是只对当前页生效。
+- 支持按文件名或类别搜索，筛选业务用途、文件类型、类别、最新版本和置顶状态，以及按时间、名称或大小排序；排序使用文件编号保证相同条件下顺序稳定。搜索中的 `%`、`_` 按普通文字处理。
+- 置顶按个人账号保存，先在完整结果中排序再分页；附件或置顶发生变化后，旧分页请求会提示刷新，避免继续翻页时遗漏或重复。
+- 任务输入、成果回传、人工成果送审及交付证据等选择器改为按文件编号记录选择，可跨页保留、逐项移除或清空，单次最多 100 份。切换公司、期间或工作单时清空旧选择。
+- 文件详情按编号重新核对权限和版本；已选文件不会因翻页被替换成同名新版本。工作流资料建议从完整授权范围查找，不局限于第一页。
+- 工作单提供轻量详情读取，新页面不再依赖一次加载全部附件；旧文件数组接口暂时保留兼容。
+- 原个人版继续使用本地文件和本机数据，资料库由原先截断列表改为本地分页；列表上方和下方均可翻页、输入页码跳转，保留原版布局、主题及上传、搜索、引用、下载和置顶入口。
+
+## 二、WorkBuddy 任务与成果
+
+- 一项任务可以有多份成果；每个成果文件版本只能归属一个任务，任务成果在对应任务中上传时确定归属，不能在回传时冒充其他任务的成果。
+- 人工成果单独标记，由经办人员明确选择送审；人工文件不会自动冒充 WorkBuddy 回传，未选择的内部草稿也不会自动进入交付。
+- 两个并行任务可以各自上传同名成果，版本按工作单、用途、来源和任务分别判断，任务 B 上传成果不会使任务 A 的回传失效。
+- 拆分输入变更与交付变更：原始输入变化会使相关任务失效，处理时需要修订或取消；普通成果上传不会让其他并行任务的输入失效。
+- 已回传任务不能直接覆盖原回执。需要更正时可填写原因创建修订任务，保留旧执行和成果；也可填写原因取消任务，取消记录保留且不能继续回传。
+- 任务包继续采用下载后由员工交给 WorkBuddy 处理，再上传成果、读取或粘贴回传清单的显式交接方式。下载任务包或复制提示词不代表处理完成，也没有新增自动回调。
+
+## 三、送审、交付与历史记录
+
+- 送审前检查任务是否已回传或明确取消、成果是否有效、历史归属是否解决、校验说明及复核人员资格；人工成果必须显式勾选。
+- 送审和交付包使用固定文件版本及来源快照，不受当前列表分页影响。成果集合变化会使原审批失效，需要重新送审和独立复核。
+- 已归档批次、原审批和交付记录保留；退回或归档重开后按新交付轮次处理，并保留旧记录。
+- 历史未归档成果只有在旧记录明确且唯一引用文件时才自动建立归属；无法确定的文件进入待确认清单，由负责人或经办填写理由，选择任务归属、人工成果或排除送审，不按文件名或时间猜测。
+- 已归档历史不因本次迁移重新编排。未归档历史如果需要变更成果集合或解决归属冲突，可能需要重新送审。
+
+## 四、接口、数据库与权限
+
+- 新增公司和工作单文件分页入口、按编号解析已选文件入口，以及完整资料范围内的工作流输入建议。分页版本变化时会要求重新刷新。
+- 新增任务专属成果上传、任务修订和取消、历史成果归属确认等接口；服务端验证账号、公司、工作单、任务和文件之间的归属关系。
+- 新增数据库迁移 `team/migrations/010_result_ownership.sql` 和 `011_file_paging.sql`，分别用于成果归属与任务版本关系、附件查询索引。升级前应备份数据库和私有附件，避免直接降级数据库作为默认回滚方式。
+- 保留个人版与团队版的不同数据边界：个人版本地运行；团队版业务数据以服务端为准，按授权公司和期间访问。
+
+## 五、接手状态与验收边界
+
+- 本次上传未重新运行测试，也未部署正式环境。此前团队版、原版、容量、接口和恢复检查曾产生测试结果，详见 [附件分页与成果归属验收记录](team/docs/ATTACHMENT-OWNERSHIP-ACCEPTANCE.md)；该文档部分状态是当时记录，接手时应重新核实。
+- 浏览器真实文件选择、任务成果上传及回传尚未完成验收；接口测试不能代替浏览器操作通过。WorkBuddy 外部处理按协议模拟，未验证实际 AI 输出质量。
+- 接手后建议先核对数据库迁移和备份恢复，再用虚构客户及两个独立员工账号，完整检查跨页选文件、两个并行任务、成果回传、退回修订、独立复核、交付、归档及重开。
+- 还需在目标环境检查权限撤销、历史归属、分页变化、重复提交和多用户并发；完成浏览器、自动化、恢复与持续集成验收后，再考虑更新正式部署。
+
+操作步骤见 [团队版操作手册](team/docs/USER_GUIDE.md) 和 [资料收集与 WorkBuddy 交接](team/docs/COLLECTION_WORKBUDDY_TEAM.md)。
+
+~~~~~~
+
 ## LICENSE
 
 SHA-256: 109706a22980f1411c87fa4bc5a3b76830b42facd7ed0058f9116dce95f33026
@@ -9202,7 +9260,7 @@ export function workflowsForView(workflows, view) {
 
 ## src/finance-dashboard-styles.js
 
-SHA-256: e580daef31419d83910e406141810368f3924c983a140eab1f42232fd519a312
+SHA-256: 0937ddb8716878ac1f5ecea294d2b77a3d17aba9e6142cd4688bbfb4db13793e
 
 ~~~~~~text
 export const FINANCE_DASHBOARD_STYLES = `
@@ -9241,13 +9299,13 @@ export const FINANCE_DASHBOARD_STYLES = `
 @container finance-workbench (max-width:500px){.fdDesk_workflowIntro{padding:15px}.fdDesk_workflowIntro h1{font-size:20px}.fdDesk_workflowIntro ol{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.fdDesk_workflowIntro li{white-space:normal;text-align:center}.fdDesk_steps{grid-template-columns:1fr}.fdDesk_promptPreview{max-height:320px;font-size:10.5px}.fdDesk_launchBar{align-items:stretch;flex-wrap:wrap}.fdDesk_launchBar>div{flex-basis:100%}}
 
 .fdDesk_storageWarning{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;padding:14px 18px;border:1px solid #b97722;border-radius:12px;background:var(--fin-panel);color:var(--fin-ink);font-size:14px;line-height:1.6}.fdDesk_storageWarning span{flex:1;min-width:180px}.fdDesk_storageWarning button{border:0;border-radius:8px;background:var(--fin-accent);color:white;padding:10px 14px;cursor:pointer;font:inherit}
-.fdDesk_filePageToolbar{gap:12px;flex-wrap:wrap}.fdDesk_filePager,.fdDesk_filePager form,.fdDesk_filePager label{display:flex;align-items:center;gap:8px}.fdDesk_filePager{margin-left:auto;flex-wrap:wrap;font-size:12px;color:var(--fin-muted)}.fdDesk_filePager form{margin:0}.fdDesk_filePager button,.fdDesk_filePager input{height:30px;border:1px solid var(--fin-line);border-radius:6px;background:var(--fin-panel);color:var(--fin-ink);padding:4px 9px}.fdDesk_filePager input{width:54px;text-align:center;padding:4px}.fdDesk_filePager button:disabled{opacity:.4;cursor:default}.fdDesk_filePager button:focus-visible,.fdDesk_filePager input:focus-visible{outline:2px solid var(--fin-accent);outline-offset:2px}@container finance-workbench (max-width:500px){.fdDesk_filePageToolbar{gap:8px}.fdDesk_filePager{margin-left:0;gap:6px}.fdDesk_filePager form{gap:6px}.fdDesk_filePager button{padding:4px 7px}}`
+.fdDesk_filePageToolbar{gap:12px;flex-wrap:wrap}.fdDesk_filePager,.fdDesk_filePager form,.fdDesk_filePager label{display:flex;align-items:center;gap:8px}.fdDesk_filePager{margin-left:auto;flex-wrap:wrap;font-size:12px;color:var(--fin-muted)}.fdDesk_filePager form{margin:0}.fdDesk_filePager button,.fdDesk_filePager input{height:30px;border:1px solid var(--fin-line);border-radius:6px;background:var(--fin-panel);color:var(--fin-ink);padding:4px 9px}.fdDesk_filePager input{width:54px;text-align:center;padding:4px}.fdDesk_filePager button:disabled{opacity:.4;cursor:default}.fdDesk_filePager button:focus-visible,.fdDesk_filePager input:focus-visible{outline:2px solid var(--fin-accent);outline-offset:2px}@container finance-workbench (max-width:500px){.fdDesk_filePageToolbar{gap:8px}.fdDesk_filePager{margin-left:0;gap:6px}.fdDesk_filePager form{gap:6px}.fdDesk_filePager button{padding:4px 7px}}.fdDesk_sidebar nav .fdDesk_navGroup button .fdDesk_navIconBox{width:24px;height:24px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--fin-muted);transition:background-color .15s,color .15s,border-color .15s}.fdDesk_navIcon{width:17px;height:17px;display:block;flex:none}.fdDesk_sidebar nav .fdDesk_navGroup button:hover .fdDesk_navIconBox{background:var(--fin-soft);color:var(--fin-accent-strong)}.fdDesk_sidebar nav .fdDesk_navGroup button.is-active .fdDesk_navIconBox{background:color-mix(in srgb,var(--fin-accent) 14%,var(--fin-panel));border-color:color-mix(in srgb,var(--fin-accent) 20%,transparent);color:var(--fin-accent-strong)}.fdDesk_sidebar nav .fdDesk_navGroup button:focus-visible{outline:2px solid var(--fin-accent);outline-offset:-2px}`
 
 ~~~~~~
 
 ## src/finance-dashboard.jsx
 
-SHA-256: 2c89adb86a931bec1e6b83881fa935a01772013f432cf0200ef643a5d905571b
+SHA-256: 1b9e3ac676941cceae82b970661b2141554d9ee5f16461749e728091d83f0c06
 
 ~~~~~~text
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
@@ -9259,6 +9317,7 @@ import { filterWorkflowList, recentWorkflowIds } from './workflow-tools.js'
 import { TaskBrief, WorkflowFilter, WorkbenchPolish } from './workflow-tools.jsx'
 
 import { FileLibrary } from './finance-files.jsx'
+import { SidebarIcon } from './sidebar-icons.jsx'
 import { VERSION } from './version.js'
 import { copyText } from './clipboard.js'
 import { STORE_PREFIX, readFinanceStore, writeFinanceStore, commitFinanceRestore, storageIssueSnapshot, subscribeStorageIssues } from './finance-storage.js'
@@ -9494,7 +9553,7 @@ export function FinanceDashboard({ sessionId, files, workspace, status, onStatus
 
 function FinanceDashboardFrame({ team, storageIssue, onExportBackup, view, profile, status, mobileNav, setMobileNav, changeView, theme, setTheme, onRefresh, onOpenWorkspace, onClose, children }) {
   const meta = team?.metadata?.[view] || PAGE_META[view] || ['财务工作台', '专业财务自动化与经营管理']; const utility = [['todos', '待办'], ['exceptions', '异常'], ['workflows', '工作流'], ['files', '资料库'], ['close', '月结']]
-  return <section className="dfinance_panel dfinance_embedded fdDesk_root" data-theme={theme} aria-label="财务工作台">{!team && <WorkbenchPolish/>}<aside className={`fdDesk_sidebar ${mobileNav ? 'is-open' : ''}`}><div className="fdDesk_identity"><span>财</span><div><strong>ZY 财务工作台</strong><small>{profile.entity}</small></div><button type="button" onClick={() => setMobileNav(false)} aria-label="关闭导航">×</button></div><nav aria-label="财务工作台导航">{[...NAV_GROUPS.slice(0,1),...(team?.groups?.slice(0,1)||[]),...NAV_GROUPS.slice(1),...(team?.groups?.slice(1)||[])].map((group, index) => <div className="fdDesk_navGroup" key={group.label || index}>{group.label && <small>{group.label}</small>}{group.items.map(([key, label, icon]) => <button type="button" key={key} className={view === key ? 'is-active' : ''} onClick={() => changeView(key)}><span>{icon}</span><strong>{label}</strong></button>)}</div>)}</nav><footer><strong>{profile.period} · v{team ? '3.0 / 个人版 '+VERSION : VERSION}</strong><span><i/>{team ? '团队数据保存在服务器' : '数据与设置保存在本机'}</span></footer></aside>{mobileNav && <button type="button" className="fdDesk_mobileMask" aria-label="关闭导航蒙层" onClick={() => setMobileNav(false)}/>}<div className="fdDesk_main">{team?.contextBar}<header className="fdDesk_topbar"><button type="button" className="fdDesk_menu" onClick={() => setMobileNav(true)} aria-label="打开导航">☰</button><div><h2>{meta[0]}</h2><p>{meta[1]}</p></div><div className="fdDesk_toolNav">{utility.map(([key, label]) => <button type="button" key={key} className={view === key ? 'is-active' : ''} onClick={() => changeView(key)}>{label}</button>)}</div><div className="fdDesk_themeMiniWrap"><small>主题</small><ThemePicker theme={theme} onChange={setTheme} compact/></div><span>{new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' })}</span><button type="button" className="fdDesk_return" onClick={onClose}>{team ? '退出登录' : '返回对话'}</button></header><div className="fdDesk_status"><i/><span>{status}</span><button type="button" onClick={onOpenWorkspace}>{team ? '月度交付' : '打开目录'}</button><button type="button" onClick={onRefresh}>刷新</button></div><main className="fdDesk_content">{storageIssue && <div key="storage-warning" className="fdDesk_storageWarning" role="alert"><span>{storageIssue}</span><button type="button" onClick={onExportBackup}>导出 JSON 备份</button></div>}<React.Fragment key="workspace-content">{children}</React.Fragment></main></div></section>
+  return <section className="dfinance_panel dfinance_embedded fdDesk_root" data-theme={theme} aria-label="财务工作台">{!team && <WorkbenchPolish/>}<aside className={`fdDesk_sidebar ${mobileNav ? 'is-open' : ''}`}><div className="fdDesk_identity"><span>财</span><div><strong>ZY 财务工作台</strong><small>{profile.entity}</small></div><button type="button" onClick={() => setMobileNav(false)} aria-label="关闭导航">×</button></div><nav aria-label="财务工作台导航">{[...NAV_GROUPS.slice(0,1),...(team?.groups?.slice(0,1)||[]),...NAV_GROUPS.slice(1),...(team?.groups?.slice(1)||[])].map((group, index) => <div className="fdDesk_navGroup" key={group.label || index}>{group.label && <small>{group.label}</small>}{group.items.map(([key, label]) => <button type="button" key={key} className={view === key ? 'is-active' : ''} aria-current={view === key ? 'page' : undefined} onClick={() => changeView(key)}><span className="fdDesk_navIconBox"><SidebarIcon name={key}/></span><strong>{label}</strong></button>)}</div>)}</nav><footer><strong>{profile.period} · v{team ? '3.0 / 个人版 '+VERSION : VERSION}</strong><span><i/>{team ? '团队数据保存在服务器' : '数据与设置保存在本机'}</span></footer></aside>{mobileNav && <button type="button" className="fdDesk_mobileMask" aria-label="关闭导航蒙层" onClick={() => setMobileNav(false)}/>}<div className="fdDesk_main">{team?.contextBar}<header className="fdDesk_topbar"><button type="button" className="fdDesk_menu" onClick={() => setMobileNav(true)} aria-label="打开导航">☰</button><div><h2>{meta[0]}</h2><p>{meta[1]}</p></div><div className="fdDesk_toolNav">{utility.map(([key, label]) => <button type="button" key={key} className={view === key ? 'is-active' : ''} onClick={() => changeView(key)}>{label}</button>)}</div><div className="fdDesk_themeMiniWrap"><small>主题</small><ThemePicker theme={theme} onChange={setTheme} compact/></div><span>{new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' })}</span><button type="button" className="fdDesk_return" onClick={onClose}>{team ? '退出登录' : '返回对话'}</button></header><div className="fdDesk_status"><i/><span>{status}</span><button type="button" onClick={onOpenWorkspace}>{team ? '月度交付' : '打开目录'}</button><button type="button" onClick={onRefresh}>刷新</button></div><main className="fdDesk_content">{storageIssue && <div key="storage-warning" className="fdDesk_storageWarning" role="alert"><span>{storageIssue}</span><button type="button" onClick={onExportBackup}>导出 JSON 备份</button></div>}<React.Fragment key="workspace-content">{children}</React.Fragment></main></div></section>
 }
 
 ~~~~~~
@@ -10428,6 +10487,52 @@ export function apply(ctx) {
     const dispose = ctx.typert.register(manifest)
     return () => { void dispose() }
   }, 'dsh-finance-workbench: remote manifest')
+}
+
+~~~~~~
+
+## src/sidebar-icons.jsx
+
+SHA-256: 001c81a0cd48cc6fe8d67866c429512f5da0670705fbae677fa3ca3791ca58d6
+
+~~~~~~text
+import React from 'react'
+
+// One outline family for both the standalone desk and team navigation.
+const paths = {
+  home: 'M3 11.5 12 4l9 7.5M5.5 10v9h13v-9M9.5 19v-5h5v5',
+  revenue: 'M4 18V6m0 12h16M8 14l3-3 3 2 5-6m-3 0h3v3',
+  receivables: 'M4 7h16v11H4zM4 10h16M8 15h3m5-1v4m-2-2h4',
+  payables: 'M4 7h16v11H4zM4 10h16M8 15h3m4 1h4',
+  expenses: 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6m-6 4h6m-6 4h3',
+  treasury: 'M3 8h18v11H3zM3 8l2-3h14l2 3m-5 5h5m-3 0v2',
+  budget: 'M4 5h16v15H4zM8 3v4m8-4v4M4 9h16M8 13h3m-3 3h5m3-3v3',
+  assets: 'M4 20h16M6 20V6l6-3 6 3v14M9 9h2m2 0h2m-6 4h2m2 0h2m-4 7v-3h2v3',
+  tax: 'M6 3h9l3 3v15H6zM15 3v4h3M9 11h6m-6 4h6m-6 3h3',
+  invoices: 'M5 5h14v4a2 2 0 0 0 0 4v6H5v-6a2 2 0 0 0 0-4zM10 8h5m-5 4h5m-5 4h3',
+  payroll: 'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM4 19c0-3 2-5 5-5s5 2 5 5M17 8h4m-2-2v4m-3 5h5m-2-2v4',
+  reconcile: 'M4 7h12m-3-3 3 3-3 3M20 17H8m3-3-3 3 3 3',
+  costing: 'M4 5h16v14H4zM8 9h3m-3 3h3m-3 3h3m3-6h3m-3 3h3m-3 3h3',
+  statements: 'M6 3h9l3 3v15H6zM15 3v4h3M9 17v-3m3 3V9m3 8v-5',
+  analysis: 'M4 19V5m0 14h16M7 15l4-4 3 2 5-6',
+  investment: 'M12 20V4M7 9l5-5 5 5M5 20h14',
+  exceptions: 'M12 3 3 20h18L12 3Zm0 6v5m0 3h.01',
+  audit: 'M6 4h12v16H6zM9 8h6m-6 4h6m-6 4h4M4 7v10',
+  backup: 'M4 8h16v11H4zM7 5h10M9 13l3 3 3-3m-3 3v-5',
+  settings: 'M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4m0-12.8L17 7M7 17l-1.4 1.4',
+  'team:orders': 'M5 5h14v15H5zM8 3v4m8-4v4M5 9h14m-10 4h6m-6 3h4',
+  'team:companies': 'M3 20h18M5 20V7l5-3v16m0-10 8-3v13M7 9h1m-1 3h1m5-1h2m-2 3h2m-2 3h2',
+  'team:review': 'M5 5h14v15H5zM9 3h6v4H9zm0 10 2 2 4-4',
+  'team:imports': 'M4 5h16v14H4zM12 16V9m-3 3 3-3 3 3',
+  'team:jobs': 'M12 4a8 8 0 1 0 8 8h-3m-5-5v5l3 2m2-7h4v4',
+  'team:account': 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM5 20c0-4 3-6 7-6s7 2 7 6',
+  'team:users': 'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3 19c0-3 2-5 6-5s6 2 6 5m1-13a3 3 0 0 1 0 6m1 2c2.5.5 4 2 4 5',
+  'team:health': 'M4 5h16v6H4zm0 8h16v6H4zm3-5h.01M7 16h.01m3-8h7m-7 8h7',
+  'team:audit': 'M6 4h12v16H6zM9 8h6m-6 4h6m-6 4h4M4 7v10',
+}
+
+export function SidebarIcon({ name }) {
+  return <svg className="fdDesk_navIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d={paths[name] || 'M4 5h16v14H4zM8 9h8m-8 4h8m-8 4h4'}/></svg>
 }
 
 ~~~~~~
