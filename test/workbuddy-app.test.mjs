@@ -33,8 +33,11 @@ test('WorkBuddy MCP server exposes and serves the interactive dashboard', async 
   try {
     await client.connect(transport)
     const tools = await client.listTools()
-    assert.deepEqual(tools.tools.map(tool => tool.name), ['show_finance_workbench'])
-    assert.equal(tools.tools[0]._meta.ui.resourceUri, 'ui://workbuddy-finance-workbench/dashboard')
+    assert.ok(tools.tools.some(tool => tool.name === 'show_finance_workbench'))
+    assert.ok(tools.tools.some(tool => tool.name === 'team_order'))
+    assert.ok(tools.tools.some(tool => tool.name === 'team_return_run'))
+    assert.ok(!tools.tools.some(tool => /approve|review/.test(tool.name)))
+    assert.equal(tools.tools.find(tool => tool.name === 'show_finance_workbench')._meta.ui.resourceUri, 'ui://workbuddy-finance-workbench/dashboard')
     const resources = await client.listResources()
     assert.equal(resources.resources[0].mimeType, 'text/html;profile=mcp-app')
     const resource = await client.readResource({ uri: 'ui://workbuddy-finance-workbench/dashboard' })
@@ -44,6 +47,9 @@ test('WorkBuddy MCP server exposes and serves the interactive dashboard', async 
     assert.equal(result.structuredContent.modules, 20)
     assert.equal(result.structuredContent.workflows, 25)
     assert.equal(result.structuredContent.prompts, 25)
+    const noSession = await client.callTool({ name: 'team_whoami', arguments: {} })
+    assert.equal(noSession.isError, true)
+    assert.match(noSession.content[0].text, /尚未授权|员工会话/)
   } finally {
     await client.close()
   }

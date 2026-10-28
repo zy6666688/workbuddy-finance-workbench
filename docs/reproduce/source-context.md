@@ -366,12 +366,14 @@ SHA-256: 7b5894eb59b918d252d691eefa7a735bc334d3e47c465778071865a17c3a954a
 
 ## HANDOVER.md
 
-SHA-256: 26eb4bbdefeca427f3305b24043c1ef7462f72d243c2c294cfb4cc06830007ce
+SHA-256: a32d612eadc7a0a8c31bbd7f8a036fdfad99306dbb3ad39cd6d16738d44df648
 
 ~~~~~~text
 # 无测试，仅接手：附件分页与 WorkBuddy 成果归属
 
-本分支保存当前开发状态，供后续人员接手。**本次上传没有重新运行测试，尚未完成全部验收，也没有更新正式环境。** 历史测试记录保留在仓库中，不能据此认定此分支已经达到正式发布条件。尤其是浏览器内的实际成果上传与回传仍待验证。
+本分支保存当前开发状态，供后续人员接手。最初上传时未重新运行测试；后续已补充侧边栏及一条团队版浏览器交付流程的专项验收，但尚未完成全部发布验收，也没有更新正式环境。
+
+后续补充：侧边栏图标更新已完成独立浏览器检查，具体范围见下文；这不改变本分支其他功能仍需验收的状态。
 
 ## 本次改动目的
 
@@ -411,10 +413,18 @@ SHA-256: 26eb4bbdefeca427f3305b24043c1ef7462f72d243c2c294cfb4cc06830007ce
 - 新增数据库迁移 `team/migrations/010_result_ownership.sql` 和 `011_file_paging.sql`，分别用于成果归属与任务版本关系、附件查询索引。升级前应备份数据库和私有附件，避免直接降级数据库作为默认回滚方式。
 - 保留个人版与团队版的不同数据边界：个人版本地运行；团队版业务数据以服务端为准，按授权公司和期间访问。
 
+## 侧边栏图标更新
+
+- 个人版及团队入口统一使用线条图标，按各功能入口区分图形；保留侧边栏原有宽度、分组和导航功能。
+- 选中、悬停及键盘焦点状态使用现有主题色；图标作为装饰元素隐藏于辅助技术，按钮保留文字名称和当前页面标记。
+- 在独立 Docker 测试环境启动完整团队版，使用虚构账号检查桌面、四套主题和 390 像素页面。月度交付、客户公司、审核中心、资料导入、后台任务、账号设置、团队成员、运行与备份及预算管理的导航跳转与当前页面标记正确；窄屏菜单打开和选择后关闭正常，页面宽度无横向溢出。
+- 原版构建及 `verify:release` 检查通过。侧边栏验收时，完整团队版浏览器控制台记录了登录前会话检查返回 401 和 favicon 请求返回 404，未观察到侧边栏功能错误。附件上传与回传已在后续专项流程中另行检查，见下文。
+
 ## 五、接手状态与验收边界
 
 - 本次上传未重新运行测试，也未部署正式环境。此前团队版、原版、容量、接口和恢复检查曾产生测试结果，详见 [附件分页与成果归属验收记录](team/docs/ATTACHMENT-OWNERSHIP-ACCEPTANCE.md)；该文档部分状态是当时记录，接手时应重新核实。
-- 浏览器真实文件选择、任务成果上传及回传尚未完成验收；接口测试不能代替浏览器操作通过。WorkBuddy 外部处理按协议模拟，未验证实际 AI 输出质量。
+- 已在独立 Docker 测试环境使用虚构客户，通过浏览器完成建档、分工、批量上传、关联资料、下载任务包、上传并回传两份成果、独立复核、下载交付包、登记交付证据及归档；刷新后确认归档状态。任务包输入与交付包成果的摘要与原文件一致。WorkBuddy 外部处理使用虚构成果模拟，未验证实际 AI 输出质量。
+- 本次浏览器演练覆盖一家公司、一个月和一个任务，不代表并行任务、退回重开、浏览器重试、权限隔离或大批量文件场景均已在浏览器通过；这些场景仍需按发布验收要求补充。
 - 接手后建议先核对数据库迁移和备份恢复，再用虚构客户及两个独立员工账号，完整检查跨页选文件、两个并行任务、成果回传、退回修订、独立复核、交付、归档及重开。
 - 还需在目标环境检查权限撤销、历史归属、分页变化、重复提交和多用户并发；完成浏览器、自动化、恢复与持续集成验收后，再考虑更新正式部署。
 
@@ -5509,7 +5519,7 @@ CI 覆盖 Linux Node.js 20、22、24 和 Windows Node.js 24 / PowerShell。浏�
 
 ## package-lock.json
 
-SHA-256: 70e3e1fe0f164742e32f66a051762533dcb91a384daee79c053d80898f8674e4
+SHA-256: bf9a959312267e8a0e6695366420d652d9fed11b81a0c3bd3b1e31406b03b852
 
 ~~~~~~text
 {
@@ -5526,6 +5536,9 @@ SHA-256: 70e3e1fe0f164742e32f66a051762533dcb91a384daee79c053d80898f8674e4
         "@deepseek-ai/dsh-typert-protocol": "^0.1.0-rc.7",
         "esbuild": "^0.28.2",
         "zod": "^4.6.5"
+      },
+      "bin": {
+        "zy-finance-team": "workbuddy/team-cli.mjs"
       },
       "devDependencies": {
         "@modelcontextprotocol/ext-apps": "^1.7.5",
@@ -7402,7 +7415,7 @@ SHA-256: 70e3e1fe0f164742e32f66a051762533dcb91a384daee79c053d80898f8674e4
 
 ## package.json
 
-SHA-256: 4b0adcc0907ec086ed236ea06d0dd76e96982d4b3115b1baffcc3c4fe29505d7
+SHA-256: acc543620347074be77b5f57e819b2caab24aeabfd612205c402e25395ecb671
 
 ~~~~~~text
 {
@@ -7431,6 +7444,9 @@ SHA-256: 4b0adcc0907ec086ed236ea06d0dd76e96982d4b3115b1baffcc3c4fe29505d7
   },
   "type": "module",
   "main": "lib/index.js",
+  "bin": {
+    "zy-finance-team": "./workbuddy/team-cli.mjs"
+  },
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
@@ -7454,6 +7470,8 @@ SHA-256: 4b0adcc0907ec086ed236ea06d0dd76e96982d4b3115b1baffcc3c4fe29505d7
     "scripts/uninstall-workbuddy-app.sh",
     "scripts/uninstall-workbuddy-app.ps1",
     "docs",
+    "team/docs/WORKBUDDY_BRIDGE.md",
+    "team/docs/WORKBUDDY_BRIDGE_ACCEPTANCE.md",
     "SECURITY.md"
   ],
   "dsh": {
@@ -7500,7 +7518,7 @@ SHA-256: 4b0adcc0907ec086ed236ea06d0dd76e96982d4b3115b1baffcc3c4fe29505d7
 
 ## scripts/build-workbuddy-app.mjs
 
-SHA-256: bc689c4e98ec415c0b884f04d4f27ac431b15f40915217cf2099429d95266776
+SHA-256: 47463748feae3514c40c223aae9a4a3c32f37aaf0b17db4a6797d11ee24bcd9a
 
 ~~~~~~text
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -7548,6 +7566,15 @@ await esbuild.build({
   bundle: true,
   outfile: fileURLToPath(new URL('./server.mjs', output)),
   minify: true,
+  platform: 'node',
+  format: 'esm',
+  target: ['node20'],
+})
+
+await esbuild.build({
+  entryPoints: [fileURLToPath(new URL('./src/team-cli.mjs', root))],
+  bundle: true,
+  outfile: fileURLToPath(new URL('./team-cli.mjs', output)),
   platform: 'node',
   format: 'esm',
   target: ['node20'],
@@ -8174,13 +8201,13 @@ echo "release verification passed"
 
 ## scripts/workbuddy-install.mjs
 
-SHA-256: 3fa1f8be11c47bb47a19ed15c09f25e3ec5fe0b1214a7fd62e649a8474cd512a
+SHA-256: 91fde04c67a1196b3132a3eaaeb16ffa080f2bb3bdb9b484d059579df3d0e451
 
 ~~~~~~text
 import { randomUUID } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { access, cp, lstat, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
-import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -8199,30 +8226,37 @@ async function run() {
   if (Number(process.versions.node.split('.')[0]) < 20) throw new Error('需要 Node.js 20 或更高版本')
   const home = process.env.WORKBUDDY_HOME || join(process.env.HOME || process.env.USERPROFILE || '', '.workbuddy')
   if (!isAbsolute(home)) throw new Error('WorkBuddy 目录必须是绝对路径')
-  const configPath = join(home, '.mcp.json')
+  // CLI and desktop WorkBuddy versions use different configuration files.
+  const configPaths = [join(home, '.mcp.json'), join(home, 'mcp.json')]
   const appPath = join(home, 'apps', 'finance-workbench')
   const skillPath = join(home, 'skills', 'finance-workbench')
-  const hasConfig = await exists(configPath)
-  let originalConfig
-  let config = { mcpServers: {} }
-  if (hasConfig) {
-    if ((await lstat(configPath)).isSymbolicLink()) throw new Error('MCP 配置是符号链接，请先改用普通配置文件')
-    originalConfig = await readFile(configPath)
-    try { config = JSON.parse(originalConfig.toString('utf8').replace(/^\uFEFF/, '')) } catch { throw new Error('MCP 配置不是有效 JSON；原应用、Skill 和配置均未修改') }
-    if (!config || typeof config !== 'object' || Array.isArray(config) || (config.mcpServers !== undefined && (!config.mcpServers || typeof config.mcpServers !== 'object' || Array.isArray(config.mcpServers)))) throw new Error('MCP 配置结构无效；原应用、Skill 和配置均未修改')
-    config.mcpServers ||= {}
+  const configs = []
+  for (const configPath of configPaths) {
+    const hasConfig = await exists(configPath)
+    let originalConfig
+    let config = { mcpServers: {} }
+    if (hasConfig) {
+      if ((await lstat(configPath)).isSymbolicLink()) throw new Error('MCP 配置是符号链接，请先改用普通配置文件')
+      originalConfig = await readFile(configPath)
+      try { config = JSON.parse(originalConfig.toString('utf8').replace(/^\uFEFF/, '')) } catch { throw new Error('MCP 配置不是有效 JSON；原应用、Skill 和配置均未修改') }
+      if (!config || typeof config !== 'object' || Array.isArray(config) || (config.mcpServers !== undefined && (!config.mcpServers || typeof config.mcpServers !== 'object' || Array.isArray(config.mcpServers)))) throw new Error('MCP 配置结构无效；原应用、Skill 和配置均未修改')
+      config.mcpServers ||= {}
+    }
+    configs.push({ configPath, hasConfig, originalConfig, config })
   }
   if (action === 'install') {
-    await Promise.all(['workbuddy/server.mjs', 'workbuddy/widget.html', 'agents/finance-workbench/SKILL.md'].map(file => access(join(repo, file))))
+    await Promise.all(['workbuddy/server.mjs', 'workbuddy/widget.html', 'workbuddy/team-cli.mjs', 'agents/finance-workbench/SKILL.md'].map(file => access(join(repo, file))))
     execFileSync(process.execPath, ['--check', join(repo, 'workbuddy/server.mjs')], { stdio: 'pipe' })
-    const oldEntry = config.mcpServers['finance-workbench']
-    if (oldEntry !== undefined && (!oldEntry || typeof oldEntry !== 'object' || Array.isArray(oldEntry))) throw new Error('原财务工作台 MCP 配置结构无效')
-    if (oldEntry?.env !== undefined && (!oldEntry.env || typeof oldEntry.env !== 'object' || Array.isArray(oldEntry.env))) throw new Error('原财务工作台环境配置结构无效')
-    config.mcpServers['finance-workbench'] = {
-      ...oldEntry, command: process.execPath, args: [join(appPath, 'server.mjs')],
-      env: { ...oldEntry?.env, WORKBUDDY_FINANCE_WORKBENCH: '1' },
+    for (const { configPath, config } of configs) {
+      const oldEntry = config.mcpServers['finance-workbench']
+      if (oldEntry !== undefined && (!oldEntry || typeof oldEntry !== 'object' || Array.isArray(oldEntry))) throw new Error('原财务工作台 MCP 配置结构无效')
+      if (oldEntry?.env !== undefined && (!oldEntry.env || typeof oldEntry.env !== 'object' || Array.isArray(oldEntry.env))) throw new Error('原财务工作台环境配置结构无效')
+      config.mcpServers['finance-workbench'] = {
+        ...oldEntry, ...(basename(configPath) === 'mcp.json' ? { type: 'stdio' } : {}), command: process.execPath, args: [join(appPath, 'server.mjs')],
+        env: { ...oldEntry?.env, WORKBUDDY_FINANCE_WORKBENCH: '1' },
+      }
     }
-  } else delete config.mcpServers['finance-workbench']
+  } else for (const { config } of configs) delete config.mcpServers['finance-workbench']
   console.log(`WorkBuddy 目录：${home}`)
   if (dryRun) { console.log('预检通过；未修改任何文件。'); return }
 
@@ -8231,17 +8265,19 @@ async function run() {
   const stage = await mkdtemp(join(home, '.finance-workbench-stage-'))
   const moved = []
   const installed = []
-  let configChanged = false
+  const changedConfigs = []
   try {
     if (action === 'install') {
       await mkdir(join(stage, 'app'))
-      for (const file of ['server.mjs', 'widget.html']) await cp(join(repo, 'workbuddy', file), join(stage, 'app', file))
+      for (const file of ['server.mjs', 'widget.html', 'team-cli.mjs']) await cp(join(repo, 'workbuddy', file), join(stage, 'app', file))
       await cp(join(repo, 'agents', 'finance-workbench'), join(stage, 'skill'), { recursive: true })
       await mkdir(dirname(appPath), { recursive: true })
       await mkdir(dirname(skillPath), { recursive: true })
     }
-    await writeFile(join(stage, 'config.json'), `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 })
-    if (hasConfig) await writeFile(`${configPath}.finance-workbench-${action}-backup-${stamp}`, originalConfig, { mode: 0o600 })
+    for (const [index, entry] of configs.entries()) {
+      await writeFile(join(stage, `config-${index}.json`), `${JSON.stringify(entry.config, null, 2)}\n`, { mode: 0o600 })
+      if (entry.hasConfig) await writeFile(`${entry.configPath}.finance-workbench-${action}-backup-${stamp}`, entry.originalConfig, { mode: 0o600 })
+    }
     for (const target of [appPath, skillPath]) {
       if (await exists(target)) {
         const backup = `${target}.${action === 'install' ? 'backup' : 'uninstalled'}-${stamp}`
@@ -8256,17 +8292,21 @@ async function run() {
       }
     }
     // Refuse to overwrite another process's concurrent configuration edit.
-    if (hasConfig ? !(await readFile(configPath)).equals(originalConfig) : await exists(configPath)) throw new Error('安装期间 MCP 配置已被其他程序修改，请稍后重试')
-    if (action === 'install' || hasConfig) {
-      await rename(join(stage, 'config.json'), configPath)
-      configChanged = true
+    for (const entry of configs) {
+      if (entry.hasConfig ? !(await readFile(entry.configPath)).equals(entry.originalConfig) : await exists(entry.configPath)) throw new Error('安装期间 MCP 配置已被其他程序修改，请稍后重试')
+    }
+    for (const [index, entry] of configs.entries()) {
+      if (action === 'install' || entry.hasConfig) {
+        await rename(join(stage, `config-${index}.json`), entry.configPath)
+        changedConfigs.push(entry)
+      }
     }
   } catch (error) {
     for (const target of installed.reverse()) await rm(target, { recursive: true, force: true })
     for (const [target, backup] of moved.reverse()) await rename(backup, target)
-    if (configChanged) {
-      if (hasConfig) await writeFile(configPath, originalConfig, { mode: 0o600 })
-      else await rm(configPath, { force: true })
+    for (const entry of changedConfigs.reverse()) {
+      if (entry.hasConfig) await writeFile(entry.configPath, entry.originalConfig, { mode: 0o600 })
+      else await rm(entry.configPath, { force: true })
     }
     throw error
   } finally { await rm(stage, { recursive: true, force: true }) }
@@ -10603,6 +10643,296 @@ export function mergeFinanceLaunchDraft(current, launch) {
 
 ~~~~~~
 
+## src/team-adapter.mjs
+
+SHA-256: 98c6a7172a6b57c4cc14702ca2a46c071ffe6603b5daf22d65f2a0e1a901867f
+
+~~~~~~text
+import { createTeamClient } from './team-api-client.mjs'
+import { realpath, readFile, stat, writeFile } from 'node:fs/promises'
+import path from 'node:path'
+import { randomUUID, createHash } from 'node:crypto'
+import { loadTeamSession, defaultWorkspace } from './team-credentials.mjs'
+
+// A session must come from the employee's authorization flow. Do not accept
+// credentials in tool parameters or publish them in tool output.
+export async function teamClientFromEnvironment(env = process.env) {
+  const synthetic = env.ZY_BRIDGE_SYNTHETIC_TEST === '1' && env.ZY_TEAM_URL === 'http://127.0.0.1:8081'
+  const auth = synthetic ? { baseUrl: env.ZY_TEAM_URL, session: env.ZY_TEAM_SESSION, csrf: env.ZY_TEAM_CSRF, workspace: env.ZY_TEAM_WORKSPACE } : await loadTeamSession()
+  const client = createTeamClient(auth)
+  client.workspace = auth.workspace || defaultWorkspace()
+  return client
+}
+
+async function workspacePath(file, forOutput = false, workspace) {
+  workspace ||= process.env.ZY_TEAM_WORKSPACE
+  if (!workspace) throw new Error('请先设置用于交接的本机工作目录')
+  if (typeof file !== 'string' || !file || path.isAbsolute(file)) throw new Error('文件必须使用工作目录内的相对路径')
+  const root = await realpath(workspace)
+  const absolute = path.resolve(root, file)
+  const parent = await realpath(forOutput ? path.dirname(absolute) : absolute)
+  const relative = path.relative(root, parent)
+  if (relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative)) throw new Error('文件不在授权交接目录内')
+  return forOutput ? path.join(parent, path.basename(absolute)) : parent
+}
+
+export async function executeTeamCommand(client, command, args = {}) {
+  switch (command) {
+    case 'me': return client.me()
+    case 'companies': return client.companies(args)
+    case 'orders': return client.orders(args)
+    case 'order': return client.order(args.orderId)
+    case 'files': { const { orderId, ...query } = args; return client.files(orderId, query) }
+    case 'workflows': return client.workflows()
+    case 'jobs': return client.jobs()
+    case 'package': return client.createJob({ kind: 'run_export', key: args.key, companyId: args.companyId, payload: { runId: args.runId } })
+    case 'download-package': {
+      const dest = await workspacePath(args.filePath, true, client.workspace)
+      const bytes = await client.downloadJob(args.jobId)
+      await writeFile(dest, bytes, { flag: 'wx', mode: 0o600 })
+      return { filePath: args.filePath, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') }
+    }
+    case 'upload-result': {
+      const source = await workspacePath(args.filePath, false, client.workspace)
+      const info = await stat(source)
+      if (!info.isFile() || info.size > 50 * 1024 * 1024) throw new Error('成果必须是 50 MB 以内的普通文件')
+      const bytes = await readFile(source)
+      return client.uploadRunResult(args.runId, { version: args.version, key: args.key || randomUUID(), name: path.basename(source), bytes })
+    }
+    case 'create-run': { const { orderId, ...body } = args; return client.createRun(orderId, body) }
+    case 'return-run': { const { runId, ...body } = args; return client.returnRun(runId, body) }
+    default: throw new Error('未知团队命令')
+  }
+}
+
+~~~~~~
+
+## src/team-api-client.mjs
+
+SHA-256: 28f8bbc68ba00497bd8f4330ecd09185efabc79aa994a28103bdcd4dd238cdd3
+
+~~~~~~text
+// Shared transport for a WorkBuddy team adapter. Credentials are supplied by
+// the caller; this module never creates, stores or prints an employee session.
+export function createTeamClient({ baseUrl, session, csrf, fetchImpl = fetch }) {
+  const base = new URL(baseUrl)
+  const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(base.hostname)
+  if (base.username || base.password || base.search || base.hash || base.pathname !== '/' ||
+      !(base.protocol === 'https:' || (base.protocol === 'http:' && loopback))) {
+    throw new Error('团队服务地址必须是 HTTPS 根地址，或本机 HTTP 根地址')
+  }
+  if (!/^[a-f0-9]{64}$/.test(session || '') || !/^[a-f0-9]{64}$/.test(csrf || '')) {
+    throw new Error('缺少有效的员工会话，请先完成团队版授权')
+  }
+  async function request(method, pathname, { query, body, multipart = false, binary = false } = {}) {
+    const url = new URL('/api/v1' + pathname, base)
+    for (const [key, value] of Object.entries(query || {})) {
+      if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value))
+    }
+    const response = await fetchImpl(url, {
+      method,
+      redirect: 'error',
+      headers: {
+        cookie: `zy_session=${session}`,
+        ...(method === 'POST' ? { 'x-csrf-token': csrf, ...(multipart ? {} : { 'content-type': 'application/json' }) } : {}),
+      },
+      ...(method === 'POST' ? { body: multipart ? body : JSON.stringify(body) } : {}),
+      signal: AbortSignal.timeout(30000),
+    })
+    if (response.ok && binary) {
+      const max = 100 * 1024 * 1024
+      if (Number(response.headers.get('content-length') || 0) > max) throw new Error('下载文件超过本机交接上限')
+      let size = 0
+      const chunks = []
+      for await (const chunk of response.body) {
+        size += chunk.length
+        if (size > max) throw new Error('下载文件超过本机交接上限')
+        chunks.push(chunk)
+      }
+      return Buffer.concat(chunks)
+    }
+    const data = await response.json().catch(() => ({ error: '团队服务返回了无法解析的响应' }))
+    if (!response.ok) throw Object.assign(new Error(data.error || '团队服务请求失败'), { status: response.status })
+    return data
+  }
+  const id = value => {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value || '')) throw new Error('编号格式不正确')
+    return value
+  }
+  return {
+    me: async () => { const { csrf: _csrf, ...actor } = await request('GET', '/auth/me'); return actor },
+    logoutCurrent: () => request('POST', '/auth/session/logout', { body: {} }),
+    companies: query => request('GET', '/companies', { query }),
+    orders: query => request('GET', '/orders', { query }),
+    order: orderId => request('GET', `/orders/${id(orderId)}`, { query: { compact: 1 } }),
+    files: (orderId, query) => request('GET', `/orders/${id(orderId)}/files/page`, { query }),
+    workflows: () => request('GET', '/workflows'),
+    jobs: () => request('GET', '/jobs'),
+    createJob: body => request('POST', '/jobs', { body }),
+    downloadJob: jobId => request('GET', `/jobs/${id(jobId)}/download`, { binary: true }),
+    downloadFile: fileId => request('GET', `/files/${id(fileId)}/download`, { binary: true }),
+    createRun: (orderId, body) => request('POST', `/orders/${id(orderId)}/runs`, { body }),
+    returnRun: (runId, body) => request('POST', `/runs/${id(runId)}/return`, { body }),
+    uploadRunResult: (runId, { version, key, name, bytes }) => {
+      const form = new FormData()
+      form.set('file', new Blob([bytes]), name)
+      return request('POST', `/runs/${id(runId)}/files`, { query: { version, key }, body: form, multipart: true })
+    },
+  }
+}
+
+~~~~~~
+
+## src/team-cli.mjs
+
+SHA-256: 5306371738fb6535fac247b45a093accd5fb6b5aa9ade32689c352d4c5c632de
+
+~~~~~~text
+#!/usr/bin/env node
+import { executeTeamCommand, teamClientFromEnvironment } from './team-adapter.mjs'
+import { authorizeEmployee, clearTeamSession } from './team-credentials.mjs'
+
+async function parseParameters(values, command) {
+  if (values.length === 0) return {}
+  if (values.length === 1 && values[0] === '--json-stdin') {
+    if (command === 'login') throw new Error('员工登录密码只能从本机交互终端输入')
+    let data = ''
+    for await (const chunk of process.stdin) { data += chunk; if (data.length > 128 * 1024) throw new Error('参数过大') }
+    return JSON.parse(data)
+  }
+  if (values.every(value => value.startsWith('--') && value.includes('='))) {
+    return Object.fromEntries(values.map(value => { const i = value.indexOf('='); return [value.slice(2, i), value.slice(i + 1)] }))
+  }
+  if (values.length === 1) return JSON.parse(values[0])
+  throw new Error('请使用 --字段=值 或 --json-stdin 输入参数')
+}
+
+async function passwordPrompt() {
+  if (!process.stdin.isTTY) throw new Error('员工登录必须在本机交互式终端中输入密码，不能由 AI 传入')
+  process.stderr.write('团队账号密码（不显示）：')
+  process.stdin.setRawMode(true); process.stdin.resume(); process.stdin.setEncoding('utf8')
+  return await new Promise((resolve, reject) => {
+    let password = ''
+    const done = () => { process.stdin.setRawMode(false); process.stdin.pause(); process.stdin.off('data', input); process.stderr.write('\n') }
+    const input = chunk => {
+      for (const char of chunk) {
+        if (char === '\u0003') { done(); reject(new Error('已取消登录')); return }
+        if (char === '\r' || char === '\n') { done(); resolve(password); return }
+        if (char === '\u007f' || char === '\b') password = password.slice(0, -1)
+        else if (char >= ' ' && password.length < 128) password += char
+      }
+    }
+    process.stdin.on('data', input)
+  })
+}
+
+async function login(args) {
+  const baseUrl = args.url || 'http://127.0.0.1:8080'
+  const password = await passwordPrompt()
+  console.log(JSON.stringify(await authorizeEmployee({ baseUrl, username: args.username, password, workspace: args.workspace })))
+}
+
+try {
+  const [command, ...values] = process.argv.slice(2)
+  if (!command || command === '--help') {
+    console.log('团队版：login、logout、local-logout、me、companies、orders、order、files、workflows、jobs、create-run、package、download-package、upload-result、return-run。参数可由 --字段=值 或 --json-stdin 输入。')
+  } else if (command === 'login') {
+    await login(await parseParameters(values, command))
+  } else if (command === 'local-logout') {
+    await clearTeamSession()
+    console.log('本机授权已清除；要撤销服务端会话，请在团队版网页退出登录。')
+  } else if (command === 'logout') {
+    const client = await teamClientFromEnvironment()
+    try { await client.logoutCurrent() } catch (error) { if (error.status !== 401) throw error }
+    await clearTeamSession()
+    console.log('本机授权已清除，当前设备会话已撤销或已过期。')
+  } else {
+    const result = await executeTeamCommand(await teamClientFromEnvironment(), command, await parseParameters(values, command))
+    console.log(JSON.stringify(result))
+  }
+} catch (error) {
+  console.error(error.message)
+  process.exitCode = 1
+}
+
+~~~~~~
+
+## src/team-credentials.mjs
+
+SHA-256: 5eab14286632f9f3cf9823060b1500fd75df65557c6a2a1fc9692c95a9ea17ee
+
+~~~~~~text
+import { spawnSync } from 'node:child_process'
+import { mkdir, readFile, writeFile, rename, unlink } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
+import path from 'node:path'
+import os from 'node:os'
+
+// Windows DPAPI ties the stored session to the current Windows account. It is
+// not a security boundary between apps running as the same Windows user.
+function crypt(input, operation) {
+  if (process.platform !== 'win32') throw new Error('本机授权目前仅支持 Windows；请使用独立 Windows 账号')
+  const script = `$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.Security; $x=[Convert]::FromBase64String([Console]::In.ReadToEnd()); $v=[System.Security.Cryptography.ProtectedData]::${operation}($x,$null,[System.Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Out.Write([Convert]::ToBase64String($v))`
+  const p = spawnSync('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', script], { input: Buffer.from(input).toString('base64'), encoding: 'utf8', windowsHide: true, maxBuffer: 65536 })
+  if (p.error || p.status !== 0) throw new Error('Windows 用户凭据保护不可用，未保存授权')
+  return Buffer.from(p.stdout.trim(), 'base64')
+}
+
+function sessionFile() {
+  if (!process.env.LOCALAPPDATA) throw new Error('无法找到当前 Windows 用户目录')
+  return path.join(process.env.LOCALAPPDATA, 'ZYFinance', 'workbuddy-session.dat')
+}
+
+export async function saveTeamSession(value) {
+  const file = sessionFile(), dir = path.dirname(file)
+  const encrypted = crypt(Buffer.from(JSON.stringify(value)), 'Protect')
+  await mkdir(dir, { recursive: true, mode: 0o700 })
+  const temp = path.join(dir, `session-${randomUUID()}.tmp`)
+  try {
+    await writeFile(temp, encrypted, { flag: 'wx', mode: 0o600 })
+    await rename(temp, file)
+  } finally { await unlink(temp).catch(() => {}) }
+}
+
+export async function loadTeamSession() {
+  if (process.platform !== 'win32') throw new Error('尚未授权：本机员工授权目前仅支持 Windows')
+  let encrypted
+  try { encrypted = await readFile(sessionFile()) } catch (e) {
+    if (e.code === 'ENOENT') throw new Error('尚未授权：请在本人 Windows 账号中运行 zy-finance-team login')
+    throw new Error('无法读取本机员工授权')
+  }
+  try {
+    const value = JSON.parse(crypt(encrypted, 'Unprotect').toString('utf8'))
+    if (!value || typeof value !== 'object' || !value.baseUrl || !value.session || !value.csrf) throw new Error('invalid')
+    return value
+  } catch { throw new Error('本机员工授权无效，请重新登录') }
+}
+
+export async function clearTeamSession() {
+  await unlink(sessionFile()).catch(e => { if (e.code !== 'ENOENT') throw e })
+}
+
+export function defaultWorkspace() { return path.join(os.homedir(), 'Documents', 'ZY-Finance-WorkBuddy') }
+
+export async function authorizeEmployee({ baseUrl, username, password, workspace }) {
+  const { createTeamClient } = await import('./team-api-client.mjs')
+  createTeamClient({ baseUrl, session: '0'.repeat(64), csrf: '0'.repeat(64) })
+  if (!/^[a-zA-Z0-9_.@-]{3,100}$/.test(username || '')) throw new Error('请输入有效的团队账号')
+  if (typeof password !== 'string' || password.length > 128) throw new Error('密码格式不正确')
+  const response = await fetch(new URL('/api/v1/auth/login', baseUrl), { method: 'POST', redirect: 'error', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, password }), signal: AbortSignal.timeout(30000) })
+  const result = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(result.error || '登录失败')
+  if (result.user?.must_change_password) throw new Error('请先在团队版网页修改初始密码，再进行授权')
+  const session = response.headers.get('set-cookie')?.match(/(?:^|,\s*)zy_session=([a-f0-9]{64})/i)?.[1]
+  if (!session || !/^[a-f0-9]{64}$/.test(result.csrf || '')) throw new Error('团队服务未返回有效员工会话')
+  workspace = path.resolve(workspace || defaultWorkspace())
+  await mkdir(workspace, { recursive: true, mode: 0o700 })
+  await saveTeamSession({ baseUrl, session, csrf: result.csrf, workspace })
+  return { ok: true, name: result.user.name, role: result.user.role, workspace }
+}
+
+~~~~~~
+
 ## src/ui-helpers.js
 
 SHA-256: 10370b07706a43fb87d1dd70f10d612498029079abf0d3124b75ae42f130bd25
@@ -10704,7 +11034,7 @@ export const VERSION = '2.7.1'
 
 ## src/workbuddy-mcp-server.mjs
 
-SHA-256: 30b35cebab3e6e63ed12c5bbe89308cb7a7e2de00e3443ba152e0f7de8bc2de8
+SHA-256: 738a6ba595655b329dfeffc4e721fdb030d341613dae91a0ea3d003b36c47a05
 
 ~~~~~~text
 import { readFileSync } from 'node:fs'
@@ -10712,6 +11042,8 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { z } from 'zod'
+import { executeTeamCommand, teamClientFromEnvironment } from './team-adapter.mjs'
 
 import { VERSION } from './version.js'
 
@@ -10721,6 +11053,36 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url))
 const widgetHtml = readFileSync(join(currentDirectory, 'widget.html'), 'utf8')
 
 const server = new McpServer({ name: 'workbuddy-finance-workbench', version: VERSION })
+
+// Calls go through the existing employee session and the normal team API.
+// Deliberately do not expose an arbitrary HTTP tool or review/approval actions.
+const teamTool = (name, description, inputSchema, command, readOnlyHint = true) => {
+  server.registerTool(name, {
+    description, inputSchema,
+    annotations: { readOnlyHint, destructiveHint: false, openWorldHint: true },
+  }, async args => {
+    try {
+      const data = await executeTeamCommand(await teamClientFromEnvironment(), command, args)
+      return { content: [{ type: 'text', text: JSON.stringify(data) }] }
+    } catch (error) {
+      return { isError: true, content: [{ type: 'text', text: error.status ? `团队服务拒绝请求 (${error.status})：${error.message}` : error.message }] }
+    }
+  })
+}
+const orderId = z.string().uuid().describe('团队版月度工作单编号')
+const runId = z.string().uuid().describe('团队版工作流执行编号')
+teamTool('team_whoami', '查看当前团队版员工身份，使用已经授权的员工会话。', {}, 'me')
+teamTool('team_companies', '搜索当前员工有权访问的客户公司。', { search: z.string().max(100).optional(), limit: z.number().int().min(1).max(100).optional(), offset: z.number().int().min(0).optional() }, 'companies')
+teamTool('team_orders', '查询当前员工有权访问的月度工作单。', { companyId: z.string().uuid().optional(), period: z.string().regex(/^20\d{2}-(0[1-9]|1[0-2])$/).optional(), search: z.string().max(100).optional(), limit: z.number().int().min(1).max(100).optional(), offset: z.number().int().min(0).optional() }, 'orders')
+teamTool('team_order', '读取授权工作单详情及执行记录。', { orderId }, 'order')
+teamTool('team_files', '分页查询工作单附件；翻页需携带首次查询返回的 pageVersion。', { orderId, search: z.string().max(100).optional(), limit: z.number().int().min(1).max(100).optional(), offset: z.number().int().min(0).optional(), pageVersion: z.string().optional() }, 'files')
+teamTool('team_workflows', '列出团队版标准工作流。', {}, 'workflows')
+teamTool('team_jobs', '查看当前授权范围内的后台任务状态。', {}, 'jobs')
+teamTool('team_create_run', '按输入文件版本创建任务；只会在已有经办工作单上创建，不代表 AI 已经处理。', { orderId, version: z.number().int().positive(), workflowId: z.string().max(100), fileIds: z.array(z.string().uuid()).min(1).max(100), key: z.string().uuid().optional(), taskBrief: z.record(z.string(), z.string()).optional() }, 'create-run', false)
+teamTool('team_create_package', '为指定任务创建任务包；须复用同一请求标识以便安全重试。', { companyId: z.string().uuid(), runId, key: z.string().min(8).max(100) }, 'package', false)
+teamTool('team_download_package', '将已完成的任务包下载到授权交接目录内；不会覆盖现有文件。', { jobId: z.string().uuid(), filePath: z.string().min(1).max(500) }, 'download-package', false)
+teamTool('team_upload_result', '上传授权交接目录中的成果到指定执行；不自动回传或复核。', { runId, version: z.number().int().positive(), key: z.string().uuid(), filePath: z.string().min(1).max(500) }, 'upload-result', false)
+teamTool('team_return_run', '回传属于此执行的已上传成果，须提供原输入摘要；仍需独立复核。', { runId, version: z.number().int().positive(), resultFileIds: z.array(z.string().uuid()).min(1).max(100), inputHashes: z.record(z.string(), z.string()), summary: z.string().min(1).max(4000) }, 'return-run', false)
 
 server.registerTool('show_finance_workbench', {
   title: '打开 ZY 财务工作台（WorkBuddy 财务工作台）',
@@ -11308,7 +11670,7 @@ test('safeWorkflowId only accepts deterministic internal names', () => {
 
 ## test/installers.test.mjs
 
-SHA-256: 8b8d73b6d88180480d358501b0dc3ae8a83424fbde4a7e7b86f8481d3191f922
+SHA-256: ccba5ae15205fa51dd8224d01885e3b33ee3497fd0a741f214adff0ccdb722b2
 
 ~~~~~~text
 import test from 'node:test'
@@ -11376,6 +11738,28 @@ test('native Shell or PowerShell wrapper invokes the shared installer and propag
   assert.match((await run(command, args, { env })).stdout, /预检通过/)
   await writeFile(f.config, '{broken')
   await assert.rejects(run(command, args, { env }))
+})
+
+test('desktop MCP config is preserved, updated and restored independently of CLI config', async t => {
+  const f = await fixture(t), desktop = join(f.home, 'mcp.json')
+  const original = { marker: 'desktop', mcpServers: { unrelated: { type: 'stdio', command: 'example' } } }
+  await writeFile(desktop, JSON.stringify(original))
+  await f.execute('install')
+  const configured = JSON.parse(await readFile(desktop, 'utf8'))
+  assert.deepEqual(configured.mcpServers.unrelated, original.mcpServers.unrelated)
+  assert.equal(configured.mcpServers['finance-workbench'].type, 'stdio')
+  assert.equal(await readFile(join(f.app, 'team-cli.mjs'), 'utf8').then(x => x.length > 0), true)
+  await f.execute('uninstall')
+  assert.deepEqual(JSON.parse(await readFile(desktop, 'utf8')), original)
+})
+
+test('invalid desktop config aborts installation without changing CLI config', async t => {
+  const f = await fixture(t), desktop = join(f.home, 'mcp.json')
+  await writeFile(f.config, '{"mcpServers":{"other":{"command":"keep"}}}')
+  await writeFile(desktop, '{broken')
+  await assert.rejects(f.execute('install'), /配置/)
+  assert.equal(await readFile(desktop, 'utf8'), '{broken')
+  assert.equal(JSON.parse(await readFile(f.config, 'utf8')).mcpServers.other.command, 'keep')
 })
 
 ~~~~~~
@@ -11540,6 +11924,105 @@ test('mergeFinanceLaunchDraft replaces old generated packages but keeps user not
 
 ~~~~~~
 
+## test/team-api-client.test.mjs
+
+SHA-256: 5774410abe8ce2f291b9eb827554a0c09cc68b56d2a3d93f029d506d663b4a1e
+
+~~~~~~text
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { createTeamClient } from '../src/team-api-client.mjs'
+import { executeTeamCommand } from '../src/team-adapter.mjs'
+import { mkdtemp, writeFile, readFile, unlink, rmdir } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { saveTeamSession, loadTeamSession, clearTeamSession } from '../src/team-credentials.mjs'
+
+const session = 'a'.repeat(64)
+const csrf = 'b'.repeat(64)
+const order = '30000000-0000-4000-8000-000000000001'
+
+test('team client rejects unsafe endpoints and invalid session credentials', () => {
+  for (const baseUrl of ['http://example.com', 'https://user:password@example.com', 'https://example.com/path', 'file:///']) {
+    assert.throws(() => createTeamClient({ baseUrl, session, csrf }))
+  }
+  assert.throws(() => createTeamClient({ baseUrl: 'http://127.0.0.1:8081', session: 'bad', csrf }))
+})
+
+test('team client forwards the employee session and prevents credential exposure in identity output', async () => {
+  const calls = []
+  const client = createTeamClient({ baseUrl: 'http://127.0.0.1:8081', session, csrf, fetchImpl: async (url, opts) => {
+    calls.push({ url: String(url), opts })
+    return new Response(JSON.stringify(url.pathname.endsWith('/me') ? { id: 'employee', csrf } : { ok: true }))
+  } })
+  assert.deepEqual(await client.me(), { id: 'employee' })
+  await client.createRun(order, { version: 1, workflowId: 'workflow', fileIds: [] })
+  assert.equal(calls[1].opts.headers.cookie, `zy_session=${session}`)
+  assert.equal(calls[1].opts.headers['x-csrf-token'], csrf)
+  assert.equal(calls[1].opts.redirect, 'error')
+  assert.throws(() => client.order('../other'), /编号格式/)
+})
+
+test('team client preserves authorization failures without retrying with elevated credentials', async () => {
+  let calls = 0
+  const client = createTeamClient({ baseUrl: 'https://team.example', session, csrf, fetchImpl: async () => {
+    calls++
+    return new Response(JSON.stringify({ error: '无权访问' }), { status: 403 })
+  } })
+  await assert.rejects(client.order(order), e => e.status === 403 && e.message === '无权访问')
+  assert.equal(calls, 1)
+})
+
+test('command dispatcher uses only explicit operations and cannot access review actions', async () => {
+  const client = { order: async id => ({ id }) }
+  assert.deepEqual(await executeTeamCommand(client, 'order', { orderId: order }), { id: order })
+  await assert.rejects(executeTeamCommand(client, 'approve', {}), /未知团队命令/)
+  await assert.rejects(executeTeamCommand(client, 'request', { path: '/api/v1/orders' }), /未知团队命令/)
+})
+
+test('file handoff stays inside the selected workspace and never overwrites an existing file', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'team-handoff-'))
+  const old = process.env.ZY_TEAM_WORKSPACE
+  process.env.ZY_TEAM_WORKSPACE = root
+  try {
+    await writeFile(path.join(root, 'result.txt'), 'synthetic result')
+    let received
+    const client = { uploadRunResult: async (_, data) => { received = data; return { id: 'file' } }, downloadJob: async () => Buffer.from('synthetic package') }
+    await executeTeamCommand(client, 'upload-result', { runId: order, version: 1, filePath: 'result.txt' })
+    assert.equal(received.bytes.toString(), 'synthetic result')
+    await assert.rejects(executeTeamCommand(client, 'upload-result', { runId: order, version: 1, filePath: '../outside.txt' }))
+    await executeTeamCommand(client, 'download-package', { jobId: order, filePath: 'package.zip' })
+    assert.equal((await readFile(path.join(root, 'package.zip'))).toString(), 'synthetic package')
+    await assert.rejects(executeTeamCommand(client, 'download-package', { jobId: order, filePath: 'package.zip' }), /EEXIST/)
+    await unlink(path.join(root, 'package.zip')); await unlink(path.join(root, 'result.txt'))
+  } finally {
+    if (old === undefined) delete process.env.ZY_TEAM_WORKSPACE; else process.env.ZY_TEAM_WORKSPACE = old
+    await rmdir(root)
+  }
+})
+
+test('Windows employee authorization is encrypted at rest and removable', { skip: process.platform !== 'win32' }, async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'team-session-'))
+  const old = process.env.LOCALAPPDATA
+  process.env.LOCALAPPDATA = root
+  const credential = { baseUrl: 'https://team.example', session, csrf, workspace: root }
+  try {
+    await saveTeamSession(credential)
+    const encrypted = await readFile(path.join(root, 'ZYFinance', 'workbuddy-session.dat'))
+    assert.equal(encrypted.includes(Buffer.from(session)), false)
+    assert.equal(encrypted.includes(Buffer.from(csrf)), false)
+    assert.deepEqual(await loadTeamSession(), credential)
+    await clearTeamSession()
+    await assert.rejects(loadTeamSession(), /尚未授权/)
+    await rmdir(path.join(root, 'ZYFinance'))
+  } finally {
+    if (old === undefined) delete process.env.LOCALAPPDATA; else process.env.LOCALAPPDATA = old
+    await rmdir(root)
+  }
+})
+
+~~~~~~
+
 ## test/ui-helpers.test.mjs
 
 SHA-256: ad340d1efbc27198ee766735f31345d9b117e56edae20c40bacf786e259831f9
@@ -11691,7 +12174,7 @@ test('invalid chunks, cross-workspace IDs, traversal and download offsets are re
 
 ## test/workbuddy-app.test.mjs
 
-SHA-256: 538231d0663d310c3101c63b8b4b822b050427bcd5227064dedd4a2809b191e8
+SHA-256: 5e1505d737e97eef22df0304d1ae2df59428e568d14183de813ae01f410fcfe2
 
 ~~~~~~text
 import test from 'node:test'
@@ -11729,8 +12212,11 @@ test('WorkBuddy MCP server exposes and serves the interactive dashboard', async 
   try {
     await client.connect(transport)
     const tools = await client.listTools()
-    assert.deepEqual(tools.tools.map(tool => tool.name), ['show_finance_workbench'])
-    assert.equal(tools.tools[0]._meta.ui.resourceUri, 'ui://workbuddy-finance-workbench/dashboard')
+    assert.ok(tools.tools.some(tool => tool.name === 'show_finance_workbench'))
+    assert.ok(tools.tools.some(tool => tool.name === 'team_order'))
+    assert.ok(tools.tools.some(tool => tool.name === 'team_return_run'))
+    assert.ok(!tools.tools.some(tool => /approve|review/.test(tool.name)))
+    assert.equal(tools.tools.find(tool => tool.name === 'show_finance_workbench')._meta.ui.resourceUri, 'ui://workbuddy-finance-workbench/dashboard')
     const resources = await client.listResources()
     assert.equal(resources.resources[0].mimeType, 'text/html;profile=mcp-app')
     const resource = await client.readResource({ uri: 'ui://workbuddy-finance-workbench/dashboard' })
@@ -11740,6 +12226,9 @@ test('WorkBuddy MCP server exposes and serves the interactive dashboard', async 
     assert.equal(result.structuredContent.modules, 20)
     assert.equal(result.structuredContent.workflows, 25)
     assert.equal(result.structuredContent.prompts, 25)
+    const noSession = await client.callTool({ name: 'team_whoami', arguments: {} })
+    assert.equal(noSession.isError, true)
+    assert.match(noSession.content[0].text, /尚未授权|员工会话/)
   } finally {
     await client.close()
   }

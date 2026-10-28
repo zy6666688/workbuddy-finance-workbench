@@ -270,6 +270,13 @@ export async function buildServer() {
     },
   );
   get("/api/v1/auth/me", "当前账号", async (r) => r.actor);
+  post("/api/v1/auth/session/logout", z.object({}), "撤销当前设备会话", async (r) =>
+    tx(r.actor, async (db) => {
+      await db.query("SELECT revoke_current_session($1)", [sha(r.cookies.zy_session || "")]);
+      await audit(db, r.actor, "session_revoked", r.actor.id, null, {}, r.id);
+      return { ok: true };
+    }),
+  );
   post("/api/v1/auth/logout", z.object({}), "退出并撤销所有会话", async (r) =>
     tx(r.actor, async (db) => {
       await db.query("SELECT revoke_sessions($1)", [r.actor.id]);

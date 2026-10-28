@@ -24,6 +24,9 @@
   },
   "type": "module",
   "main": "lib/index.js",
+  "bin": {
+    "zy-finance-team": "./workbuddy/team-cli.mjs"
+  },
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
@@ -47,6 +50,8 @@
     "scripts/uninstall-workbuddy-app.sh",
     "scripts/uninstall-workbuddy-app.ps1",
     "docs",
+    "team/docs/WORKBUDDY_BRIDGE.md",
+    "team/docs/WORKBUDDY_BRIDGE_ACCEPTANCE.md",
     "SECURITY.md"
   ],
   "dsh": {

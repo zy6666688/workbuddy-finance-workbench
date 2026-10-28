@@ -44,7 +44,7 @@
     },
     {
       "path": "HANDOVER.md",
-      "sha256": "26eb4bbdefeca427f3305b24043c1ef7462f72d243c2c294cfb4cc06830007ce"
+      "sha256": "a32d612eadc7a0a8c31bbd7f8a036fdfad99306dbb3ad39cd6d16738d44df648"
     },
     {
       "path": "LICENSE",
@@ -252,15 +252,15 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "70e3e1fe0f164742e32f66a051762533dcb91a384daee79c053d80898f8674e4"
+      "sha256": "bf9a959312267e8a0e6695366420d652d9fed11b81a0c3bd3b1e31406b03b852"
     },
     {
       "path": "package.json",
-      "sha256": "4b0adcc0907ec086ed236ea06d0dd76e96982d4b3115b1baffcc3c4fe29505d7"
+      "sha256": "acc543620347074be77b5f57e819b2caab24aeabfd612205c402e25395ecb671"
     },
     {
       "path": "scripts/build-workbuddy-app.mjs",
-      "sha256": "bc689c4e98ec415c0b884f04d4f27ac431b15f40915217cf2099429d95266776"
+      "sha256": "47463748feae3514c40c223aae9a4a3c32f37aaf0b17db4a6797d11ee24bcd9a"
     },
     {
       "path": "scripts/generate-agent-catalog.mjs",
@@ -324,7 +324,7 @@
     },
     {
       "path": "scripts/workbuddy-install.mjs",
-      "sha256": "3fa1f8be11c47bb47a19ed15c09f25e3ec5fe0b1214a7fd62e649a8474cd512a"
+      "sha256": "91fde04c67a1196b3132a3eaaeb16ffa080f2bb3bdb9b484d059579df3d0e451"
     },
     {
       "path": "src/client.jsx",
@@ -375,6 +375,22 @@
       "sha256": "6b568497be581dffcebd9c22dfb1a73f7cfe631bcfdc529aa5a40b522123c340"
     },
     {
+      "path": "src/team-adapter.mjs",
+      "sha256": "98c6a7172a6b57c4cc14702ca2a46c071ffe6603b5daf22d65f2a0e1a901867f"
+    },
+    {
+      "path": "src/team-api-client.mjs",
+      "sha256": "28f8bbc68ba00497bd8f4330ecd09185efabc79aa994a28103bdcd4dd238cdd3"
+    },
+    {
+      "path": "src/team-cli.mjs",
+      "sha256": "5306371738fb6535fac247b45a093accd5fb6b5aa9ade32689c352d4c5c632de"
+    },
+    {
+      "path": "src/team-credentials.mjs",
+      "sha256": "5eab14286632f9f3cf9823060b1500fd75df65557c6a2a1fc9692c95a9ea17ee"
+    },
+    {
       "path": "src/ui-helpers.js",
       "sha256": "10370b07706a43fb87d1dd70f10d612498029079abf0d3124b75ae42f130bd25"
     },
@@ -384,7 +400,7 @@
     },
     {
       "path": "src/workbuddy-mcp-server.mjs",
-      "sha256": "30b35cebab3e6e63ed12c5bbe89308cb7a7e2de00e3443ba152e0f7de8bc2de8"
+      "sha256": "738a6ba595655b329dfeffc4e721fdb030d341613dae91a0ea3d003b36c47a05"
     },
     {
       "path": "src/workbuddy-widget.jsx",
@@ -424,7 +440,7 @@
     },
     {
       "path": "test/installers.test.mjs",
-      "sha256": "8b8d73b6d88180480d358501b0dc3ae8a83424fbde4a7e7b86f8481d3191f922"
+      "sha256": "ccba5ae15205fa51dd8224d01885e3b33ee3497fd0a741f214adff0ccdb722b2"
     },
     {
       "path": "test/public-release.test.mjs",
@@ -439,6 +455,10 @@
       "sha256": "7e224883a6dc152906144c426ccbcc854ac4866088a6f386af91aafd89a72b27"
     },
     {
+      "path": "test/team-api-client.test.mjs",
+      "sha256": "5774410abe8ce2f291b9eb827554a0c09cc68b56d2a3d93f029d506d663b4a1e"
+    },
+    {
       "path": "test/ui-helpers.test.mjs",
       "sha256": "ad340d1efbc27198ee766735f31345d9b117e56edae20c40bacf786e259831f9"
     },
@@ -448,7 +468,7 @@
     },
     {
       "path": "test/workbuddy-app.test.mjs",
-      "sha256": "538231d0663d310c3101c63b8b4b822b050427bcd5227064dedd4a2809b191e8"
+      "sha256": "5e1505d737e97eef22df0304d1ae2df59428e568d14183de813ae01f410fcfe2"
     },
     {
       "path": "test/workflow-snapshot.test.mjs",
