@@ -665,7 +665,7 @@ SHA-256: 46be567b1dec7a66730dcb0b7504ebc71748b53d514b4fd23f333647b6dce5d3
 
 ## agents/finance-workbench/SKILL.md
 
-SHA-256: be4afb7a3c3bd72cde025d1ef6a835f4245f8abbe47b1453d1f84e9f7e35cd87
+SHA-256: bdf38004e7748949893409cdafd3da3d20c5d70ae955a6a045b8d617ed1beddd
 
 ~~~~~~text
 ---
@@ -683,14 +683,24 @@ metadata:
 
 用户要求处理财务表格、票据、对账、往来、资金、预算、经营分析、月结检查或财务归档时使用。仅讨论一般财务知识、且不涉及文件或流程执行时，可以直接回答。
 
-## 开始前必须完成
+## 面向普通用户的续办方式（优先）
+
+用户说“某客户某月接着办”“补好了继续”“驳回了帮我改”“成果给我”时，优先使用 `team_resume_invoice_work`，不要让用户走下方文件分析的准备流程。客户和月份沿用对话中已明确的范围；有歧义时只问客户、月份、批次名称或哪笔业务。不要问内部编号、key、版本、JSON、工具参数或让用户运行命令。
+
+- 说“继续”就调用 continue，程序自动沿用原字段、附件和未确认提交；说“进度”用 progress；说“成果给我”用 download。只把用户本次明确给出的补充字段放入 corrections/context，未提供的字段不重写。
+- 不先展示技术方案、工具清单或长步骤。能办的直接办，缺项集中问一次；已经在记录里的资料先读取，不反复询问。遇到多批、多业务时简短列出名称让用户选。
+- 回复通常三句话以内：已经做了什么；还缺什么或等待谁复核；成果的可点击保存位置。只在用户要求排障时解释技术细节。不把“保存申请”“形成交接成果”说成实际开票或正式入账。
+- 例如：“明澄咨询 10 月的补件已接着办理，原资料已保留。现在等另一位同事核验申请。”有缺项时：“原资料已找回，现在只缺购方税号；发给我即可接着办。”
+- 工具没有确认成功时直说“结果还在核实，资料已保留，下次继续即可”，不要求用户记住请求参数。人工复核仍由另一名授权人员在工作台完成。
+
+## 独立文件分析开始前
 
 1. 阅读 `references/safety.md`。
 2. 从 `references/workflows.json` 选择最匹配的工作流；不确定时先列出 2–3 个候选及差异。
 3. 明确主体、期间、币种、单位、数据版本和输出目录。
 4. 盘点输入文件，不修改原件。
 
-## 标准执行闭环
+## 独立文件分析闭环
 
 1. **选场景**：范围缩小到一张表、一次核对或一个固定输出。
 2. **备样本**：保留正常、缺失、重复、异常和特殊业务样本。
@@ -763,7 +773,7 @@ metadata:
 
 ## 完成回报
 
-按 `templates/task-brief.md` 的结构报告：实际读取文件、实际生成文件、关键合计、勾稽结果、异常/待复核项、未完成事项及原因。不要只给操作建议。
+团队续办按上方简明回报，通常三句话以内，只说结果、必需补件或人工复核、实际成果位置；系统编号和技术过程留在工具记录中，不要求用户记忆或重填。独立文件分析才按 `templates/task-brief.md` 报告实际文件、合计、校验和未完成项。不要只给操作建议。
 
 ## 工作流目录
 
@@ -10587,6 +10597,395 @@ export function apply(ctx) {
 
 ~~~~~~
 
+## src/invoice-assistant.mjs
+
+SHA-256: e4d9810673a819e2a7bf8797fd6728490946ca802a8f7bfd088810492ee245d6
+
+~~~~~~text
+import { randomUUID, createHash } from 'node:crypto'
+import {
+  mkdir,
+  readFile,
+  open,
+  link,
+  unlink,
+  realpath,
+  readdir,
+} from 'node:fs/promises'
+import path from 'node:path'
+
+const labels = {
+  application_materials: '待补资料',
+  retry_available: '可继续补办',
+  application_review: '待独立核验申请',
+  awaiting_receipt: '等待实际开票回执',
+  receipt_review: '待独立核验回执',
+  receipt_correction: '回执被驳回，待补正',
+  receipt_unknown: '实际结果待核实',
+  receipt_failed: '实际开票失败，待人工核实',
+  accounting_materials: '账务待补资料',
+  draft_review: '记账草稿待独立复核',
+  handoff_ready: '交接成果已形成',
+  withdrawn: '申请已撤回',
+}
+const nextSteps = {
+  application_materials: '补齐下面缺少的资料后继续，已有内容会保留。',
+  retry_available: '可以沿用原资料继续补办。',
+  application_review: '请另一名有权限的同事在工作台核验申请。',
+  awaiting_receipt: '收到实际开票回执后再回录。',
+  receipt_review: '请另一名有权限的同事在工作台核验回执。',
+  receipt_correction: '按驳回意见补正原回执资料，再交另一名同事核验。',
+  receipt_unknown: '先核实实际开票结果，避免重复开票。',
+  receipt_failed: '先核实开票失败原因，继续跟踪原申请。',
+  accounting_materials: '补齐下面列出的账务资料和业务依据后继续。',
+  draft_review: '请另一名有权限的同事复核记账草稿。',
+  handoff_ready: '可以取回已复核的交接成果，尚未正式入账。',
+  withdrawn: '请负责人核实撤回后的安排。',
+}
+
+function summary(items) {
+  return items.map((i) => ({
+    customer: i.company_name,
+    business: i.payload.businessRef,
+    status: i.handoff?.stale
+      ? '历史成果已复核，当前资料有变化'
+      : labels[i.group] || '待核实',
+    missing: [...new Set((i.feedback || []).map((f) => f.message))],
+    next:
+      i.availabilityIssue ||
+      (i.handoff?.stale
+        ? '请负责人按最新资料核实，历史成果会保留。'
+        : nextSteps[i.group]) ||
+      '请负责人核实当前进度。',
+    reviewRequired: !!i.nextStep?.requiresHumanReview,
+    hasHandoff: !!i.handoff && !i.handoff.stale,
+  }))
+}
+async function allPages(read) {
+  const result = []
+  for (let offset = 0; offset < 1000; offset += 50) {
+    const page = await read({ limit: 50, offset })
+    if (!Array.isArray(page)) throw Error('未能读取完整列表，请稍后再试。')
+    result.push(...page)
+    if (page.length < 50) return result
+  }
+  throw Error('匹配范围较大，请补充客户全称或批次名称后再继续。')
+}
+
+// Journal is local to the authorized handoff directory, account, server and
+// batch. It survives MCP/app restart and is written before any mutation.
+async function submitRemembered(client, actor, batchId, selectedIds, body) {
+  const root = await realpath(client.workspace)
+  const dir = path.join(root, '.invoice-resume')
+  await mkdir(dir, { recursive: true, mode: 0o700 })
+  if ((await realpath(dir)) !== dir)
+    throw Error('续办暂存目录不可用，请联系负责人检查交接目录。')
+  const scope = createHash('sha256')
+    .update(JSON.stringify([client.origin, actor.org_id, actor.id, batchId]))
+    .digest('hex')
+  let pending, file
+  // Immutable, atomically published requests need no process lock that could
+  // strand the user after a crash. Concurrent identical calls share one key;
+  // differing requests still use the server's version/transaction protections.
+  for (const name of (await readdir(dir))
+    .filter((n) => n.startsWith(scope + '-') && n.endsWith('.json'))
+    .sort()) {
+    try {
+      file = path.join(dir, name)
+      pending = JSON.parse(await readFile(file, 'utf8'))
+      break
+    } catch (e) {
+      if (e.code !== 'ENOENT')
+        throw Error(
+          '上次续办记录无法读取，请先核实原处理结果，未发起新的提交。',
+        )
+    }
+  }
+  if (
+    pending &&
+    (!Array.isArray(pending.scopeIds) ||
+      !Array.isArray(pending.body?.items) ||
+      typeof pending.body?.key !== 'string')
+  )
+    throw Error('上次续办暂存不完整，请先核实原处理结果，未发起新的提交。')
+  const recovered = !!pending
+  if (
+    pending &&
+    (pending.scopeIds.length !== selectedIds.length ||
+      pending.scopeIds.some((id) => !selectedIds.includes(id)) ||
+      pending.body.items.some((item) => !selectedIds.includes(item.itemId)))
+  )
+    return {
+      needsOriginalScope: true,
+      message:
+        '上次续办结果尚未确认，请先按原客户和业务范围继续查询，暂不另办其他项目。',
+    }
+  if (!pending) {
+    if (!body.items.length) return { idle: true }
+    const stable = (value) =>
+      Array.isArray(value)
+        ? value.map(stable)
+        : value && typeof value === 'object'
+          ? Object.fromEntries(
+              Object.keys(value)
+                .sort()
+                .map((k) => [k, stable(value[k])]),
+            )
+          : value
+    const digest = createHash('sha256')
+      .update(scope + JSON.stringify(stable(body)))
+      .digest('hex')
+    const key = `${digest.slice(0, 8)}-${digest.slice(8, 12)}-4${digest.slice(13, 16)}-a${digest.slice(17, 20)}-${digest.slice(20, 32)}`
+    pending = { scopeIds: selectedIds, body: { ...body, key } }
+    file = path.join(dir, `${scope}-${digest}.json`)
+    const temp = file + '.' + randomUUID() + '.tmp'
+    const out = await open(temp, 'wx', 0o600)
+    try {
+      try {
+        await out.writeFile(JSON.stringify(pending))
+        await out.sync()
+      } finally {
+        await out.close()
+      }
+      try {
+        await link(temp, file)
+      } catch (e) {
+        if (e.code !== 'EEXIST') throw e
+      }
+    } finally {
+      await unlink(temp).catch(() => {})
+    }
+  }
+  let result
+  try {
+    result = await client.continueInvoiceBatch(batchId, pending.body)
+  } catch (e) {
+    if (e.status >= 400 && e.status < 500 && !e.outcomeUnknown)
+      await unlink(file).catch((e) => {
+        if (e.code !== 'ENOENT') throw e
+      })
+    throw e
+  }
+  if (!result?.id || !Array.isArray(result.items))
+    throw Object.assign(
+      Error(
+        '尚未取得完整结果，已保存本次填写。下次说“继续办理”即可核实，不必重填。',
+      ),
+      { outcomeUnknown: true },
+    )
+  await unlink(file).catch((e) => {
+    if (e.code !== 'ENOENT') throw e
+  })
+  return { result, recovered }
+}
+
+export async function resumeInvoiceWork(client, args, download) {
+  if (!['progress', 'continue', 'download'].includes(args.operation))
+    throw Error('请明确是查询进度、继续办理，还是取回成果。')
+  const actor = await client.me()
+  const matches = await allPages((q) =>
+    client.companies({ ...q, search: args.customer.slice(0, 100) }),
+  )
+  const companies = matches.filter(
+    (c) => c.name === args.customer || c.code === args.customer,
+  )
+  if (companies.length !== 1)
+    return {
+      message: '请确认客户全称或客户编码，已有资料会继续保留。',
+      choices: matches.map((c) => ({ customer: c.name, code: c.code })),
+    }
+  const orders = await allPages((q) =>
+    client.orders({ ...q, companyId: companies[0].id, period: args.period }),
+  )
+  if (!orders.length)
+    return {
+      message: '当前账号下未找到该客户本期工作单，请核实客户、月份或权限。',
+    }
+  const batches = new Map()
+  for (const order of orders)
+    for (const b of await allPages((q) =>
+      client.invoiceBatches({ ...q, orderId: order.id }),
+    ))
+      batches.set(b.id, b)
+  const candidates = [...batches.values()].filter(
+    (b) =>
+      (!args.batchTitle || b.title === args.batchTitle) &&
+      (!args.batchCreatedAt ||
+        new Date(b.created_at).toISOString() === args.batchCreatedAt),
+  )
+  if (candidates.length !== 1)
+    return {
+      message: candidates.length
+        ? '找到多批业务，请选要接着办的批次，不需要重填资料。'
+        : '未找到符合范围的开票批次，请核实批次名称。',
+      choices: candidates.map((b) => ({
+        batch: b.title,
+        createdAt: b.created_at,
+      })),
+    }
+  const batchId = candidates[0].id,
+    batch = await client.invoiceBatchActions(batchId)
+  const select = (batch) =>
+    batch.items.filter(
+      (i) =>
+        i.company_id === companies[0].id &&
+        i.orderPeriod === args.period &&
+        (!args.businessRef || i.payload.businessRef === args.businessRef),
+    )
+  const items = select(batch)
+  if (!items.length)
+    return { message: '未找到当前可办理的指定业务，未扩大客户或项目范围。' }
+  if (items.length > 50)
+    return { message: '本期超过 50 项，请按业务编号缩小范围后续办。' }
+  if (args.operation === 'progress')
+    return {
+      message: '已查到当前进度，已填资料无需重填。',
+      items: summary(items),
+    }
+  if (args.operation === 'download') {
+    const files = []
+    for (const item of items)
+      if (item.handoff && !item.handoff.stale) {
+        const safeName = item.company_name
+          .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
+          .slice(0, 60)
+        files.push(
+          await download({
+            draftId: item.handoff.draftId,
+            format: 'xlsx',
+            filePath: `${safeName}-${args.period}-${randomUUID().slice(0, 8)}-交接.xlsx`,
+          }),
+        )
+      }
+    return {
+      message: files.length
+        ? '已保存通过复核的交接成果，未正式入账。'
+        : '当前没有可交接的最新复核成果，请先完成待办。',
+      files: files.map((f) => ({ location: f.absolutePath, state: f.state })),
+      items: summary(items),
+    }
+  }
+  if ((args.corrections || args.context) && items.length !== 1)
+    return {
+      message:
+        '本批有多笔业务，请说明要补正哪一笔的业务编号，避免把同一份补充资料填到其他业务。',
+      items: summary(items),
+    }
+  const inputs = []
+  for (const item of items) {
+    if (item.resume && !item.resume.canPrefill) continue
+    const resume = item.resume
+    const action =
+      resume?.action ||
+      (item.allowedActions.includes('repair')
+        ? 'repair'
+        : item.allowedActions.includes('retry')
+          ? 'retry'
+          : (item.accountingDraft?.context || args.context) &&
+              item.allowedActions.includes('accounting')
+            ? 'accounting'
+            : item.allowedActions.includes('ledger')
+              ? 'ledger'
+              : null)
+    if (!action) continue
+    const e = item.expected
+    const input = {
+      itemId: item.id,
+      action,
+      expectedAttemptId: e.attemptId,
+      orderVersion: e.orderVersion,
+      reason:
+        args.note || resume?.reason || '按原资料继续办理，保留独立人工复核。',
+    }
+    if (action !== 'retry') input.requestVersion = e.requestVersion
+    if (action === 'repair' || action === 'retry') {
+      const original =
+        resume?.changes ||
+        (item.request
+          ? {
+              payload: item.request.payload,
+              sourceFileIds: item.request.source_files.map((f) => f.id),
+              authorization: {
+                id: item.request.authorization_id,
+                version: item.request.authorization_version,
+              },
+            }
+          : {
+              payload: item.payload.payload,
+              sourceFileIds: item.payload.sourceFileIds,
+              authorization: item.payload.authorization,
+            })
+      input.changes = structuredClone(original)
+      if (args.corrections)
+        Object.assign(input.changes.payload, args.corrections)
+    }
+    if (action === 'accounting') {
+      const previous = resume?.context || item.accountingDraft?.context || {}
+      input.context = { ...structuredClone(previous), ...args.context }
+      if (
+        args.context &&
+        ((args.context.ruleId !== undefined &&
+          args.context.ruleId !== previous.ruleId) ||
+          (args.context.ruleVersion !== undefined &&
+            args.context.ruleVersion !== previous.ruleVersion)) &&
+        args.context.conditionsConfirmed !== true
+      )
+        input.context.conditionsConfirmed = false
+      input.draftVersion = e.draftVersion
+      if (args.note)
+        input.context.note = [input.context.note, args.note]
+          .filter(Boolean)
+          .join('\n')
+          .slice(-2000)
+      input.context.note ||= input.reason
+    }
+    inputs.push(input)
+  }
+  // Even when all actions have already completed, replay a previously unknown
+  // request under its original key. The journal, not the new status, owns it.
+  const outcome = await submitRemembered(
+    client,
+    actor,
+    batchId,
+    items.map((i) => i.id),
+    { items: inputs },
+  )
+  if (outcome.needsOriginalScope) return outcome
+  if (outcome.idle)
+    return {
+      message: '已有资料已保留；当前需要补充资料或人工核验，请按以下待办继续。',
+      items: summary(items),
+    }
+  let fresh
+  try {
+    fresh = select(await client.invoiceBatchActions(batchId))
+  } catch {
+    return {
+      message:
+        '上次提交已有回执，但当前进度暂时无法读取。请稍后查询进度，无需重复填写或提交。',
+      progressUnavailable: true,
+      receipt: outcome.result.id,
+      scopeComplete: outcome.result.scopeComplete,
+    }
+  }
+  return {
+    message:
+      outcome.result.scopeComplete === false
+        ? '部分客户权限发生变化，当前无法确认全部项目的结果；请负责人核实，已有资料无需重填。'
+        : outcome.recovered
+          ? '已找回上次提交结果，无需重填。若本次又补充了新内容，请在核对结果后继续办理。'
+          : '已按原资料续办，请查看每笔业务的待办；需要人工核验的已保留。',
+    scopeComplete: outcome.result.scopeComplete,
+    items: summary(fresh),
+    receipt: outcome.result.id,
+    failures: outcome.result.items
+      .filter((i) => i.status === 'blocked')
+      .map((i) => i.error),
+  }
+}
+
+~~~~~~
+
 ## src/sidebar-icons.jsx
 
 SHA-256: 001c81a0cd48cc6fe8d67866c429512f5da0670705fbae677fa3ca3791ca58d6
@@ -10701,7 +11100,7 @@ export function mergeFinanceLaunchDraft(current, launch) {
 
 ## src/team-adapter.mjs
 
-SHA-256: 8cc9bc998819de1ef5ff7a1100002f57b8c7d70bc539026cf8764877dd2397b0
+SHA-256: 7eb2b6a183d628bb8354cb3f880e71f453f2c895ed5c1579fbbc349af506a130
 
 ~~~~~~text
 import { createTeamClient } from './team-api-client.mjs'
@@ -10709,6 +11108,7 @@ import { realpath, readFile, stat, writeFile, open, link, unlink } from 'node:fs
 import path from 'node:path'
 import { randomUUID, createHash } from 'node:crypto'
 import { loadTeamSession, defaultWorkspace } from './team-credentials.mjs'
+import { resumeInvoiceWork } from './invoice-assistant.mjs'
 
 // A session must come from the employee's authorization flow. Do not accept
 // credentials in tool parameters or publish them in tool output.
@@ -10758,6 +11158,7 @@ async function saveHandoff(dest, bytes) {
 
 export async function executeTeamCommand(client, command, args = {}) {
   switch (command) {
+    case 'resume-invoice-work': return resumeInvoiceWork(client, args, input => executeTeamCommand(client, 'download-invoice-accounting', input))
     case 'me': return client.me()
     case 'companies': return client.companies(args)
     case 'client-dossier': return client.dossier(args.companyId, args.period)
@@ -10863,7 +11264,7 @@ export async function executeTeamCommand(client, command, args = {}) {
 
 ## src/team-api-client.mjs
 
-SHA-256: 1f71a040684288fafbc345b9c026773ec7eca810d0ee58dff512c76e7e4a3c07
+SHA-256: 49ef0c587282f50270399258723025b532cc5669081345fdf04f9dd34f4f73da
 
 ~~~~~~text
 // Shared transport for a WorkBuddy team adapter. Credentials are supplied by
@@ -10931,6 +11332,7 @@ export function createTeamClient({ baseUrl, session, csrf, fetchImpl = fetch }) 
     return value
   }
   return {
+    origin: base.origin,
     me: async () => { const { csrf: _csrf, ...actor } = await request('GET', '/auth/me'); return actor },
     logoutCurrent: () => request('POST', '/auth/session/logout', { body: {} }),
     companies: query => request('GET', '/companies', { query }),
@@ -11263,7 +11665,7 @@ export const VERSION = '2.7.1'
 
 ## src/workbuddy-mcp-server.mjs
 
-SHA-256: e8f259ab35d895f80e2b6e2e9f25c539cc0f226daba79b3fd8a8d03ad64ce3a5
+SHA-256: 198df201662c7925d50835fa35b728818a0cc648dc6ecb84671b2ad1a3c23d32
 
 ~~~~~~text
 import { readFileSync } from 'node:fs'
@@ -11281,7 +11683,7 @@ const APP_MIME = 'text/html;profile=mcp-app'
 const currentDirectory = dirname(fileURLToPath(import.meta.url))
 const widgetHtml = readFileSync(join(currentDirectory, 'widget.html'), 'utf8')
 
-const server = new McpServer({ name: 'workbuddy-finance-workbench', version: VERSION })
+const server = new McpServer({ name: 'workbuddy-finance-workbench', version: VERSION }, { instructions: '面向普通财务人员：优先替用户办理，沿用已有资料，只集中询问真正缺少的业务信息。续办、查进度和取成果优先使用 team_resume_invoice_work，客户、月份、批次按用户明确范围处理。不要要求用户提供 UUID、key、版本、JSON、命令或工具名。回复先说处理结果，再说缺项或待哪位人员复核，最后给可点击成果位置；不复述工具参数、技术排查和长操作日志。已有资料不要重新索取。不得代替独立复核，不把申请保存或交接成果说成已开票、已入账。' })
 
 // Calls go through the existing employee session and the normal team API.
 // Deliberately do not expose an arbitrary HTTP tool or review/approval actions.
@@ -11294,6 +11696,7 @@ const teamTool = (name, description, inputSchema, command, readOnlyHint = true) 
       const data = await executeTeamCommand(await teamClientFromEnvironment(), command, args)
       return { content: [{ type: 'text', text: JSON.stringify(data) }] }
     } catch (error) {
+      if (error.outcomeUnknown && command === 'resume-invoice-work') return { isError: true, content: [{ type: 'text', text: '本次结果还在核实，填写已保留。下次说“继续办理”即可找回结果，不需要重填，也不会另建重复申请。' }] }
       if (error.outcomeUnknown) return { isError: true, content: [{ type: 'text', text: JSON.stringify({
         error: error.message, outcomeUnknown: true, requestKey: args.key || null,
         requestId: error.requestId || null,
@@ -11305,6 +11708,14 @@ const teamTool = (name, description, inputSchema, command, readOnlyHint = true) 
 }
 const orderId = z.string().uuid().describe('团队版月度工作单编号')
 const runId = z.string().uuid().describe('团队版工作流执行编号')
+const registerInvoiceAssistant = () => teamTool('team_resume_invoice_work', '普通用户的一句话入口。按客户全称和月份查进度、沿用原资料继续办理或取回已复核成果；内部自动查编号、版本并保存未确认请求，重启后也能继续。用户说接着办就用 continue，说进度用 progress，说取成果用 download。歧义返回批次/业务供用户选择，只问缺项，不输出内部参数。corrections/context 只填写用户本次明确补充的字段，不重造已有资料；不会代替人工复核。', {
+  customer: z.string().trim().min(1).max(200).describe('客户全称或客户编码'),
+  period: z.string().regex(/^20\d{2}-(0[1-9]|1[0-2])$/),
+  operation: z.enum(['progress','continue','download']),
+  batchTitle: z.string().max(200).optional(), batchCreatedAt: z.iso.datetime().optional().describe('同名批次时，使用查询返回的创建时间区分'), businessRef: z.string().max(100).optional(), note: z.string().trim().max(1000).optional(),
+  context: invoiceAccountingContext.partial().optional(),
+  corrections: z.object({buyerName:z.string().max(200).optional(),buyerTaxId:z.string().max(30).optional(),businessDescription:z.string().max(2000).optional(),remark:z.string().max(1000).optional()}).strict().optional(),
+}, 'resume-invoice-work', false)
 teamTool('team_start_accounting', '一键账务入口：将标准 XLSX 整理底稿及原始依据保存，并在同一事务发起工作台内嵌计算。所有规则、排队和计算都由工作台负责，无需额外开票插件或第三方计算服务。会更新输入版本并使旧任务失效，不入账、不复核；同一请求重试保留 key 和所有输入。返回 workflow.runId 继续查询。', { orderId, version: z.number().int().positive(), key: z.string().uuid(), workflowId: z.enum(['monthly-management-report','vat-monthly-check']), sourceFileIds: z.array(z.string().uuid()).min(1).max(50), reason: z.string().min(1).max(2000), filePath: z.string().min(1).max(500) }, 'start-accounting', false)
 teamTool('team_workflow_template', '下载剩余工作流的专用 XLSX 模板到授权目录；按 team_workflow 的 inputContract 填写，不猜测字段与政策。两项账务计算使用 team_accounting_template。', { workflowId: z.string().regex(/^[a-z][a-z0-9-]{0,99}$/), filePath: z.string().min(1).max(500) }, 'workflow-template', false)
 teamTool('team_start_prepared_workflow', '统一程序内入口：一次保存专用模板整理结果和依据，按工作流能力安排本地规则处理或账务计算。先读 team_workflow 范围和模板。相同 key 及内容可安全重试；更新输入版本会使旧任务失效。返回 workflow.runId 查询结果，不自动付款、入账、申报、开票、删除或启用定时器。', { orderId, version: z.number().int().positive(), key: z.string().uuid(), workflowId: z.string().regex(/^[a-z][a-z0-9-]{0,99}$/), sourceFileIds: z.array(z.string().uuid()).min(1).max(19), reason: z.string().min(1).max(2000), filePath: z.string().min(1).max(500) }, 'start-prepared-workflow', false)
@@ -11335,7 +11746,7 @@ teamTool('team_prepare_invoice_authorization', '登记逐户授权草稿，凭�
   orderId, key: z.string().uuid(), evidenceFileIds: z.array(z.string().uuid()).min(1).max(20),
   payload: z.object({ sellerName: z.string().min(1).max(200), sellerTaxId: z.string().min(1).max(30), agencyName: z.string().min(1).max(200), representative: z.string().min(1).max(100), region: z.string().min(1).max(100), channelLabel: z.string().min(1).max(100), validFrom: z.iso.date(), validUntil: z.iso.date(), scopes: z.array(z.enum(['prepare_applications','record_results'])).min(1).max(2), note: z.string().min(1).max(2000) }).strict()
 }, 'prepare-invoice-authorization', false)
-teamTool('team_prepare_invoice_batch', '一句话批量申请入口：明确客户范围后查工作单当前版本、固定档案、有效授权和来源文件，一次提交最多 50 项，由工作台逐户生成申请草稿。保留批次 key、每项 itemKey 及 key 以便原样重试。prepared 仅表示申请已保存，仍需看缺项和人工核验。blocked 项修正后新建补办批次，勿重复成功项；不调用开票平台。', { key: z.string().uuid(), title: z.string().min(1).max(200), items: z.array(z.object({ ...invoiceInput, itemKey: z.string().uuid(), authorization: invoiceAuthorizationRef }).strict()).min(1).max(50) }, 'prepare-invoice-batch', false)
+teamTool('team_prepare_invoice_batch', '一句话批量申请入口：明确客户范围后查工作单当前版本、固定档案、有效授权和来源文件，一次提交最多 50 项，由工作台逐户生成申请草稿。保留批次 key、每项 itemKey 及 key 以便原样重试。prepared 仅表示申请已保存，仍需看缺项和人工核验。blocked 项通过原批次续办入口补正，不另建批次，勿重复成功项；不调用开票平台。', { key: z.string().uuid(), title: z.string().min(1).max(200), items: z.array(z.object({ ...invoiceInput, itemKey: z.string().uuid(), authorization: invoiceAuthorizationRef }).strict()).min(1).max(50) }, 'prepare-invoice-batch', false)
 teamTool('team_invoice_batches', '查询批量申请列表；只统计当前可访问客户，不能将不可见项目当作完成。', { orderId: orderId.optional(), ...invoicePage }, 'invoice-batches')
 teamTool('team_invoice_batch', '按批次追踪逐户缺项、授权、人工核验及回录结果。prepared 不是开票成功；recordedIssued 是人工核验的离线回执，未做平台查验。结果不明先核实，不可重开。', { batchId: z.string().uuid() }, 'invoice-batch')
 teamTool('team_invoice_results', '分页读取成功、失败或结果不明的回录及附件、核验状态。pending 仍待独立核验，verified 不等于税务局在线查验。', { requestId: z.string().uuid(), ...invoicePage }, 'invoice-results')
@@ -11347,6 +11758,7 @@ teamTool('team_upload_invoice_evidence', '上传授权交接目录内用户提�
 const invoiceAccountingContext = z.object({
   businessType: z.string().trim().max(100).optional(), handlingDate: z.union([z.iso.date(), z.literal('')]).optional(), currency: z.string().trim().max(10).optional(), businessMode: z.enum(['standard_sale','other','unknown']).optional(), decision: z.enum(['new_entry','link_existing','hold']).optional(), conditionsConfirmed: z.boolean().optional(), ruleId:z.string().uuid().nullable().optional(), ruleVersion:z.number().int().positive().nullable().optional(), recognitionBasis: z.string().trim().max(2000).optional(), existingVoucher: z.string().trim().max(60).optional(), note: z.string().trim().min(1).max(2000), evidence: z.array(z.object({requirement:z.string().trim().min(1).max(100),fileId:z.string().uuid(),note:z.string().trim().min(1).max(1000)}).strict()).max(30).optional()
 }).strict()
+registerInvoiceAssistant()
 const continuationBase = { itemId:z.string().uuid(),expectedAttemptId:z.string().uuid().nullable(),orderVersion:z.number().int().positive(),reason:z.string().trim().min(1).max(2000) }
 const continuationChanges = z.object({payload:invoiceInput.payload,sourceFileIds:invoiceInput.sourceFileIds,authorization:invoiceAuthorizationRef}).strict()
 const invoiceContinuationItem = z.discriminatedUnion('action',[
@@ -12085,6 +12497,216 @@ test('invalid desktop config aborts installation without changing CLI config', a
 
 ~~~~~~
 
+## test/invoice-assistant.test.mjs
+
+SHA-256: 9b3b79edde17240f6dd9c0136a0a269dde63bf7727c316b7d3d37ab4408435f8
+
+~~~~~~text
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { mkdtemp, rm, readdir } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { resumeInvoiceWork } from '../src/invoice-assistant.mjs'
+
+const args = {
+  customer: '虚构明澄咨询',
+  period: '2026-10',
+  operation: 'continue',
+}
+const item = () => ({
+  id: 'item',
+  company_id: 'company',
+  company_name: args.customer,
+  orderPeriod: args.period,
+  payload: {
+    businessRef: '业务甲',
+    payload: { buyerName: '旧购方', buyerTaxId: '', lines: [{ net: '100' }] },
+    sourceFileIds: ['file'],
+    authorization: { id: 'auth', version: 1 },
+  },
+  group: 'retry_available',
+  allowedActions: ['retry'],
+  expected: { attemptId: null, orderVersion: 2 },
+  feedback: [{ message: '缺购方税号' }],
+})
+function client(workspace, rows = [item()]) {
+  return {
+    workspace,
+    origin: 'http://127.0.0.1:8097',
+    me: async () => ({ id: 'actor', org_id: 'org' }),
+    companies: async () => [{ id: 'company', name: args.customer }],
+    orders: async () => [{ id: 'order' }],
+    invoiceBatches: async () => [{ id: 'batch', title: '虚构补件' }],
+    invoiceBatchActions: async () => ({ items: rows }),
+  }
+}
+test('一句话续办自动取版本、沿用资料；重启后只重放未知结果的原请求', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'invoice-assistant-'))
+  try {
+    const c = client(dir),
+      sent = []
+    c.continueInvoiceBatch = async (_, body) => {
+      sent.push(structuredClone(body))
+      throw Object.assign(Error('timeout'), { outcomeUnknown: true })
+    }
+    await assert.rejects(
+      resumeInvoiceWork(c, {
+        ...args,
+        corrections: { buyerTaxId: 'SYNTHETIC' },
+      }),
+      /timeout/,
+    )
+    const restarted = client(dir, [
+      { ...item(), group: 'application_review', allowedActions: [] },
+    ])
+    restarted.continueInvoiceBatch = async (_, body) => {
+      sent.push(structuredClone(body))
+      return {
+        id: 'receipt',
+        scopeComplete: true,
+        items: [{ status: 'completed' }],
+      }
+    }
+    const result = await resumeInvoiceWork(restarted, args)
+    assert.deepEqual(sent[0], sent[1])
+    assert.equal(sent[0].items[0].changes.payload.buyerName, '旧购方')
+    assert.deepEqual(sent[0].items[0].changes.payload.lines, [{ net: '100' }])
+    assert.equal(sent[0].items[0].changes.payload.buyerTaxId, 'SYNTHETIC')
+    assert.match(result.message, /找回上次/)
+    assert.deepEqual(await readdir(path.join(dir, '.invoice-resume')), [])
+    const again = await resumeInvoiceWork(restarted, args)
+    assert.match(again.message, /人工核验/)
+    assert.equal(sent.length, 2)
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+test('多业务补件、歧义批次不扩大范围；只下载非过期已核验成果', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'invoice-assistant-'))
+  try {
+    const c = client(dir, [item(), { ...item(), id: 'other' }])
+    await assert.rejects(
+      resumeInvoiceWork(c, { ...args, operation: undefined }),
+      /请明确/,
+    )
+    const result = await resumeInvoiceWork(c, {
+      ...args,
+      corrections: { buyerName: '新购方' },
+    })
+    assert.match(result.message, /哪一笔/)
+    c.invoiceBatches = async () => [
+      { id: 'one', title: '第一批' },
+      { id: 'two', title: '第二批' },
+    ]
+    assert.equal((await resumeInvoiceWork(c, args)).choices.length, 2)
+    c.invoiceBatches = async () => [{ id: 'batch', title: '批次' }]
+    c.invoiceBatchActions = async () => ({
+      items: [
+        { ...item(), handoff: { draftId: 'good', stale: false } },
+        { ...item(), id: 'other', handoff: { draftId: 'old', stale: true } },
+      ],
+    })
+    const seen = []
+    const download = await resumeInvoiceWork(
+      c,
+      { ...args, operation: 'download' },
+      async (input) => {
+        seen.push(input)
+        return { absolutePath: 'saved.xlsx', state: 'downloaded' }
+      },
+    )
+    assert.equal(seen.length, 1)
+    assert.equal(seen[0].draftId, 'good')
+    assert.equal(download.files[0].state, 'downloaded')
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+test('首次账务资料可直接续办，规则变更不沿用旧确认；未知请求不扩大范围', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'invoice-assistant-'))
+  try {
+    const row = {
+      ...item(),
+      group: 'accounting_materials',
+      allowedActions: ['accounting'],
+      expected: {
+        attemptId: null,
+        orderVersion: 2,
+        requestVersion: 1,
+        draftVersion: 0,
+      },
+    }
+    const c = client(dir, [row]),
+      sent = []
+    c.continueInvoiceBatch = async (_, body) => {
+      sent.push(body)
+      return {
+        id: 'receipt',
+        scopeComplete: true,
+        items: [{ status: 'completed' }],
+      }
+    }
+    await resumeInvoiceWork(c, {
+      ...args,
+      context: { businessType: '服务收入', note: '客户明确提供的确认说明' },
+    })
+    assert.equal(sent[0].items[0].action, 'accounting')
+    assert.equal(sent[0].items[0].context.businessType, '服务收入')
+    row.accountingDraft = {
+      context: {
+        ruleId: 'old',
+        ruleVersion: 1,
+        conditionsConfirmed: true,
+        note: '原说明',
+        evidence: [{ fileId: 'old-file' }],
+      },
+    }
+    await resumeInvoiceWork(c, {
+      ...args,
+      context: { ruleId: 'new', ruleVersion: 2 },
+    })
+    assert.equal(sent[1].items[0].context.conditionsConfirmed, false)
+    assert.deepEqual(sent[1].items[0].context.evidence, [
+      { fileId: 'old-file' },
+    ])
+    c.continueInvoiceBatch = async () => {
+      throw Object.assign(Error('timeout'), { outcomeUnknown: true })
+    }
+    await assert.rejects(resumeInvoiceWork(c, args), /timeout/)
+    c.invoiceBatchActions = async () => ({
+      items: [row, { ...row, id: 'extra' }],
+    })
+    const blocked = await resumeInvoiceWork(c, args)
+    assert.equal(blocked.needsOriginalScope, true)
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+test('并发相同办理共享稳定请求，部分权限回执不能报告全部完成', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'invoice-assistant-'))
+  try {
+    const c = client(dir),
+      sent = []
+    c.continueInvoiceBatch = async (_, body) => {
+      sent.push(structuredClone(body))
+      return { id: 'receipt', scopeComplete: false, items: [] }
+    }
+    const results = await Promise.all([
+      resumeInvoiceWork(c, args),
+      resumeInvoiceWork(c, args),
+    ])
+    assert.equal(sent.length, 2)
+    assert.deepEqual(sent[0], sent[1])
+    for (const result of results) assert.match(result.message, /无法确认全部/)
+    assert.deepEqual(await readdir(path.join(dir, '.invoice-resume')), [])
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
+~~~~~~
+
 ## test/public-release.test.mjs
 
 SHA-256: efa42a5cfeb89e70e9959e9d1b55c163e65d897d740484d5ae9fadfaebc1a03f
@@ -12541,7 +13163,7 @@ test('invalid chunks, cross-workspace IDs, traversal and download offsets are re
 
 ## test/workbuddy-app.test.mjs
 
-SHA-256: d8e713642b47c549586919cfb26ab99bea4fd9f752031bde773861d6cae684ab
+SHA-256: ab5416aacdab069e65d81b63af3c1f27b2e4cbde0bc9d8bb943ebaf3d5c21cdf
 
 ~~~~~~text
 import test from 'node:test'
@@ -12590,6 +13212,11 @@ test('WorkBuddy MCP server exposes and serves the interactive dashboard', async 
     assert.ok(tools.tools.find(tool => tool.name === 'team_start_workflow').inputSchema.required.includes('key'))
     assert.equal(tools.tools.find(tool => tool.name === 'team_workflow_status').annotations.readOnlyHint, true)
     assert.ok(!tools.tools.some(tool => /approve|review/.test(tool.name)))
+    const resume = tools.tools.find(tool => tool.name === 'team_resume_invoice_work')
+    assert.ok(resume)
+    assert.deepEqual(resume.inputSchema.required.sort(), ['customer', 'operation', 'period'])
+    assert.ok(!('key' in resume.inputSchema.properties))
+    assert.ok(!('orderVersion' in resume.inputSchema.properties))
     assert.equal(tools.tools.find(tool => tool.name === 'show_finance_workbench')._meta.ui.resourceUri, 'ui://workbuddy-finance-workbench/dashboard')
     const resources = await client.listResources()
     assert.equal(resources.resources[0].mimeType, 'text/html;profile=mcp-app')

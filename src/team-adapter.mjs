@@ -3,6 +3,7 @@ import { realpath, readFile, stat, writeFile, open, link, unlink } from 'node:fs
 import path from 'node:path'
 import { randomUUID, createHash } from 'node:crypto'
 import { loadTeamSession, defaultWorkspace } from './team-credentials.mjs'
+import { resumeInvoiceWork } from './invoice-assistant.mjs'
 
 // A session must come from the employee's authorization flow. Do not accept
 // credentials in tool parameters or publish them in tool output.
@@ -52,6 +53,7 @@ async function saveHandoff(dest, bytes) {
 
 export async function executeTeamCommand(client, command, args = {}) {
   switch (command) {
+    case 'resume-invoice-work': return resumeInvoiceWork(client, args, input => executeTeamCommand(client, 'download-invoice-accounting', input))
     case 'me': return client.me()
     case 'companies': return client.companies(args)
     case 'client-dossier': return client.dossier(args.companyId, args.period)

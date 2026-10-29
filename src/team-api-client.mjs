@@ -63,6 +63,7 @@ export function createTeamClient({ baseUrl, session, csrf, fetchImpl = fetch }) 
     return value
   }
   return {
+    origin: base.origin,
     me: async () => { const { csrf: _csrf, ...actor } = await request('GET', '/auth/me'); return actor },
     logoutCurrent: () => request('POST', '/auth/session/logout', { body: {} }),
     companies: query => request('GET', '/companies', { query }),

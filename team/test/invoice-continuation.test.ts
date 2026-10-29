@@ -669,6 +669,33 @@ test(
           );
           assert.deepEqual(await readFile(result.absolutePath), bytes);
           assert.deepEqual(await readdir(client.workspace), ["handoff.json"]);
+          const plain = await executeTeamCommand(
+            client,
+            "resume-invoice-work",
+            {
+              customer: "虚构续办客户",
+              period: "2026-10",
+              operation: "progress",
+              batchTitle: "虚构续办体检",
+            },
+          );
+          assert.equal(
+            plain.items.find((i: any) => i.business === "A").hasHandoff,
+            true,
+          );
+          const noRepeat = await executeTeamCommand(
+            client,
+            "resume-invoice-work",
+            {
+              customer: "虚构续办客户",
+              period: "2026-10",
+              operation: "continue",
+              batchTitle: "虚构续办体检",
+              businessRef: "A",
+            },
+          );
+          assert.match(noRepeat.message, /人工核验/);
+          await rmdir(path.join(client.workspace, ".invoice-resume"));
         } finally {
           await unlink(path.join(client.workspace, "handoff.json")).catch(
             () => {},
@@ -791,7 +818,9 @@ test(
           undefined,
           404,
         );
-        await admin!.query("UPDATE users SET role='operator' WHERE id=$1", [op]);
+        await admin!.query("UPDATE users SET role='operator' WHERE id=$1", [
+          op,
+        ]);
         const replay = await continueBatch(replayBody);
         assert.equal(replay.id, replayId);
         assert.equal(replay.scopeComplete, false);

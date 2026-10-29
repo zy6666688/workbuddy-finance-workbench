@@ -1,4 +1,5 @@
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
+import { useContinuationStorage } from "./use-continuation-storage.js";
 import { InvoiceRequests } from "./invoices.js";
 import {
   AccountingFields,
@@ -59,15 +60,56 @@ export function InvoiceBatchContinuation({
   batch,
   onRefresh,
   onOpen,
+  actor,
 }: any) {
+  const saved = useContinuationStorage(
+    `${actor.org_id}:${actor.id}:${batch.id}`,
+    batch.items.map((i: any) => i.id),
+  );
+  const {
+    selections,
+    reason,
+    pendingSubmission,
+  }: {
+    selections: Record<string, any>;
+    reason: string;
+    pendingSubmission: any;
+  } = saved.value;
+  const setSelections = (
+    next:
+      Record<string, any> | ((old: Record<string, any>) => Record<string, any>),
+  ) =>
+    saved.update((old: any) => ({
+      ...old,
+      selections: typeof next === "function" ? next(old.selections) : next,
+    }));
+  const setReason = (reason: string) => saved.update({ reason });
+  const setPendingSubmission = (pendingSubmission: any) =>
+    saved.update({ pendingSubmission });
   const { busy, notice, setNotice, act, keyFor } = useInvoiceAction(),
     [filter, setFilter] = useState("all"),
-    [selections, setSelections] = useState<Record<string, any>>({}),
-    [reason, setReason] = useState(""),
     [editing, setEditing] = useState<any>(null),
-    [pendingSubmission, setPendingSubmission] = useState<any>(null),
     [receipt, setReceipt] = useState<any>(null);
+  useEffect(() => {
+    const item = batch.items.find((i: any) => i.id === saved.value.editorId);
+    if (!item || pendingSubmission) return;
+    let alive = true;
+    void api(`/orders/${item.order_id}?compact=1`)
+      .then((detail: any) => {
+        if (alive) setEditing({ item, detail, selection: selections[item.id] });
+      })
+      .catch((e: any) => {
+        if (alive) setNotice(e.message);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [saved.value.editorId]);
   const choose = (item: any, selected: boolean) => {
+    if (!selected && saved.value.editorId === item.id) {
+      saved.update({ editorId: null });
+      setEditing(null);
+    }
     setSelections((old) => {
       const next = { ...old };
       if (selected) {
@@ -95,9 +137,12 @@ export function InvoiceBatchContinuation({
     });
   };
   const change = (id: string, patch: any) =>
-    setSelections((old) => ({ ...old, [id]: { ...old[id], ...patch } }));
+    setSelections((old) =>
+      old[id] ? { ...old, [id]: { ...old[id], ...patch } } : old,
+    );
   const edit = async (item: any) => {
     const detail = await api(`/orders/${item.order_id}?compact=1`);
+    saved.update({ editorId: item.id });
     setEditing({ item, detail, selection: selections[item.id] });
   };
   const refreshVersions = async () => {
@@ -129,7 +174,14 @@ export function InvoiceBatchContinuation({
     }
   };
   const sendSubmission = async (body: any) => {
-    setPendingSubmission(body);
+    if (saved.value.unavailableSubmission)
+      throw Error(
+        "上次提交包含当前无权访问的客户，请负责人核实原处理结果后再续办。",
+      );
+    if (!setPendingSubmission(body))
+      throw Error(
+        "本次提交尚未发出：请先解决页面暂存提示，避免丢失资料或重复提交。",
+      );
     let result;
     try {
       result = await api(`/invoice-batches/${batch.id}/continue`, body);
@@ -142,7 +194,6 @@ export function InvoiceBatchContinuation({
       throw Error(
         "续办回执不完整，仍保留原请求；请原样重试，不能据此认定保存成功。",
       );
-    setPendingSubmission(null);
     setReceipt(result);
     const failed = new Set(
       result.items
@@ -154,12 +205,16 @@ export function InvoiceBatchContinuation({
         .filter((x: any) => x.status === "completed")
         .map((x: any) => x.item_id),
     );
-    setSelections((old) =>
-      // An invisible result after scope revocation is not a successful result.
-      Object.fromEntries(
-        Object.entries(old).filter(([id]) => !completed.has(id)),
-      ),
-    );
+    saved.update((old: any) => ({
+      ...old,
+      pendingSubmission: null,
+      editorId: null,
+      selections:
+        // An invisible result after scope revocation is not a successful result.
+        Object.fromEntries(
+          Object.entries(old.selections).filter(([id]) => !completed.has(id)),
+        ),
+    }));
     setEditing(null);
     setNotice(
       result.scopeComplete === false
@@ -238,6 +293,20 @@ export function InvoiceBatchContinuation({
   return (
     <section>
       <h4>批次续办</h4>
+      <p role="status">
+        {saved.error ||
+          (saved.restored
+            ? "已恢复上次填写，请核对当前进度后接着办。"
+            : "填写会自动暂存在此浏览器，关闭后用同一账号打开本批次即可接着办。")}
+      </p>
+      <p className="muted">
+        暂存包含业务资料，请使用本人设备；清理浏览器数据会清除暂存。附件保留已上传文件的选择，本机未上传文件需要重新选择。
+      </p>
+      {saved.value.unavailableSubmission && (
+        <p role="alert">
+          上次提交的客户权限有变化，请负责人核实处理结果。当前不会重复提交。
+        </p>
+      )}
       <p>
         明确选择项目后处理。未选项目保持原状；保存草稿、形成交接成果均不代表已入账。
       </p>
@@ -262,7 +331,11 @@ export function InvoiceBatchContinuation({
           void act(submit);
         }}
       >
-        <fieldset disabled={busy || !!pendingSubmission}>
+        <fieldset
+          disabled={
+            busy || !!pendingSubmission || !!saved.value.unavailableSubmission
+          }
+        >
           <legend>所选项目续办资料</legend>
           <label>
             本次续办说明
@@ -425,7 +498,10 @@ export function InvoiceBatchContinuation({
           <button
             type="button"
             disabled={busy}
-            onClick={() => setSelections({})}
+            onClick={() => {
+              saved.update({ selections: {}, editorId: null });
+              setEditing(null);
+            }}
           >
             清空选择
           </button>
@@ -463,7 +539,12 @@ export function InvoiceBatchContinuation({
             item: editing.item,
             initialChanges: editing.selection?.changes,
             initialReason: editing.selection?.reason || reason,
-            onCancel: () => setEditing(null),
+            onCancel: () => {
+              saved.update({ editorId: null });
+              setEditing(null);
+            },
+            onDraftChange: (changes: any, itemReason: string) =>
+              change(editing.item.id, { changes, reason: itemReason }),
             onPrepare: async (changes: any, itemReason: string) => {
               setSelections((old) => ({
                 ...old,
@@ -478,6 +559,7 @@ export function InvoiceBatchContinuation({
                 },
               }));
               setEditing(null);
+              saved.update({ editorId: null });
               setNotice("本项内容已暂存；请提交所选项目续办。");
             },
           }}

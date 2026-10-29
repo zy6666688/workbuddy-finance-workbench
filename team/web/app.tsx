@@ -597,7 +597,7 @@ function App() {
   ];
   const teamContent = () => (
     <div className="team-panels" aria-busy={busy}>
-      {page === "invoices" && <InvoiceBatches api={api} write={write} renderContinuation={(batch:any,onChanged:any)=><InvoiceBatchContinuation key={batch.id} api={api} batch={batch} onRefresh={onChanged} onOpen={async(id:string)=>{pendingOpen.current=id;navigate("orders");}}/>} onOpen={async(id:string)=>{pendingOpen.current=id;navigate("orders");}}/>}
+      {page === "invoices" && <InvoiceBatches api={api} write={write} renderContinuation={(batch:any,onChanged:any)=><InvoiceBatchContinuation key={user.org_id+user.id+batch.id+batch.items.map((i:any)=>i.id).sort().join()} actor={user} api={api} batch={batch} onRefresh={onChanged} onOpen={async(id:string)=>{pendingOpen.current=id;navigate("orders");}}/>} onOpen={async(id:string)=>{pendingOpen.current=id;navigate("orders");}}/>}
       {page === "accounting" && <AccountingWorkspace key={cid + "/" + period} api={api} companyId={cid} period={period} canWrite={write} />}
       {notice && (
         <div className="notice" role="alert">

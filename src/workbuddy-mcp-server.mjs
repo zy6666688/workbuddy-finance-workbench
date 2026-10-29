@@ -13,7 +13,7 @@ const APP_MIME = 'text/html;profile=mcp-app'
 const currentDirectory = dirname(fileURLToPath(import.meta.url))
 const widgetHtml = readFileSync(join(currentDirectory, 'widget.html'), 'utf8')
 
-const server = new McpServer({ name: 'workbuddy-finance-workbench', version: VERSION })
+const server = new McpServer({ name: 'workbuddy-finance-workbench', version: VERSION }, { instructions: '面向普通财务人员：优先替用户办理，沿用已有资料，只集中询问真正缺少的业务信息。续办、查进度和取成果优先使用 team_resume_invoice_work，客户、月份、批次按用户明确范围处理。不要要求用户提供 UUID、key、版本、JSON、命令或工具名。回复先说处理结果，再说缺项或待哪位人员复核，最后给可点击成果位置；不复述工具参数、技术排查和长操作日志。已有资料不要重新索取。不得代替独立复核，不把申请保存或交接成果说成已开票、已入账。' })
 
 // Calls go through the existing employee session and the normal team API.
 // Deliberately do not expose an arbitrary HTTP tool or review/approval actions.
@@ -26,6 +26,7 @@ const teamTool = (name, description, inputSchema, command, readOnlyHint = true) 
       const data = await executeTeamCommand(await teamClientFromEnvironment(), command, args)
       return { content: [{ type: 'text', text: JSON.stringify(data) }] }
     } catch (error) {
+      if (error.outcomeUnknown && command === 'resume-invoice-work') return { isError: true, content: [{ type: 'text', text: '本次结果还在核实，填写已保留。下次说“继续办理”即可找回结果，不需要重填，也不会另建重复申请。' }] }
       if (error.outcomeUnknown) return { isError: true, content: [{ type: 'text', text: JSON.stringify({
         error: error.message, outcomeUnknown: true, requestKey: args.key || null,
         requestId: error.requestId || null,
@@ -37,6 +38,14 @@ const teamTool = (name, description, inputSchema, command, readOnlyHint = true) 
 }
 const orderId = z.string().uuid().describe('团队版月度工作单编号')
 const runId = z.string().uuid().describe('团队版工作流执行编号')
+const registerInvoiceAssistant = () => teamTool('team_resume_invoice_work', '普通用户的一句话入口。按客户全称和月份查进度、沿用原资料继续办理或取回已复核成果；内部自动查编号、版本并保存未确认请求，重启后也能继续。用户说接着办就用 continue，说进度用 progress，说取成果用 download。歧义返回批次/业务供用户选择，只问缺项，不输出内部参数。corrections/context 只填写用户本次明确补充的字段，不重造已有资料；不会代替人工复核。', {
+  customer: z.string().trim().min(1).max(200).describe('客户全称或客户编码'),
+  period: z.string().regex(/^20\d{2}-(0[1-9]|1[0-2])$/),
+  operation: z.enum(['progress','continue','download']),
+  batchTitle: z.string().max(200).optional(), batchCreatedAt: z.iso.datetime().optional().describe('同名批次时，使用查询返回的创建时间区分'), businessRef: z.string().max(100).optional(), note: z.string().trim().max(1000).optional(),
+  context: invoiceAccountingContext.partial().optional(),
+  corrections: z.object({buyerName:z.string().max(200).optional(),buyerTaxId:z.string().max(30).optional(),businessDescription:z.string().max(2000).optional(),remark:z.string().max(1000).optional()}).strict().optional(),
+}, 'resume-invoice-work', false)
 teamTool('team_start_accounting', '一键账务入口：将标准 XLSX 整理底稿及原始依据保存，并在同一事务发起工作台内嵌计算。所有规则、排队和计算都由工作台负责，无需额外开票插件或第三方计算服务。会更新输入版本并使旧任务失效，不入账、不复核；同一请求重试保留 key 和所有输入。返回 workflow.runId 继续查询。', { orderId, version: z.number().int().positive(), key: z.string().uuid(), workflowId: z.enum(['monthly-management-report','vat-monthly-check']), sourceFileIds: z.array(z.string().uuid()).min(1).max(50), reason: z.string().min(1).max(2000), filePath: z.string().min(1).max(500) }, 'start-accounting', false)
 teamTool('team_workflow_template', '下载剩余工作流的专用 XLSX 模板到授权目录；按 team_workflow 的 inputContract 填写，不猜测字段与政策。两项账务计算使用 team_accounting_template。', { workflowId: z.string().regex(/^[a-z][a-z0-9-]{0,99}$/), filePath: z.string().min(1).max(500) }, 'workflow-template', false)
 teamTool('team_start_prepared_workflow', '统一程序内入口：一次保存专用模板整理结果和依据，按工作流能力安排本地规则处理或账务计算。先读 team_workflow 范围和模板。相同 key 及内容可安全重试；更新输入版本会使旧任务失效。返回 workflow.runId 查询结果，不自动付款、入账、申报、开票、删除或启用定时器。', { orderId, version: z.number().int().positive(), key: z.string().uuid(), workflowId: z.string().regex(/^[a-z][a-z0-9-]{0,99}$/), sourceFileIds: z.array(z.string().uuid()).min(1).max(19), reason: z.string().min(1).max(2000), filePath: z.string().min(1).max(500) }, 'start-prepared-workflow', false)
@@ -67,7 +76,7 @@ teamTool('team_prepare_invoice_authorization', '登记逐户授权草稿，凭�
   orderId, key: z.string().uuid(), evidenceFileIds: z.array(z.string().uuid()).min(1).max(20),
   payload: z.object({ sellerName: z.string().min(1).max(200), sellerTaxId: z.string().min(1).max(30), agencyName: z.string().min(1).max(200), representative: z.string().min(1).max(100), region: z.string().min(1).max(100), channelLabel: z.string().min(1).max(100), validFrom: z.iso.date(), validUntil: z.iso.date(), scopes: z.array(z.enum(['prepare_applications','record_results'])).min(1).max(2), note: z.string().min(1).max(2000) }).strict()
 }, 'prepare-invoice-authorization', false)
-teamTool('team_prepare_invoice_batch', '一句话批量申请入口：明确客户范围后查工作单当前版本、固定档案、有效授权和来源文件，一次提交最多 50 项，由工作台逐户生成申请草稿。保留批次 key、每项 itemKey 及 key 以便原样重试。prepared 仅表示申请已保存，仍需看缺项和人工核验。blocked 项修正后新建补办批次，勿重复成功项；不调用开票平台。', { key: z.string().uuid(), title: z.string().min(1).max(200), items: z.array(z.object({ ...invoiceInput, itemKey: z.string().uuid(), authorization: invoiceAuthorizationRef }).strict()).min(1).max(50) }, 'prepare-invoice-batch', false)
+teamTool('team_prepare_invoice_batch', '一句话批量申请入口：明确客户范围后查工作单当前版本、固定档案、有效授权和来源文件，一次提交最多 50 项，由工作台逐户生成申请草稿。保留批次 key、每项 itemKey 及 key 以便原样重试。prepared 仅表示申请已保存，仍需看缺项和人工核验。blocked 项通过原批次续办入口补正，不另建批次，勿重复成功项；不调用开票平台。', { key: z.string().uuid(), title: z.string().min(1).max(200), items: z.array(z.object({ ...invoiceInput, itemKey: z.string().uuid(), authorization: invoiceAuthorizationRef }).strict()).min(1).max(50) }, 'prepare-invoice-batch', false)
 teamTool('team_invoice_batches', '查询批量申请列表；只统计当前可访问客户，不能将不可见项目当作完成。', { orderId: orderId.optional(), ...invoicePage }, 'invoice-batches')
 teamTool('team_invoice_batch', '按批次追踪逐户缺项、授权、人工核验及回录结果。prepared 不是开票成功；recordedIssued 是人工核验的离线回执，未做平台查验。结果不明先核实，不可重开。', { batchId: z.string().uuid() }, 'invoice-batch')
 teamTool('team_invoice_results', '分页读取成功、失败或结果不明的回录及附件、核验状态。pending 仍待独立核验，verified 不等于税务局在线查验。', { requestId: z.string().uuid(), ...invoicePage }, 'invoice-results')
@@ -79,6 +88,7 @@ teamTool('team_upload_invoice_evidence', '上传授权交接目录内用户提�
 const invoiceAccountingContext = z.object({
   businessType: z.string().trim().max(100).optional(), handlingDate: z.union([z.iso.date(), z.literal('')]).optional(), currency: z.string().trim().max(10).optional(), businessMode: z.enum(['standard_sale','other','unknown']).optional(), decision: z.enum(['new_entry','link_existing','hold']).optional(), conditionsConfirmed: z.boolean().optional(), ruleId:z.string().uuid().nullable().optional(), ruleVersion:z.number().int().positive().nullable().optional(), recognitionBasis: z.string().trim().max(2000).optional(), existingVoucher: z.string().trim().max(60).optional(), note: z.string().trim().min(1).max(2000), evidence: z.array(z.object({requirement:z.string().trim().min(1).max(100),fileId:z.string().uuid(),note:z.string().trim().min(1).max(1000)}).strict()).max(30).optional()
 }).strict()
+registerInvoiceAssistant()
 const continuationBase = { itemId:z.string().uuid(),expectedAttemptId:z.string().uuid().nullable(),orderVersion:z.number().int().positive(),reason:z.string().trim().min(1).max(2000) }
 const continuationChanges = z.object({payload:invoiceInput.payload,sourceFileIds:invoiceInput.sourceFileIds,authorization:invoiceAuthorizationRef}).strict()
 const invoiceContinuationItem = z.discriminatedUnion('action',[

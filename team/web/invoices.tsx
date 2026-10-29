@@ -7,7 +7,7 @@ import {
   AuthorizationSelect,
   InvoiceResults,
 } from "./invoice-agency.js";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { FilePicker } from "./file-picker.js";
 
 const stages: any = {
@@ -161,6 +161,13 @@ export function InvoiceRequests({
     }
     setReason(continuation.initialReason || "");
   }, [continuation?.item.id]);
+  useLayoutEffect(() => {
+    if (continuation && editing)
+      continuation.onDraftChange?.(
+        { payload, sourceFileIds: fileIds, authorization },
+        reason,
+      );
+  }, [payload, fileIds, authorization, reason, editing]);
   const field = (key: string, label: string, max: number) => (
     <label>
       {label}
@@ -483,7 +490,7 @@ export function InvoiceRequests({
                 continuation ? continuation.onCancel() : setEditing(false)
               }
             >
-              取消编辑
+              {continuation ? "收起编辑（保留填写）" : "取消编辑"}
             </button>
           </div>
         </form>

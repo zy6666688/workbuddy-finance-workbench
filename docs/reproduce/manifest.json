@@ -60,7 +60,7 @@
     },
     {
       "path": "agents/finance-workbench/SKILL.md",
-      "sha256": "be4afb7a3c3bd72cde025d1ef6a835f4245f8abbe47b1453d1f84e9f7e35cd87"
+      "sha256": "bdf38004e7748949893409cdafd3da3d20c5d70ae955a6a045b8d617ed1beddd"
     },
     {
       "path": "agents/finance-workbench/references/prompts/01-excel-cleaning.md",
@@ -367,6 +367,10 @@
       "sha256": "dbebc88d6df2bd698f3a861acf31244d2520427cdca81559d7335d94eb93f29c"
     },
     {
+      "path": "src/invoice-assistant.mjs",
+      "sha256": "e4d9810673a819e2a7bf8797fd6728490946ca802a8f7bfd088810492ee245d6"
+    },
+    {
       "path": "src/sidebar-icons.jsx",
       "sha256": "001c81a0cd48cc6fe8d67866c429512f5da0670705fbae677fa3ca3791ca58d6"
     },
@@ -376,11 +380,11 @@
     },
     {
       "path": "src/team-adapter.mjs",
-      "sha256": "8cc9bc998819de1ef5ff7a1100002f57b8c7d70bc539026cf8764877dd2397b0"
+      "sha256": "7eb2b6a183d628bb8354cb3f880e71f453f2c895ed5c1579fbbc349af506a130"
     },
     {
       "path": "src/team-api-client.mjs",
-      "sha256": "1f71a040684288fafbc345b9c026773ec7eca810d0ee58dff512c76e7e4a3c07"
+      "sha256": "49ef0c587282f50270399258723025b532cc5669081345fdf04f9dd34f4f73da"
     },
     {
       "path": "src/team-cli.mjs",
@@ -400,7 +404,7 @@
     },
     {
       "path": "src/workbuddy-mcp-server.mjs",
-      "sha256": "e8f259ab35d895f80e2b6e2e9f25c539cc0f226daba79b3fd8a8d03ad64ce3a5"
+      "sha256": "198df201662c7925d50835fa35b728818a0cc648dc6ecb84671b2ad1a3c23d32"
     },
     {
       "path": "src/workbuddy-widget.jsx",
@@ -443,6 +447,10 @@
       "sha256": "e92017ab859fa60fdc5713e1c2f55531552af2f189f25f896daed3549c427861"
     },
     {
+      "path": "test/invoice-assistant.test.mjs",
+      "sha256": "9b3b79edde17240f6dd9c0136a0a269dde63bf7727c316b7d3d37ab4408435f8"
+    },
+    {
       "path": "test/public-release.test.mjs",
       "sha256": "efa42a5cfeb89e70e9959e9d1b55c163e65d897d740484d5ae9fadfaebc1a03f"
     },
@@ -468,7 +476,7 @@
     },
     {
       "path": "test/workbuddy-app.test.mjs",
-      "sha256": "d8e713642b47c549586919cfb26ab99bea4fd9f752031bde773861d6cae684ab"
+      "sha256": "ab5416aacdab069e65d81b63af3c1f27b2e4cbde0bc9d8bb943ebaf3d5c21cdf"
     },
     {
       "path": "test/workflow-snapshot.test.mjs",
