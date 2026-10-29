@@ -93,6 +93,11 @@ async function packageFor(runId) {
     await new Promise((r) => setTimeout(r, 1000));
   }
   assert.equal(done.status, "completed");
+  const waiting = await db.query(
+    "SELECT count(*)::int AS n FROM pgboss.job WHERE name='team-job' AND data->>'id'=$1 AND state='created'",
+    [job.id],
+  );
+  assert.ok(waiting.rows[0].n <= 1, "repeated dispatch must not flood the queue with the same business job");
   const { bytes } = await request(
       "op",
       `/jobs/${job.id}/download`,

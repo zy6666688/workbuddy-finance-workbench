@@ -1,15 +1,23 @@
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import { Pool } from "pg";
 import argon2 from "argon2";
-import { mkdtemp, readFile, readdir, unlink, rmdir } from "node:fs/promises";
+import {
+  mkdtemp,
+  readFile,
+  readdir,
+  unlink,
+  rmdir,
+  mkdir,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createTeamClient } from "../../src/team-api-client.mjs";
 import { executeTeamCommand } from "../../src/team-adapter.mjs";
 import { buildServer } from "../src/server.js";
-import { pool } from "../src/core.js";
+import { pool, dataRoot } from "../src/core.js";
 
 const enabled = process.env.TEAM_TEST_ACCEPT === "1";
 const admin = enabled
@@ -90,14 +98,25 @@ test(
       "INSERT INTO client_dossier_bindings(org_id,company_id,period,revision_id,actor_id) VALUES($1,$2,'2026-10',$3,$4)",
       [org, company, dossier, op],
     );
+    await mkdir(dataRoot, { recursive: true });
     for (const [id, kind] of [
       [source, "source"],
       [evidence, "evidence"],
-    ])
+    ]) {
+      await writeFile(path.join(dataRoot, id), "a", { flag: "wx" });
       await admin!.query(
         "INSERT INTO files(id,org_id,company_id,order_id,name,kind,category,size,sha256,storage_key,uploaded_by,version) VALUES($1,$2,$3,$4,$5,$5,'other',1,$6,$1::uuid::text,$7,1)",
-        [id, org, company, order, kind, "a".repeat(64), op],
+        [
+          id,
+          org,
+          company,
+          order,
+          kind,
+          createHash("sha256").update("a").digest("hex"),
+          op,
+        ],
       );
+    }
     async function login(id: string) {
       const r = await app.inject({
         method: "POST",

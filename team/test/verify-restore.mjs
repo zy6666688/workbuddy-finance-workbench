@@ -14,6 +14,14 @@ try {
     assert.equal(createHash("sha256").update(bytes).digest("hex"), f.sha256);
   }
   const report = {};
+  const accountingTables = [];
+  for (const table of ['accounting_snapshots', 'invoice_requests', 'invoice_request_revisions',
+    'invoice_authorizations', 'invoice_batches', 'invoice_batch_items', 'invoice_result_records',
+    'invoice_continuations', 'invoice_continuation_items', 'invoice_ledger',
+    'invoice_accounting_rules', 'invoice_accounting_drafts']) {
+    if ((await db.query('SELECT to_regclass($1) AS t', ['public.' + table])).rows[0].t)
+      accountingTables.push(table);
+  }
   for (const table of [
     "users",
     "companies",
@@ -28,6 +36,7 @@ try {
     "jobs",
     "finance_workspaces",
     "user_preferences",
+    ...accountingTables,
     ...(hasDossier ? ['client_dossier_documents', 'client_dossier_revisions', 'client_dossier_drafts', 'client_dossier_bindings'] : []),
   ])
     report[table] = (

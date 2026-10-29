@@ -315,7 +315,9 @@ export async function runWorker() {
     retryBackoff: true,
     expireInSeconds: 600,
   });
-  await boss.work("team-job", { batchSize: 2 }, async (jobs) => {
+  // Settle each job independently: one rejected customer's task must not keep
+  // another customer's fetched task unprocessed and retry the entire batch.
+  await boss.work("team-job", { batchSize: 1 }, async (jobs) => {
     for (const job of jobs) {
       const data = job.data as { id: string; actor_id: string };
       try {
@@ -340,7 +342,9 @@ export async function runWorker() {
     try {
       const p = await control.query("SELECT * FROM pending_jobs()");
       for (const j of p.rows)
-        await boss.send("team-job", j, { singletonKey: j.id });
+        // A standard queue does not deduplicate send() by singletonKey alone.
+        // Keep one waiting dispatch per business job, including after restart.
+        await boss.upsert("team-job", j, { singletonKey: j.id });
     } catch (e: any) {
       console.error("dispatch error", e.message);
     } finally {

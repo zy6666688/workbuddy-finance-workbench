@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import argon2 from "argon2";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { buildServer } from "../src/server.js";
-import { pool } from "../src/core.js";
+import { pool, dataRoot, sha } from "../src/core.js";
 import { workflowProgress } from "../src/workflow-tasks.js";
 import { FINANCE_WORKFLOWS } from "../../src/finance-data.js";
 const enabled = process.env.TEAM_TEST_ACCEPT === "1";
@@ -105,9 +107,12 @@ test(
       "INSERT INTO work_orders(id,org_id,company_id,period,status,due_date,checklist,assignee_id) VALUES($1,$2,$3,'2026-10','processing','2026-11-01','[]',$4)",
       [order, org, company, op],
     );
+    const storageKey = randomUUID();
+    await mkdir(dataRoot, { recursive: true });
+    await writeFile(path.join(dataRoot, storageKey), "", { flag: "wx" });
     await admin!.query(
       "INSERT INTO files(id,org_id,company_id,order_id,name,kind,category,size,sha256,storage_key,uploaded_by,version) VALUES($1,$2,$3,$4,'虚构.txt','source','other',0,$5,$6,$7,1)",
-      [file, org, company, order, "a".repeat(64), randomUUID(), op],
+      [file, org, company, order, sha(""), storageKey, op],
     );
     async function login(id: string) {
       const r = await app.inject({
