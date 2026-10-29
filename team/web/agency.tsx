@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import { ClientDossier } from "./client-dossier.js";
 const stages: any = {
   collecting: "待收集",
   checking: "整理核对",
@@ -487,6 +488,7 @@ export function ClientWorkspace({
             </button>
           )}
         </div>
+        <ClientDossier key={client.id + period} api={api} companyId={client.id} period={period} />
         <div className="agency-columns">
           <section className="panel">
             <h2>客户交接</h2>
@@ -974,6 +976,7 @@ export function ReviewCenter({
                     .join("、")}
                   <br />
                   {o.submission.checks?.summary}
+                  {o.submission.accounting && <><br />财务底稿 v{o.submission.accounting.version} · 银行核对：{o.submission.accounting.bank?.status || "未关联"}</>}
                 </p>
               )}
               {queue === "returned" && (

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildFinanceBackup, canCloseFinanceException, closeProgress, dueLabel, emptyFinanceSnapshot, financeExceptionRisk, financeExceptionsToCsv, greetingFor, localDateKey, normalizeFinanceException, normalizeFinanceSnapshot, normalizeTodo, parseFinanceBackup, shiftDate, snapshotProfit, summarizeFinanceExceptions, workflowsForView } from '../src/finance-dashboard-helpers.js'
+import { buildFinanceBackup, canCloseFinanceException, closeProgress, dueLabel, emptyFinanceSnapshot, financeExceptionRisk, financeExceptionsToCsv, greetingFor, localDateKey, normalizeFinanceException, normalizeFinanceSnapshot, normalizeTodo, parseFinanceBackup, shiftDate, snapshotProfit, snapshotBudgetDifference, summarizeFinanceExceptions, workflowsForView } from '../src/finance-dashboard-helpers.js'
 
 test('date helpers use local dates and stable due labels', () => {
   const date = new Date(2026, 7, 21, 9, 0, 0)
@@ -52,6 +52,13 @@ test('finance snapshots normalize numbers and calculate profit safely', () => {
   assert.equal(snapshot.note, '已复核')
   assert.equal(snapshotProfit(snapshot), 560000)
   assert.equal(snapshotProfit({ income: '', expense: 10 }), null)
+})
+
+test('budget comparison handles missing values and decimal amounts', () => {
+  assert.equal(snapshotBudgetDifference({ expense: 40000.20, budget: 35000 }), 5000.20)
+  assert.equal(snapshotBudgetDifference({ expense: 0.1, budget: 0.3 }), -0.2)
+  assert.equal(snapshotBudgetDifference({ expense: '', budget: 0 }), null)
+  assert.equal(snapshotBudgetDifference({ expense: 0, budget: null }), null)
 })
 
 test('module routing exposes focused finance workflows', () => {

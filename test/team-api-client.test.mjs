@@ -49,6 +49,23 @@ test('command dispatcher uses only explicit operations and cannot access review 
   await assert.rejects(executeTeamCommand(client, 'request', { path: '/api/v1/orders' }), /未知团队命令/)
 })
 
+test('workflow commands preserve the request key and query a specific task', async () => {
+  const calls = []
+  const client = createTeamClient({ baseUrl: 'http://127.0.0.1:8081', session, csrf, fetchImpl: async (url, opts) => {
+    calls.push({ pathname: url.pathname, method: opts.method, body: opts.body && JSON.parse(opts.body) })
+    return new Response(JSON.stringify({ runId: order, state: 'queued' }))
+  } })
+  const body = { version: 1, key: order, workflowId: 'w', fileIds: [order] }
+  await executeTeamCommand(client, 'start-workflow', { orderId: order, ...body })
+  await executeTeamCommand(client, 'start-workflow', { orderId: order, ...body })
+  await executeTeamCommand(client, 'workflow-status', { runId: order })
+  assert.deepEqual(calls[0], { pathname: `/api/v1/orders/${order}/workflow-tasks`, method: 'POST', body })
+  assert.deepEqual(calls[1], calls[0])
+  assert.equal(calls[2].pathname, `/api/v1/workflow-tasks/${order}`)
+  assert.equal(calls[2].method, 'GET')
+  assert.throws(() => client.workflowStatus('../jobs'), /编号格式/)
+})
+
 test('file handoff stays inside the selected workspace and never overwrites an existing file', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'team-handoff-'))
   const old = process.env.ZY_TEAM_WORKSPACE
@@ -87,5 +104,34 @@ test('Windows employee authorization is encrypted at rest and removable', { skip
   } finally {
     if (old === undefined) delete process.env.LOCALAPPDATA; else process.env.LOCALAPPDATA = old
     await rmdir(root)
+  }
+})
+
+test('continuation timeout and malformed receipts preserve the exact request for safe retry', async () => {
+  const body = { key: order, items: [{ itemId: order, action: 'ledger', expectedAttemptId: null, orderVersion: 1, requestVersion: 2, reason: 'synthetic review' }] }
+  for (const failure of ['timeout', 'malformed', 'server']) {
+    const calls = []
+    const client = createTeamClient({ baseUrl: 'http://127.0.0.1:8081', session, csrf, fetchImpl: async (_url, options) => {
+      calls.push(options.body)
+      if (calls.length > 1) return new Response(JSON.stringify({ id: order, items: [], scopeComplete: false }))
+      if (failure === 'timeout') throw new Error('aborted')
+      if (failure === 'malformed') return new Response('<html>interrupted</html>')
+      return new Response(JSON.stringify({ error: 'unavailable' }), { status: 500 })
+    } })
+    await assert.rejects(executeTeamCommand(client, 'continue-invoice-batch', { batchId: order, ...body }), e => e.outcomeUnknown === true)
+    assert.equal(calls.length, 1)
+    await executeTeamCommand(client, 'continue-invoice-batch', { batchId: order, ...body })
+    assert.equal(calls[0], calls[1])
+    assert.deepEqual(JSON.parse(calls[1]), body)
+  }
+})
+
+test('handoff transport refuses error pages and interrupted bodies rather than returning a false download', async () => {
+  for (const response of [
+    new Response('<html>login</html>', { headers: { 'content-type': 'text/html' } }),
+    new Response(new ReadableStream({ start(c) { c.enqueue(new Uint8Array([1, 2])); c.error(new Error('interrupted')) } }), { headers: { 'content-type': 'application/json' } }),
+  ]) {
+    const client = createTeamClient({ baseUrl: 'http://127.0.0.1:8081', session, csrf, fetchImpl: async () => response })
+    await assert.rejects(client.downloadInvoiceAccounting(order, 'json'))
   }
 })

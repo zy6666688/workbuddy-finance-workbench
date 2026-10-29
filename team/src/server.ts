@@ -1,3 +1,12 @@
+import { createRun, runRequest, workflowTaskRoutes, startWorkflowTask, readProgress } from "./workflow-tasks.js";
+import { embeddedCapability, workflowDefinition } from "./embedded-workflows.js";
+import { invoiceRoutes } from "./invoice-routes.js";
+import { invoiceAgencyRoutes } from "./invoice-agency-routes.js";
+import { invoiceContinuationRoutes } from "./invoice-continuation.js";
+import { invoiceAccountingRoutes } from "./invoice-accounting-routes.js";
+import { calculationRoutes } from "./calculation-routes.js";
+import { readAccountingWorkbook } from "./accounting-workbook.js";
+import { workflowTemplate } from "./workflow-tables.js";
 import {
   resultRoutes,
   resultColumns,
@@ -9,6 +18,9 @@ import {
 } from "./results.js";
 import { filePageRoutes } from "./file-pages.js";
 import { workspaceRoutes } from "./workspace.js";
+import { accountingRoutes } from "./accounting-routes.js";
+import { clientDossierRoutes, bindNewMonthDossier } from "./client-dossier-routes.js";
+import { contextualAccountingReport } from "./accounting-context.js";
 import { deliveryRead } from "./delivery.js";
 import { literalContains } from "./search.js";
 import { agencyRoutes, submissionReadiness } from "./agency.js";
@@ -206,9 +218,15 @@ export async function buildServer() {
     app.post(
       url,
       {
+        // Use the same Zod parser for HTTP and service inputs. AJV cannot apply
+        // defaults inside union branches and can remove another branch's fields.
+        validatorCompiler: () => (data) => {
+          const parsed = schema.safeParse(data);
+          return parsed.success ? { value: parsed.data } : { error: parsed.error };
+        },
         schema: {
           summary,
-          body: z.toJSONSchema(schema, { target: "draft-7" }),
+          body: z.toJSONSchema(schema, { target: "draft-7", io: "input" }),
           security: [{ session: [], csrf: [] }],
         },
       },
@@ -670,10 +688,10 @@ export async function buildServer() {
         ),
       ),
   );
-  const upload = (taskResult: boolean) => async (r: any) => {
+  const upload = (taskResult: boolean, accountingInput = false) => async (r: any) => {
     writer(r.actor);
     const q = r.query as any;
-    const kind = taskResult
+    const kind = accountingInput ? "source" : taskResult
       ? "result"
       : z.enum(["source", "result", "evidence"]).parse(q.kind);
     const origin =
@@ -684,7 +702,7 @@ export async function buildServer() {
         : null;
     const runId = taskResult ? uuid.parse(r.params.id) : null;
     const expected = z.coerce.number().int().positive().parse(q.version);
-    const category = label.parse(q.category || "其他");
+    const category = accountingInput ? "WorkBuddy整理底稿" : label.parse(q.category || "其他");
     const uploadKey = q.key === undefined ? null : uuid.parse(q.key);
     const materialIndex =
       q.materialIndex === undefined
@@ -708,8 +726,19 @@ export async function buildServer() {
     )
       fail(400, "不支持的文件类型");
     const bytes = await file.toBuffer();
+    const basisIds = accountingInput ? z.array(uuid).min(1).max(50).parse(String((file.fields.sourceFileIds as any)?.value || "").split(",")) : [];
+    const preparationNote = accountingInput ? z.string().trim().min(1).max(2000).parse((file.fields.reason as any)?.value) : "";
+    const preparedWorkflow = accountingInput ? z.string().regex(/^[a-z][a-z0-9-]{0,99}$/).refine(id => !!embeddedCapability(id), "工作流没有内置执行器").optional().parse((file.fields.workflowId as any)?.value) : undefined;
+    if (preparedWorkflow && !uploadKey) fail(400, "一次发起计算必须提供稳定请求标识");
     if (file.file.truncated) fail(413, "文件超过50MB");
     validateFile(bytes, ext);
+    if (accountingInput) {
+      if (ext !== ".xlsx" || bytes.length > 10 * 1024 * 1024) fail(400, "整理底稿须为 10 MB 以内的标准 XLSX");
+      if (!preparedWorkflow || embeddedCapability(preparedWorkflow)!.executor === "embedded_accounting") {
+        const parsed = await readAccountingWorkbook(bytes, name);
+        if (Buffer.byteLength(JSON.stringify(parsed)) > 2 * 1024 * 1024) fail(413, "底稿数据过大，请按期间整理");
+      }
+    }
     const fingerprint = sha(
       canonical({
         name,
@@ -719,6 +748,7 @@ export async function buildServer() {
         category,
         materialIndex: materialIndex ?? null,
         hash: sha(bytes),
+        ...(accountingInput ? { basisIds: [...new Set(basisIds)].sort(), preparationNote, preparedWorkflow: preparedWorkflow || null } : {}),
       }),
     );
     return tx(r.actor, async (db) => {
@@ -739,6 +769,10 @@ export async function buildServer() {
         if (previous) {
           if (previous.upload_fingerprint !== fingerprint)
             fail(409, "上传标识已用于不同文件，请重新选择文件");
+          if (preparedWorkflow) {
+            const existing = await one(db, "SELECT id FROM runs WHERE order_id=$1 AND created_by=$2 AND client_key=$3", [o.id, r.actor.id, uploadKey]);
+            return { id: previous.id, workflow: await readProgress(db, existing.id), replayed: true };
+          }
           return {
             id: previous.id,
             orderVersion: o.version,
@@ -758,6 +792,13 @@ export async function buildServer() {
       )
         fail(409, "只能上传至当前输入版本的外部处理中任务，已回传请创建修订");
       editable(o);
+      if (accountingInput) {
+        if (o.status !== "processing" || !(await company(db, o.company_id)).active) fail(409, "请在有效客户的经办阶段提交整理底稿");
+        const basis = await db.query("SELECT f.id FROM files f WHERE f.order_id=$1 AND f.id=ANY($2::uuid[]) AND f.kind='source' AND NOT EXISTS(SELECT 1 FROM files n WHERE n.order_id=f.order_id AND n.kind='source' AND n.name=f.name AND n.version>f.version)", [o.id, basisIds]);
+        if (basis.rows.length !== new Set(basisIds).size) fail(409, "整理依据已变化，请重新选择本单最新资料");
+        const original = await db.query("SELECT 1 FROM files WHERE order_id=$1 AND kind='source' AND name=$2 AND category<>'WorkBuddy整理底稿' LIMIT 1", [o.id, path.basename(name.replaceAll("\\", "/"))]);
+        if (original.rowCount) fail(409, "整理底稿请使用与客户原件不同的文件名");
+      }
       if (
         materialIndex !== undefined &&
         (kind !== "source" ||
@@ -848,9 +889,14 @@ export async function buildServer() {
           "file_uploaded",
           f.id,
           o.company_id,
-          { name: f.name, kind, origin, runId, sha256: f.hash },
+          { name: f.name, kind, origin, runId, sha256: f.hash, ...(accountingInput ? { basisIds, preparationNote, preparedInput: true } : {}) },
           r.id,
         );
+        if (preparedWorkflow) {
+          const executionMode = embeddedCapability(preparedWorkflow)!.executor;
+          const workflow = await startWorkflowTask(db, r.actor, o.id, { version: o.version + 1, key: uploadKey, workflowId: preparedWorkflow, fileIds: executionMode === "embedded_rules" ? [...new Set([f.id, ...basisIds])] : [f.id], taskBrief: { requirements: preparationNote, ...(executionMode === "embedded_rules" ? { preparedWorkbookId: f.id } : {}) }, executionMode }, r.id);
+          return { id: f.id, workflow };
+        }
         return {
           id: f.id,
           orderVersion: o.version + 1,
@@ -867,6 +913,12 @@ export async function buildServer() {
     { schema: { summary: "上传资料、人工成果或证据" } },
     upload(false),
   );
+  app.post("/api/v1/orders/:id/accounting-input", { schema: { summary: "保存有依据的标准整理底稿，更新输入版本" } }, upload(false, true));
+  app.get("/api/v1/workflows/:id/template", async (r: any, reply: any) => {
+    const id = z.string().regex(/^[a-z][a-z0-9-]{0,99}$/).parse(r.params.id);
+    reply.header("Content-Disposition", `attachment; filename="${id}-template.xlsx"`).type("application/octet-stream");
+    return workflowTemplate(id);
+  });
   app.post(
     "/api/v1/runs/:id/files",
     { schema: { summary: "上传明确归属任务的成果" } },
@@ -909,76 +961,18 @@ export async function buildServer() {
       }),
   );
   get("/api/v1/workflows", "25个标准工作流", async () =>
-    FINANCE_WORKFLOWS.map((w: any) => ({ id: w.id, title: w.title })),
+    FINANCE_WORKFLOWS.map((w: any) => ({ id: w.id, title: w.title, embedded: embeddedCapability(w.id) })),
   );
-  post(
-    "/api/v1/orders/:id/runs",
-    versioned.extend({
-      workflowId: z.string().max(100),
-      taskBrief: z.record(z.string().max(50), z.string().max(2000)).default({}),
-      fileIds: z.array(uuid).min(1).max(100),
-      key: uuid.optional(),
-    }),
-    "建立WorkBuddy执行记录",
-    async (r, b) =>
-      tx(r.actor, async (db) => {
-        writer(r.actor);
-        const o = await order(db, (r.params as any).id);
-        const fingerprint = sha(
-          canonical({
-            workflowId: b.workflowId,
-            taskBrief: b.taskBrief,
-            fileIds: [...b.fileIds].sort(),
-          }),
-        );
-        if (b.key) {
-          const previous = (
-            await db.query(
-              "SELECT id,client_fingerprint FROM runs WHERE order_id=$1 AND created_by=$2 AND client_key=$3",
-              [o.id, r.actor.id, b.key],
-            )
-          ).rows[0];
-          if (previous) {
-            if (previous.client_fingerprint !== fingerprint)
-              fail(409, "任务标识已用于不同输入");
-            return { id: previous.id };
-          }
-        }
-        if (o.version !== b.version) fail(409, "记录已被修改，请刷新后重试");
-        if (o.status !== "processing") fail(409, "请先进入经办处理阶段");
-        if (!FINANCE_WORKFLOWS.some((w: any) => w.id === b.workflowId))
-          fail(400, "工作流不存在");
-        const fs = (
-          await db.query(
-            "SELECT f.id,f.name,f.sha256,f.version FROM files f WHERE f.id=ANY($1::uuid[]) AND f.order_id=$2 AND f.kind='source' AND NOT EXISTS(SELECT 1 FROM files n WHERE n.order_id=f.order_id AND n.kind=f.kind AND n.name=f.name AND n.version>f.version)",
-            [b.fileIds, o.id],
-          )
-        ).rows;
-        if (fs.length !== new Set(b.fileIds).size)
-          fail(400, "输入文件不属于本工作单");
-        const id = randomUUID();
-        await db.query(
-          "INSERT INTO runs(id,org_id,company_id,order_id,workflow_id,input_files,revision,created_by,task_brief,client_key,client_fingerprint,input_revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
-          [
-            id,
-            r.actor.org_id,
-            o.company_id,
-            o.id,
-            b.workflowId,
-            JSON.stringify(fs),
-            o.revision,
-            r.actor.id,
-            JSON.stringify(b.taskBrief),
-            b.key || null,
-            fingerprint,
-            o.input_revision,
-          ],
-        );
-        await touch(db, o, r.actor);
-        await audit(db, r.actor, "run_created", id, o.company_id, {}, r.id);
-        return { id };
-      }),
+  get("/api/v1/workflows/:id", "读取内嵌工作流指令与可用执行方式", async r => workflowDefinition((r.params as any).id));
+  post("/api/v1/orders/:id/runs", runRequest, "建立WorkBuddy执行记录", async (r, b) =>
+    tx(r.actor, db => createRun(db, r.actor, (r.params as any).id, b, r.id)),
   );
+  workflowTaskRoutes(get, post);
+  invoiceRoutes(get, post);
+  invoiceAgencyRoutes(get, post);
+  invoiceContinuationRoutes(get, post);
+  invoiceAccountingRoutes(app, get, post);
+  calculationRoutes(get, post);
   post(
     "/api/v1/runs/:id/return",
     versioned.extend({
@@ -1000,18 +994,22 @@ export async function buildServer() {
         const hashes = Object.fromEntries(
           run.input_files.map((f: any) => [f.id, f.sha256]),
         );
+        if (run.execution_mode !== "workbuddy")
+          fail(409, "内嵌计算请使用计算成果回传入口，保留原始异常清单");
         if (canonical(hashes) !== canonical(b.inputHashes))
           fail(400, "输入清单与原任务不一致");
         if (
           run.status === "returned" &&
           run.active &&
           run.input_revision === o.input_revision &&
-          o.status === "processing" &&
           canonical([...run.result_files].sort()) ===
             canonical([...new Set(b.resultFileIds)].sort()) &&
           run.check_result.summary === b.summary
         )
-          return { ok: true, replayed: true };
+          return { ok: true, replayed: true, runId: run.id,
+            resultFileIds: run.result_files, progress: await readProgress(db, run.id), posted: false };
+        if (!(await company(db, o.company_id)).active)
+          fail(409, "客户已停用，不能回传新成果");
         if (
           run.version !== b.version ||
           run.status !== "external" ||
@@ -1019,7 +1017,7 @@ export async function buildServer() {
           run.input_revision !== o.input_revision ||
           o.status !== "processing"
         )
-          fail(409, "任务版本或状态已改变，请重新发起");
+          fail(409, "任务版本或状态已改变，请查询原任务；输入变化时显式修订，勿重复新建");
         if (run.input_files.some((f: any) => b.inputHashes[f.id] !== f.sha256))
           fail(400, "输入清单与原任务不一致");
         const fs = (
@@ -1055,7 +1053,8 @@ export async function buildServer() {
           { results: fs, inputFiles: run.input_files, summary: b.summary },
           r.id,
         );
-        return { ok: true };
+        return { ok: true, runId: run.id, resultFileIds: b.resultFileIds,
+          progress: await readProgress(db, run.id), posted: false };
       }),
   );
   app.get(
@@ -1213,7 +1212,7 @@ export async function buildServer() {
         "run_export",
         "delivery_export",
       ]),
-      key: z.string().min(8).max(100),
+      key: z.string().min(8).max(100).refine(value => !value.startsWith("workflow-task:"), "该任务标识前缀由工作流执行入口保留"),
       companyId: uuid.optional(),
       payload: z.any(),
     }),
@@ -1442,6 +1441,8 @@ export async function buildServer() {
   agencyRoutes(get, post, createOrder);
   operationsRoutes(get, post);
   workspaceRoutes(app);
+  accountingRoutes(app);
+  clientDossierRoutes(app, validateFile);
   resultRoutes(get, post);
   filePageRoutes(app);
   await app.register(staticFiles, {
@@ -1477,7 +1478,10 @@ export async function createOrder(
       JSON.stringify(c.template),
     ],
   );
-  if (r.rows[0]) await audit(db, a, "order_created", id, c.id, b, requestId);
+  if (r.rows[0]) {
+    await bindNewMonthDossier(db, a, c.id, b.period, requestId);
+    await audit(db, a, "order_created", id, c.id, b, requestId);
+  }
   return (
     r.rows[0] || {
       ...(await one(
@@ -1509,6 +1513,8 @@ export async function transition(
     next = "processing";
   } else if (b.action === "submit") {
     if (o.status !== "processing") fail(409, "当前不能提交复核");
+    // Serialize red-invoice reservations across periods of the same company.
+    await db.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", ["red-reservation:" + o.company_id]);
     const readiness = await submissionReadiness(db, o);
     if (!readiness.blockingReady)
       fail(
@@ -1524,6 +1530,12 @@ export async function transition(
     if (b.checks.unresolved.trim()) fail(400, "存在未解决事项，不能提交");
     const results = await selectedResults(db, o, b.manualFileIds || []);
     if (!results.length) fail(400, "请回传任务成果或明确选择人工成果");
+    const accounting = (await db.query(
+      "SELECT id,version,payload FROM accounting_snapshots WHERE company_id=$1 AND period=$2 ORDER BY version DESC LIMIT 1",
+      [o.company_id, o.period],
+    )).rows[0];
+    const report = accounting ? await contextualAccountingReport(db, o.company_id, o.period, accounting.payload) : null;
+    if (report?.issues.length) fail(400, `财务核对底稿存在 ${report.issues.length} 项差异，请先处理`);
     const snapshot = {
       files: results,
       checks: b.checks,
@@ -1531,6 +1543,7 @@ export async function transition(
       at: new Date().toISOString(),
       revision: o.revision,
       inputRevision: o.input_revision,
+      accounting: accounting ? { id: accounting.id, version: accounting.version, summary: report!.summary, bank: report!.bank, previous: report!.previous, cashFlow: report!.cashFlow, reclassification: report!.reclassification, statementSources: report!.statements.sources || [], comparative: Object.fromEntries(Object.entries(report!.comparative).map(([key,value]:[string,any])=>[key,{status:value.status,id:value.id,period:value.period,version:value.version}])), reportingBasis: accounting.payload.reportingBasis || null, snapshotComparison: report!.snapshotComparison } : null,
     };
     await db.query(
       "UPDATE work_orders SET submission=$1,contributors=ARRAY(SELECT DISTINCT unnest(contributors||$3::uuid)) WHERE id=$2",

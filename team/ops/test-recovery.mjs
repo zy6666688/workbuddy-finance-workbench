@@ -22,6 +22,7 @@ const base = [
   "-f",
   "compose.test.yaml",
 ];
+if (process.env.TEAM_TEST_CANDIDATE === '1') base.push('-f', 'compose.candidate.yaml');
 function run(args, extra = {}) {
   const r = spawnSync(docker, args, {
     env: { ...env, ...extra },

@@ -45,6 +45,20 @@ test("ambiguous bank candidates are never auto-matched", () => {
   assert.equal(r.ambiguous.length, 1);
   assert.equal(r.difference, "1.00");
 });
+test("preview separates valid, invalid and unrecognizable amounts", () => {
+  const r = validateRows("bank", [
+    { date: "2026-01-01", reference: "A", amount: "0.10" },
+    { date: "2026-02-01", reference: "B", amount: "0.20" },
+    { date: "2026-01-03", reference: "C", amount: "invalid" },
+    { date: "2026-01-01", reference: "A", amount: "0.10" },
+  ], {}, "2026-01");
+  assert.equal(r.total, "0.40");
+  assert.equal(r.validTotal, "0.10");
+  assert.equal(r.invalidTotal, "0.30");
+  assert.equal(r.validCount, 1);
+  assert.equal(r.invalidCount, 3);
+  assert.equal(r.uncountedAmountCount, 1);
+});
 test("Excel/CSV templates, field mapping and formula rejection", async () => {
   for (const kind of ["companies", "materials", "bank", "ledger", "delivery"])
     for (const format of ["csv", "xlsx"])

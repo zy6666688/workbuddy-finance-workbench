@@ -7,7 +7,7 @@ async function parseParameters(values, command) {
   if (values.length === 1 && values[0] === '--json-stdin') {
     if (command === 'login') throw new Error('员工登录密码只能从本机交互终端输入')
     let data = ''
-    for await (const chunk of process.stdin) { data += chunk; if (data.length > 128 * 1024) throw new Error('参数过大') }
+    for await (const chunk of process.stdin) { data += chunk; if (Buffer.byteLength(data, 'utf8') > 6 * 1024 * 1024) throw new Error('参数过大') }
     return JSON.parse(data)
   }
   if (values.every(value => value.startsWith('--') && value.includes('='))) {
@@ -45,7 +45,7 @@ async function login(args) {
 try {
   const [command, ...values] = process.argv.slice(2)
   if (!command || command === '--help') {
-    console.log('团队版：login、logout、local-logout、me、companies、orders、order、files、workflows、jobs、create-run、package、download-package、upload-result、return-run。参数可由 --字段=值 或 --json-stdin 输入。')
+    console.log('团队版：login、logout、local-logout、me、companies、client-dossier、client-dossier-revision、client-dossier-draft、prepare-client-dossier、orders、order、files、workflows、workflow、jobs、start-workflow、workflow-status、calculation、return-calculation、revise-workflow、retry-job、accounting-template、download-file、upload-accounting-input、start-accounting、start-prepared-workflow、workflow-template、create-run、package、download-package、upload-result、return-run、invoicing-capabilities、invoice-requests、prepare-invoice、invoice-request、revise-invoice、invoice-revisions、invoice-authorizations、invoice-authorization、prepare-invoice-authorization、prepare-invoice-batch、invoice-batches、invoice-batch、upload-invoice-evidence、prepare-invoice-result、invoice-results、invoice-batch-actions、continue-invoice-batch、invoice-continuation、invoice-accounting-context、invoice-accounting-rules、invoice-accounting-rule、prepare-invoice-accounting-rule、revise-invoice-accounting-rule、register-invoice-ledger、invoice-ledger、invoice-ledger-entry、prepare-invoice-accounting、revise-invoice-accounting、invoice-accounting-draft、download-invoice-accounting。开票工具登记授权、准备申请、回录实际结果草稿；不核验、不开具；档案草稿须在网页由员工确认；参数可由 --字段=值 或 --json-stdin 输入。')
   } else if (command === 'login') {
     await login(await parseParameters(values, command))
   } else if (command === 'local-logout') {

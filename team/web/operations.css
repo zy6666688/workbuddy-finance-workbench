@@ -207,11 +207,14 @@
   font-weight: 600;
   padding: 8px 0;
 }
-.ops-form fieldset {
+.ops-form fieldset, fieldset.ops-form {
+  min-inline-size: 0;
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 14px;
 }
+.ops-handoff label, .ops-receipt label { min-width: 0; overflow-wrap: anywhere; }
+.ops-handoff button, .ops-receipt button { min-height: 44px; }
 .ops-upload input[type="file"] {
   max-width: 100%;
 }

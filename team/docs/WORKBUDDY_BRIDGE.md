@@ -31,6 +31,12 @@ MCP 工具和 CLI 命令行参数均不允许传入员工密码或任意 API 路
 
 ## 经办流程示例
 
+一句话任务优先使用 `team_start_workflow`（CLI：`start-workflow`）。输入已确认的工作单编号、当前版本、工作流、附件编号、任务要求和 UUID 请求标识；服务端在同一事务中创建执行和任务包任务。相同标识、相同输入重复调用返回原任务，不重复打包；相同标识改变输入会被拒绝。任务包失败后在工作台重试原后台任务。
+
+返回的 `runId` 可供 `team_workflow_status`（CLI：`workflow-status`）持续查询。记录存于数据库，重启或新会话可以继续查询；不会因近期后台任务超过 100 条而找不到。`ready` 只表示包已就绪，需 WorkBuddy 在当前会话下载并处理；`returned` 表示成果已回传待送审，`review` 等待独立复核，`delivery` 等待交付，`archived` 表示该任务成果包含在已归档提交中。输入变化返回 `stale`，不会把旧任务称为完成。当前员工看不到其他员工的后台任务详情时会明确提示。
+
+此能力自动安排资料打包，并支持对话内查询；不等同于服务器托管模型、后台无限执行或主动推送。付款、过账、申报、复核及实际开票仍不开放为自动审批工具。
+
 1. 在团队版网页建立客户及工作单，完成分工、资料收集并进入经办处理。公司授权和资料清单由服务端校验。
 2. 在 WorkBuddy 中说明客户、会计期间、任务目的和选用的资料版本。让它查询当前身份与工作单，再创建工作流执行记录。不要仅凭公司名称推断文件归属。
 3. WorkBuddy 创建任务包并查询后台任务状态；完成后下载到交接目录。检查包内输入清单和摘要，使用任务包内材料处理。下载目录中的文件属于该 Windows 用户，使用后按照团队保管要求处理。
@@ -51,3 +57,41 @@ MCP 工具和 CLI 命令行参数均不允许传入员工密码或任意 API 路
 本机 CLI 可使用 `me`、`companies`、`orders`、`order`、`files`、`workflows`、`jobs`、`create-run`、`package`、`download-package`、`upload-result` 和 `return-run`。简单文本参数可使用 `--字段=值`；含数组或数值的复杂参数可通过标准输入传入 JSON，避免 Windows 命令行转义问题，例如 `'{"orderId":"工作单编号"}' | node "$env:USERPROFILE\.workbuddy\apps\finance-workbench\team-cli.mjs" order --json-stdin`。团队版只支持 Windows 上的本机加密授权；其它系统不能因接口能运行就认为已完成安全授权。
 
 真实桌面 MCP 链路和 CLI 只读查询已用虚构客户验证，详见接入验收记录；不代表真实客户数据可以直接投产。
+
+
+## 当前开发目录的内嵌计算与申请管理（未上线、未业务验收）
+
+- 原始资料 → `team_download_file` / `team_accounting_template` → 按来源整理 → `team_upload_accounting_input` → 刷新工作单 → `team_start_workflow(executionMode=embedded_accounting)`。已有标准 XLSX 可直接发起。首批仅月度经营报告、增值税月度检查绑定后台计算器。
+- `team_workflow_status` 查询 → `team_calculation` 分页读异常 → `team_return_calculation` 回传原始计算文件与说明 → 网页送审 → 独立复核。未解决异常保留并阻止送审；不自动记账。
+- 输入变动用 `team_revise_workflow` 修订并重新排队；技术失败用 `team_retry_job` 重试原任务。查询失败和结果未知不应新建重复任务。
+- `team_prepare_invoice` 保存平台无关申请，`team_revise_invoice` 修订并撤销旧核验，`team_invoice_request` / `team_invoice_revisions` 读取当前进度与历史。独立核验和撤回位于月度交付经办页。未对接任何实际开票渠道。
+- 需要迁移 015、016 并同步更新团队服务和 WorkBuddy 构建。当前只做静态编译和打包，不代表真实桌面验收或已安装。
+
+默认采用程序内封装：WorkBuddy 只调用本工作台。`team_start_accounting` 将整理底稿保存、输入版本变更、执行记录创建及队列安排放在同一数据库事务；相同请求返回原任务，不依赖额外财税 MCP 或外部计算服务。已有标准输入仍可使用 `team_start_workflow`，两种入口不重复调用。真实开具渠道尚未选定，未来也应由后端适配，不要求用户额外切换插件。
+
+
+## 通用程序内工作流扩展（开发中）
+
+除两项原账务计算外，其余 23 项使用 `embedded_rules`，通过 `team_workflow` 读取专用输入契约和能力边界。新整理资料优先 `team_workflow_template` → WorkBuddy 按依据映射 → `team_start_prepared_workflow`；服务端一次保存主表/依据、固定输入、建立执行并排队。已有标准资料用 `team_start_workflow`；两种方式不重复调用。
+
+统一恢复链：`team_workflow_status` → `team_calculation(section=summary/issues/rows)` → `team_return_calculation` → 网页独立复核。失败重试原任务；输入变化新建修订，并在多份 XLSX 时明确 `preparedWorkbookId`。同一请求重试保留 key 和原参数。多币种不直接相加，重复编号不静默删除，缺失字段不填零，特殊匹配和业务解释保留待核实状态。
+
+模板以文本表头和明确字段工作表为准，不承诺任意原始 Excel 都能自动识别；公式、未知列和无依据参数进入异常。每行结果有文件编号/工作表/行号；有计算异常的回执不能直接送审。合同、制度与调度模板只封装证据和草稿，不执行高风险动作。需要迁移 017，尚未业务验收/上线。
+
+
+## 逐户授权、批量申请、实际结果回录（源码，未上线）
+
+新增授权登记/查询、批次准备/查询、凭证原件上传、结果回录/查询工具。WorkBuddy 只负责按员工权限调用工作台并提交草稿；核验和撤销留在网页，未增加外部服务、开票接口或税务登录信息。批量每次最多 50 项，业务失败按项保存，技术故障整体回滚；保持原 key 与参数恢复，不重复成功项目。
+
+工作台在月度经办页管理逐户授权、申请及回录，新增「批量开票申请」页面追踪逐户进度。`recordedIssued` 是回执经人工核验的标记；`issued=false` 专指本工作台未执行开具，`taxAuthorityVerified=false` 明确没有在线查验。需要新增迁移 018 后再安排业务验收，当前未应用。
+
+完整字段、入口及边界见 [代账开票工作流](INVOICE_AGENCY_WORKFLOW.md)。旧部署的验收记录不能用来证明这些新增入口已可用。
+
+
+## 批次续办与账务草稿（源码，未测试上线）
+
+新增统一 `team_invoice_batch_actions` / `team_continue_invoice_batch` / `team_invoice_continuation`，从原批次项继续补件、补办或准备账务，保留历史尝试和稳定请求防重。原申请与实际回录仍由独立人员核验。
+
+新增客户记账规则、回录台账、记账草稿及交接成果工具。程序读取本期科目表，复用独立核验的客户规则；确认条件绑定具体规则编号和版本。已有凭证只做对应关系，缺口或特殊业务挂起。通过复核后可下载交接成果，不过账、不写现有核对底稿、不接外部开票平台。
+
+新增迁移 019，尚未应用；已安装的 WorkBuddy 和 8096 未更新。字段、操作及后续验收见 [续办与记账草稿说明](INVOICE_CONTINUATION_ACCOUNTING.md)。

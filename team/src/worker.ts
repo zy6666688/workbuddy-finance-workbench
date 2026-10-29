@@ -21,6 +21,7 @@ import {
 import { createOrder } from "./server.js";
 import { FINANCE_WORKFLOWS } from "../../src/finance-data.js";
 import { composeFinanceTask } from "../../src/task-prompt.js";
+import { calculateEmbedded } from "./embedded-workflows.js";
 
 export async function processJob(actor: Actor, id: string) {
   return tx(actor, async (db) => {
@@ -103,16 +104,17 @@ export async function processJob(actor: Actor, id: string) {
         });
         result = { importId: p.id, count: p.payload.count || 0 };
       }
-    } else if (j.kind === "run_export" || j.kind === "delivery_export") {
+    } else if (["run_export", "delivery_export", "embedded_accounting", "embedded_rules"].includes(j.kind)) {
       let o: any,
         run: any,
         files: any[],
         zip = new AdmZip();
-      if (j.kind === "run_export") {
+      if (j.kind !== "delivery_export") {
         run = await one(db, "SELECT * FROM runs WHERE id=$1", [
           j.payload.runId,
         ]);
         o = await order(db, run.order_id);
+        if (!(await company(db, o.company_id)).active) fail(409, "客户已停用，任务停止处理");
         run = await one(db, "SELECT * FROM runs WHERE id=$1", [run.id]);
         if (
           run.status !== "external" ||
@@ -174,6 +176,12 @@ export async function processJob(actor: Actor, id: string) {
             "\uFEFF检查项,结果,说明\r\n输入行数,,\r\n输出行数,,\r\n来源金额合计,,\r\n结果金额合计,,\r\n未解决异常,,\r\n",
           ),
         );
+        if (["embedded_accounting", "embedded_rules"].includes(j.kind)) {
+          if (o.company_id !== j.company_id) fail(403, "任务公司不匹配");
+          const calculated = await calculateEmbedded(db, o, run, files);
+          for (const output of calculated.files) zip.addFile(`outputs/${output.name}`, output.bytes);
+          result.calculation = calculated.metadata;
+        }
       } else {
         o = await order(db, j.payload.orderId);
         if (!["delivery", "archived"].includes(o.status))
@@ -225,7 +233,7 @@ export async function processJob(actor: Actor, id: string) {
         fail(413, "单次打包不能超过200MB，请拆分任务");
       for (const f of files)
         zip.addFile(
-          `${j.kind === "run_export" ? "inputs" : "results"}/${f.id}-${f.name}`,
+          `${j.kind !== "delivery_export" ? "inputs" : "results"}/${f.id}-${f.name}`,
           await fileBytes(f),
         );
       zip.addFile(
@@ -280,7 +288,7 @@ export async function processJob(actor: Actor, id: string) {
           actor.id,
         ],
       );
-      result = { fileId: f.id };
+      result = { ...result, fileId: f.id };
     }
     await db.query(
       "UPDATE jobs SET status='completed',result=$1,error=NULL,updated_at=now() WHERE id=$2",

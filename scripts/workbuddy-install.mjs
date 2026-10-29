@@ -47,7 +47,7 @@ async function run() {
       if (oldEntry?.env !== undefined && (!oldEntry.env || typeof oldEntry.env !== 'object' || Array.isArray(oldEntry.env))) throw new Error('原财务工作台环境配置结构无效')
       config.mcpServers['finance-workbench'] = {
         ...oldEntry, ...(basename(configPath) === 'mcp.json' ? { type: 'stdio' } : {}), command: process.execPath, args: [join(appPath, 'server.mjs')],
-        env: { ...oldEntry?.env, WORKBUDDY_FINANCE_WORKBENCH: '1' },
+        env: { ...(process.platform === 'win32' && process.env.LOCALAPPDATA ? { LOCALAPPDATA: process.env.LOCALAPPDATA } : {}), ...oldEntry?.env, WORKBUDDY_FINANCE_WORKBENCH: '1' },
       }
     }
   } else for (const { config } of configs) delete config.mcpServers['finance-workbench']

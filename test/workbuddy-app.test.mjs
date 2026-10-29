@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { access, readFile } from 'node:fs/promises'
+import { access, readFile, mkdtemp, rmdir } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
@@ -24,10 +26,13 @@ test('WorkBuddy package contains a complete MCP App and one-click installers', a
 })
 
 test('WorkBuddy MCP server exposes and serves the interactive dashboard', async () => {
+  // Never reuse the developer's real employee authorization for package tests.
+  const sessionHome = await mkdtemp(join(tmpdir(), 'finance-no-session-'))
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [fileURLToPath(new URL('workbuddy/server.mjs', root))],
     stderr: 'pipe',
+    env: { LOCALAPPDATA: sessionHome },
   })
   const client = new Client({ name: 'finance-workbench-test', version: '1.0.0' })
   try {
@@ -36,6 +41,8 @@ test('WorkBuddy MCP server exposes and serves the interactive dashboard', async 
     assert.ok(tools.tools.some(tool => tool.name === 'show_finance_workbench'))
     assert.ok(tools.tools.some(tool => tool.name === 'team_order'))
     assert.ok(tools.tools.some(tool => tool.name === 'team_return_run'))
+    assert.ok(tools.tools.find(tool => tool.name === 'team_start_workflow').inputSchema.required.includes('key'))
+    assert.equal(tools.tools.find(tool => tool.name === 'team_workflow_status').annotations.readOnlyHint, true)
     assert.ok(!tools.tools.some(tool => /approve|review/.test(tool.name)))
     assert.equal(tools.tools.find(tool => tool.name === 'show_finance_workbench')._meta.ui.resourceUri, 'ui://workbuddy-finance-workbench/dashboard')
     const resources = await client.listResources()
@@ -52,5 +59,6 @@ test('WorkBuddy MCP server exposes and serves the interactive dashboard', async 
     assert.match(noSession.content[0].text, /尚未授权|员工会话/)
   } finally {
     await client.close()
+    await rmdir(sessionHome)
   }
 })

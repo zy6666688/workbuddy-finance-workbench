@@ -1,3 +1,6 @@
+import { InvoiceBatchContinuation } from "./invoice-continuation.js";
+import { InvoiceBatches } from "./invoice-agency.js";
+import { InvoiceRequests } from "./invoices.js";
 import {
   BatchUpload,
   Followups,
@@ -9,7 +12,7 @@ import { FilePicker, PagedFiles } from "./file-picker.js";
 import { render } from "preact";
 import { useState, useEffect, useRef } from "preact/hooks";
 import "./style.css";
-import { AuthLayout, AuthPassword } from "./auth.js";
+import { AuthLayout, AuthPassword, loginEnvironment } from "./auth.js";
 import { ClientWorkspace, ReviewCenter } from "./agency.js";
 import {
   DeliveryOverview,
@@ -18,6 +21,7 @@ import {
   defaultDeliveryQuery,
 } from "./delivery.js";
 import { FinanceDashboard } from "../../src/finance-dashboard.jsx";
+import { AccountingWorkspace } from "./accounting.js";
 import {
   writeFinanceStore,
   configureStore,
@@ -71,11 +75,20 @@ async function api(url: string, body?: any) {
         : body instanceof FormData
           ? body
           : JSON.stringify(body),
+  }).catch(() => {
+    throw Object.assign(new Error(body === undefined
+      ? "服务响应中断，请重新查询。"
+      : "服务响应中断，提交结果尚不能确认。请查询原记录，或保持原内容重试，不要重复新建。"), { outcomeUnknown: body !== undefined });
   });
-  const data = await r.json();
+  const data = await r.json().catch(() => {
+    throw Object.assign(new Error(body === undefined
+      ? "无法读取服务响应，请重新查询。"
+      : "无法读取提交回执，不能确认是否已保存。请查询原记录，或保持原内容重试。"), { outcomeUnknown: body !== undefined });
+  });
   if (!r.ok)
     throw Object.assign(new Error(data.error || "请求失败"), {
       status: r.status,
+      outcomeUnknown: body !== undefined && r.status >= 500,
     });
   return data;
 }
@@ -130,6 +143,7 @@ function SingleAttachment({api, scope, purpose, name, initialId, title, disabled
   </details>;
 }
 function App() {
+  const environment = loginEnvironment();
   const [deskReady, setDeskReady] = useState(""),
     [deskEpoch, setDeskEpoch] = useState(0),
     [viewRequest, setViewRequest] = useState<any>(null),
@@ -481,9 +495,9 @@ function App() {
   if (!user)
     return (
       <AuthLayout>
-        <span className="zyAuth-entryTag">团队工作空间</span>
-        <h2>欢迎回来</h2>
-        <p>登录账号，继续今天的财务工作。</p>
+        <span className="zyAuth-entryTag">{environment.title} · 端口 {environment.port}</span>
+        <h2>{environment.loginLabel}</h2>
+        <p>{environment.kind === "test" ? "请使用测试账号；日常业务请进入正式工作台。" : "登录对应团队账号，继续工作。"}</p>
         <form
           aria-busy={busy}
           onSubmit={(e) => {
@@ -509,7 +523,7 @@ function App() {
           </div>
           <AuthPassword />
           <button className="zyAuth-submit" disabled={busy}>
-            {busy ? "正在登录…" : "登录工作台"}
+            {busy ? "正在登录…" : environment.loginLabel}
           </button>
         </form>
         {notice && (
@@ -517,7 +531,7 @@ function App() {
             {notice}
           </p>
         )}
-        <p className="zyAuth-help">忘记密码？请联系团队负责人重置。</p>
+        <p className="zyAuth-help">{environment.kind === "test" ? "正式账号登录不了？先确认是否应进入 8096 正式工作台。测试账号问题请联系负责人。" : "忘记密码？请先确认入口，再联系团队负责人。"}</p>
         <p className="zyAuth-accountNote">
           账号由团队负责人统一分配。首次登录后，请按提示设置你的专属密码。
         </p>
@@ -567,7 +581,9 @@ function App() {
   const teamPages = [
     ["orders", "月度交付"],
     ["companies", "客户公司"],
+    ["invoices", "批量开票申请"],
     ["imports", "资料导入"],
+    ["accounting", "财务核对底稿"],
     ["jobs", "后台任务"],
     ["audit", "操作记录"],
     ["account", "账号设置"],
@@ -581,6 +597,8 @@ function App() {
   ];
   const teamContent = () => (
     <div className="team-panels" aria-busy={busy}>
+      {page === "invoices" && <InvoiceBatches api={api} write={write} renderContinuation={(batch:any,onChanged:any)=><InvoiceBatchContinuation key={batch.id} api={api} batch={batch} onRefresh={onChanged} onOpen={async(id:string)=>{pendingOpen.current=id;navigate("orders");}}/>} onOpen={async(id:string)=>{pendingOpen.current=id;navigate("orders");}}/>}
+      {page === "accounting" && <AccountingWorkspace key={cid + "/" + period} api={api} companyId={cid} period={period} canWrite={write} />}
       {notice && (
         <div className="notice" role="alert">
           {notice}
@@ -943,6 +961,7 @@ function App() {
                 <div className="delivery-submission">
                   <h3>本次送审成果 · 第 {detail.submission.revision} 版</h3>
                   <p>{detail.submission.checks?.summary}</p>
+                  {detail.submission.accounting && <p>财务核对底稿 v{detail.submission.accounting.version} · 银行核对：{detail.submission.accounting.bank?.status || "未关联"}。请结合底稿和原始资料独立复核。</p>}
                   {detail.submission.checks?.unresolved && (
                     <p>未解决事项：{detail.submission.checks.unresolved}</p>
                   )}
@@ -1176,7 +1195,8 @@ function App() {
             className="delivery-section order-handoff"
             hidden={detailTab !== "processing"}
           >
-            <Panel title="外部处理与成果回传">
+            <Panel title="工作流处理、开票申请与成果回传">
+              <InvoiceRequests key={detail.id + "/invoices"} detail={detail} api={api} onRefresh={() => refreshOrder(detail.id)} write={write} />
               <WorkBuddyHandoff
                 key={detail.id}
                 detail={detail}
@@ -1368,8 +1388,12 @@ function App() {
               {preview?.rows && (
                 <div>
                   <h3>
-                    共 {preview.count} 行 · 金额合计 {preview.total}
+                    共 {preview.count} 行 · 有效 {preview.validCount} 行 · 错误 {preview.invalidCount} 行
                   </h3>
+                  {preview.rows.some((row: any) => Object.hasOwn(row, "amount")) && <p>
+                    可识别金额合计 {preview.total} 元 · 有效行 {preview.validTotal} 元 · 错误行 {preview.invalidTotal} 元
+                    {preview.uncountedAmountCount > 0 && ` · ${preview.uncountedAmountCount} 行金额无法识别，未计入合计`}
+                  </p>}
                   <p>
                     {preview.errors.length
                       ? "发现 " +
@@ -1426,7 +1450,12 @@ function App() {
                 <button disabled={busy}>开始核对</button>
               </form>
               {preview?.reconciliation && (
-                <pre>{JSON.stringify(preview.reconciliation, null, 2)}</pre>
+                <div aria-live="polite">
+                  <p>银行合计 {preview.reconciliation.bankTotal} 元 · 账务合计 {preview.reconciliation.ledgerTotal} 元 · 差额 {preview.reconciliation.difference} 元</p>
+                  <p>唯一匹配 {preview.reconciliation.matched.length} 组 · 多候选待复核 {preview.reconciliation.ambiguous.length} 组 · 银行未匹配 {preview.reconciliation.unmatchedBank.length} 条 · 账务未匹配 {preview.reconciliation.unmatchedLedger.length} 条</p>
+                  <p>按日期、参考编号和金额进行匹配；结果不代表已完成账务核算或自动更新经营快照。</p>
+                  <details><summary>查看行号及明细</summary><pre>{JSON.stringify(preview.reconciliation, null, 2)}</pre></details>
+                </div>
               )}
             </Panel>
           )}
@@ -1536,6 +1565,8 @@ function App() {
                         monthly_batch: "批量月度任务",
                         import_commit: "资料导入",
                         run_export: "WorkBuddy任务包",
+                        embedded_accounting: "后台账务计算",
+                        embedded_rules: "程序内工作流处理",
                         delivery_export: "审核交付包",
                       } as any
                     )[j.kind]
@@ -1646,6 +1677,8 @@ function App() {
                         {
                           monthly_batch: "批量建月",
                           run_export: "WorkBuddy 任务包",
+                          embedded_accounting: "后台账务计算",
+                        embedded_rules: "程序内工作流处理",
                           delivery_export: "审核交付包",
                           import_commit: "资料导入",
                         } as any
@@ -1838,23 +1871,25 @@ function App() {
               throw new Error(
                 "请先到资料库引用本次输入文件版本，或在月度交付中逐项选择输入",
               );
-            const signature=JSON.stringify([order.id,workflow.id,[...ids].sort(),workflow.taskBrief||{}]);
+            const definition = await api(`/workflows/${workflow.id}`);
+            if (activeDeskKey.current !== deskKey) return;
+            const executionMode = referenceFiles.some((f: any) => ids.includes(f.id) && /\.xlsx$/i.test(f.name)) ? definition.recommendedExecutionMode : "workbuddy";
+            const signature=JSON.stringify([order.id,workflow.id,[...ids].sort(),workflow.taskBrief||{},executionMode]);
             if(workflowRequest.current.signature!==signature) workflowRequest.current={signature,key:crypto.randomUUID()};
             const requestKey=workflowRequest.current.key;
-            const r = await api(`/orders/${order.id}/runs`, {
+            await api(`/orders/${order.id}/workflow-tasks`, {
               version: order.version,
               workflowId: workflow.id,
               taskBrief: workflow.taskBrief || {},
+              executionMode,
               fileIds: ids,
               key: requestKey,
             });
             if (activeDeskKey.current !== deskKey) return;
-            await api("/jobs",{kind:"run_export",payload:{runId:r.id},companyId:cid,key:"run-export-"+r.id});
-            if (activeDeskKey.current !== deskKey) return;
             workflowRequest.current={signature:"",key:""};
             if (activeDeskKey.current === deskKey)
               setViewRequest({ id: Date.now(), view: "team:jobs" });
-          }, "执行记录已建立，任务包生成中")
+          }, "任务已建立并排队，可查看进度和待处理事项")
         }
         launching={busy}
         onClose={() =>
@@ -1884,7 +1919,7 @@ function App() {
             {
               label: "团队交付",
               items: teamPages
-                .filter(([k]) => ["orders", "companies", "review"].includes(k))
+                .filter(([k]) => ["orders", "companies", "invoices", "review"].includes(k))
                 .map(([k, v]) => ["team:" + k, v, "·"]),
             },
             {
@@ -1892,7 +1927,7 @@ function App() {
               items: teamPages
                 .filter(
                   ([k]) =>
-                    !["orders", "companies", "review", "audit"].includes(k),
+                    !["orders", "companies", "invoices", "review", "audit"].includes(k),
                 )
                 .map(([k, v]) => ["team:" + k, v, "·"]),
             },

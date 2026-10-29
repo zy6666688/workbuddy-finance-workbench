@@ -80,8 +80,11 @@ export function validateRows(
     ? []
     : [{ row: 1, message: "表格没有数据行" }];
   const seen = new Set<string>();
-  let total = new Decimal(0);
+  let total = new Decimal(0), validTotal = new Decimal(0), invalidTotal = new Decimal(0);
+  let validCount = 0, invalidCount = 0, uncountedAmountCount = 0;
   const normalized = rows.map((raw, i) => {
+    const errorsBefore = errors.length;
+    let amount: Decimal | undefined;
     const row = Object.fromEntries(
       headers.map((h) => [h, String(raw[mapping[h] || h] ?? "").trim()]),
     );
@@ -112,7 +115,8 @@ export function validateRows(
         });
       else {
         row.amount = new Decimal(row.amount).toFixed(2);
-        total = total.plus(row.amount);
+        amount = new Decimal(row.amount);
+        total = total.plus(amount);
       }
     }
     if (kind === "materials" && !["true", "false"].includes(row.required))
@@ -134,12 +138,25 @@ export function validateRows(
           : JSON.stringify(row);
     if (seen.has(key)) errors.push({ row: i + 2, message: "重复记录，请复核" });
     seen.add(key);
+    if (errors.length === errorsBefore) {
+      validCount++;
+      if (amount) validTotal = validTotal.plus(amount);
+    } else {
+      invalidCount++;
+      if (amount) invalidTotal = invalidTotal.plus(amount);
+      else if (kind === "bank" || kind === "ledger") uncountedAmountCount++;
+    }
     return row;
   });
   return {
     rows: normalized,
     errors,
     total: total.toFixed(2),
+    validTotal: validTotal.toFixed(2),
+    invalidTotal: invalidTotal.toFixed(2),
+    validCount,
+    invalidCount,
+    uncountedAmountCount,
     count: rows.length,
     digest: sha(JSON.stringify({ kind, normalized, period })),
   };

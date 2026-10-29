@@ -262,7 +262,7 @@ export const FINANCE_MODULES = {
   expenses: {
     title: '费用报销', icon: '费', eyebrow: 'EXPENSE CONTROL', category: '经营与往来',
     intro: '从申请、票据、标准、审批到归档形成完整费用闭环。',
-    snapshotKeys: [['本月支出', 'expense'], ['本月利润', 'profit']], todoCategories: ['报销', '税务'],
+    snapshotKeys: [['本月支出', 'expense'], ['收入减支出', 'profit']], todoCategories: ['报销', '税务'],
     process: [['申请受理', '确认人员、部门和业务事项'], ['票据检查', '识别重复、缺失和金额异常'], ['标准审核', '核对费用标准与预算'], ['支付归档', '关联审批、付款和附件']],
     controls: ['未审批通过不进入正式汇总', '发票唯一键和金额关系已检查', '超标准、超预算和大额项目单列', '识别结果保留源文件和页码'],
     deliverables: ['费用报销明细', '异常与补件清单', '部门费用汇总'],
@@ -334,7 +334,7 @@ export const FINANCE_MODULES = {
   costing: {
     title: '成本核算', icon: '本', eyebrow: 'COST ACCOUNTING', category: '核算与合规',
     intro: '统一料、工、费和分配口径，确保成本结果能回到业务与原始数据。',
-    snapshotKeys: [['本月支出', 'expense'], ['本月利润', 'profit']], todoCategories: ['成本', '分析'],
+    snapshotKeys: [['本月支出', 'expense'], ['收入减支出', 'profit']], todoCategories: ['成本', '分析'],
     process: [['数据归集', '材料、人工和制造费用分层'], ['口径确认', '对象、期间和分配基础固定'], ['成本计算', '单位成本、差异和结转勾稽'], ['异常分析', '负库存、波动和分配异常单列']],
     controls: ['成本对象和期间口径稳定', '分配规则有依据且可复算', '数量和金额同时校验', '异常成本不直接覆盖原结果'],
     deliverables: ['成本计算底稿', '单位成本与差异表', '异常成本清单'],
@@ -343,7 +343,7 @@ export const FINANCE_MODULES = {
   statements: {
     title: '财务报表', icon: '表', eyebrow: 'FINANCIAL REPORTING', category: '报告与决策',
     intro: '从结账完整性、科目映射到报表勾稽，形成可追溯的报表底稿。',
-    snapshotKeys: [['本月收入', 'income'], ['本月支出', 'expense'], ['本月利润', 'profit']], todoCategories: ['月结', '报表'],
+    snapshotKeys: [['本月收入', 'income'], ['本月支出', 'expense'], ['收入减支出', 'profit']], todoCategories: ['月结', '报表'],
     process: [['结账检查', '确认资料、凭证和计提完整'], ['科目映射', '统一主体、币种、单位和层级'], ['报表生成', '主表与附表按固定口径输出'], ['勾稽复核', '表内、表间和期间变动校验']],
     controls: ['报表期间与账套状态一致', '映射调整保留来源和审批', '主表附表勾稽关系通过', '未结事项和重大异常充分披露'],
     deliverables: ['财务报表底稿', '勾稽检查表', '异常与未结事项说明'],
@@ -352,7 +352,7 @@ export const FINANCE_MODULES = {
   analysis: {
     title: '财务分析', icon: '析', eyebrow: 'FINANCE ANALYTICS', category: '报告与决策',
     intro: '把数据事实、业务解释、风险提示和建议行动清楚分开。',
-    snapshotKeys: [['本月利润', 'profit'], ['预算额度', 'budget']], todoCategories: ['分析', '预算'],
+    snapshotKeys: [['收入减支出', 'profit'], ['预算额度', 'budget']], todoCategories: ['分析', '预算'],
     process: [['口径锁定', '指标公式、单位和期间固定'], ['趋势拆解', '同比、环比和结构变化'], ['原因验证', '业务解释与数据证据对应'], ['行动跟踪', '责任人、目标和完成时间']],
     controls: ['分母为零和缺失值处理明确', '事实与假设分开展示', '重大变化追溯到明细', '建议不越过业务授权边界'],
     deliverables: ['月度经营分析', '指标趋势与结构表', '行动建议跟踪表'],
@@ -361,7 +361,7 @@ export const FINANCE_MODULES = {
   investment: {
     title: '投资管理', icon: '投', eyebrow: 'INVESTMENT REVIEW', category: '报告与决策',
     intro: '围绕现金流、合同条款、情景假设和投后跟踪组织决策资料。',
-    snapshotKeys: [['可用资金', 'cash'], ['本月利润', 'profit']], todoCategories: ['投资', '分析'],
+    snapshotKeys: [['可用资金', 'cash'], ['收入减支出', 'profit']], todoCategories: ['投资', '分析'],
     process: [['项目建档', '主体、期限、金额和决策材料齐备'], ['现金流测算', '假设、敏感性和压力情景留痕'], ['合同检查', '付款、收益、退出和约束提取'], ['投后跟踪', '计划、实际、风险和行动闭环']],
     controls: ['假设与事实清晰区分', '现金流口径和折现参数可复算', '合同条款回到原文证据', '投资决策由有权限机构完成'],
     deliverables: ['项目投资台账', '现金流与情景测算', '投后风险跟踪表'],

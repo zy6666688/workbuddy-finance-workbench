@@ -4,6 +4,7 @@ import {
   tx,
   one,
   order,
+  company,
   editable,
   writer,
   audit,
@@ -13,6 +14,7 @@ import {
   reason,
   canonical,
 } from "./core.js";
+import { assertEmbeddedInput } from "./embedded-workflows.js";
 
 export const resultColumns = `f.id,f.name,f.kind,f.category,f.size,f.sha256,f.version,f.uploaded_by,f.created_at,p.origin,p.run_id,p.input_revision AS origin_input_revision`;
 export const latestResult = `NOT EXISTS(SELECT 1 FROM files n JOIN result_origins np ON np.file_id=n.id WHERE n.order_id=f.order_id AND n.kind='result' AND n.name=f.name AND n.version>f.version AND np.origin=p.origin AND np.run_id IS NOT DISTINCT FROM p.run_id)`;
@@ -70,7 +72,7 @@ export async function selectedResults(
 export async function resultReadiness(db: any, o: any) {
   const runs = (
     await db.query(
-      "SELECT id,status,input_revision,result_files FROM runs WHERE order_id=$1 AND active",
+      "SELECT id,status,input_revision,result_files,check_result FROM runs WHERE order_id=$1 AND active",
       [o.id],
     )
   ).rows;
@@ -99,8 +101,16 @@ export async function resultReadiness(db: any, o: any) {
     pending,
     manualCandidateCount,
     taskResultCount: selected.length,
-    blockingReady: !pending && !blockedRuns.length && !invalidReceipt,
+    blockingReady:
+      !pending &&
+      !blockedRuns.length &&
+      !invalidReceipt &&
+      !runs.some((r: any) => r.check_result?.unresolvedIssues > 0),
     items: [
+      {
+        label: "内嵌计算异常已通过修订重算解决",
+        ok: !runs.some((r: any) => r.check_result?.unresolvedIssues > 0),
+      },
       { label: "历史成果归属已确认", ok: pending === 0 },
       {
         label: "任务已回传，失效任务已修订或明确取消",
@@ -275,6 +285,7 @@ export function resultRoutes(get: any, post: any) {
       version: z.number().int().positive(),
       reason,
       fileIds: z.array(uuid).min(1).max(100).optional(),
+      preparedWorkbookId: uuid.optional(),
       key: uuid,
     }),
     "创建新的修订执行",
@@ -293,6 +304,9 @@ export function resultRoutes(get: any, post: any) {
           supersedes: run.id,
           reason: b.reason,
           fileIds: b.fileIds ? [...new Set(b.fileIds)].sort() : null,
+          ...(b.preparedWorkbookId
+            ? { preparedWorkbookId: b.preparedWorkbookId }
+            : {}),
         });
         const replay = (
           await db.query(
@@ -307,6 +321,7 @@ export function resultRoutes(get: any, post: any) {
         }
         if (run.version !== b.version || !run.active)
           fail(409, "任务已变化或已被修订");
+        if (!(await company(db, o.company_id)).active) fail(409, "客户已停用");
         if (o.status === "collecting" || o.status === "checking")
           fail(409, "请先进入经办处理");
         if (run.input_revision !== o.input_revision && !b.fileIds)
@@ -314,14 +329,38 @@ export function resultRoutes(get: any, post: any) {
         const ids = b.fileIds || run.input_files.map((x: any) => x.id);
         const fs = (
           await db.query(
-            "SELECT f.id,f.name,f.sha256,f.version FROM files f WHERE f.id=ANY($1::uuid[]) AND f.order_id=$2 AND f.kind='source' AND NOT EXISTS(SELECT 1 FROM files n WHERE n.order_id=f.order_id AND n.kind=f.kind AND n.name=f.name AND n.version>f.version)",
+            "SELECT f.id,f.name,f.sha256,f.version,f.size FROM files f WHERE f.id=ANY($1::uuid[]) AND f.order_id=$2 AND f.kind='source' AND NOT EXISTS(SELECT 1 FROM files n WHERE n.order_id=f.order_id AND n.kind=f.kind AND n.name=f.name AND n.version>f.version)",
             [ids, o.id],
           )
         ).rows;
         if (fs.length !== new Set(ids).size) fail(400, "输入不属于当前工作单");
+        if (run.execution_mode !== "workbuddy")
+          assertEmbeddedInput(run.workflow_id, fs, run.execution_mode);
+        const taskBrief = { ...run.task_brief };
+        if (
+          run.execution_mode === "embedded_rules" &&
+          (taskBrief.preparedWorkbookId || b.preparedWorkbookId)
+        ) {
+          const oldName = run.input_files.find(
+            (f: any) => f.id === taskBrief.preparedWorkbookId,
+          )?.name;
+          const candidates = fs.filter((f: any) => /\.xlsx$/i.test(f.name));
+          const primary =
+            b.preparedWorkbookId ||
+            candidates.find((f: any) => f.id === taskBrief.preparedWorkbookId)
+              ?.id ||
+            candidates.find((f: any) => f.name === oldName)?.id ||
+            (candidates.length === 1 ? candidates[0].id : null);
+          if (!primary || !candidates.some((f: any) => f.id === primary))
+            fail(
+              400,
+              "请选择本次整理主表；多份 XLSX 时请明确 preparedWorkbookId",
+            );
+          taskBrief.preparedWorkbookId = primary;
+        }
         const id = randomUUID();
         await db.query(
-          "INSERT INTO runs(id,org_id,company_id,order_id,workflow_id,input_files,revision,input_revision,created_by,task_brief,client_key,client_fingerprint,supersedes_run_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)",
+          "INSERT INTO runs(id,org_id,company_id,order_id,workflow_id,input_files,revision,input_revision,created_by,task_brief,client_key,client_fingerprint,supersedes_run_id,execution_mode) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)",
           [
             id,
             o.org_id,
@@ -332,15 +371,30 @@ export function resultRoutes(get: any, post: any) {
             o.revision + (["review", "delivery"].includes(o.status) ? 1 : 0),
             o.input_revision,
             r.actor.id,
-            JSON.stringify(run.task_brief),
+            JSON.stringify(taskBrief),
             b.key,
             fingerprint,
             run.id,
+            run.execution_mode,
           ],
         );
         await db.query(
           "UPDATE runs SET active=false,version=version+1 WHERE id=$1",
           [run.id],
+        );
+        await db.query(
+          "INSERT INTO jobs(id,org_id,company_id,actor_id,kind,idempotency_key,payload) VALUES($1,$2,$3,$4,$5,$6,$7)",
+          [
+            randomUUID(),
+            o.org_id,
+            o.company_id,
+            r.actor.id,
+            run.execution_mode !== "workbuddy"
+              ? run.execution_mode
+              : "run_export",
+            `workflow-task:${id}`,
+            JSON.stringify({ runId: id }),
+          ],
         );
         await invalidateApproval(db, o);
         await touch(db, o, r.actor);

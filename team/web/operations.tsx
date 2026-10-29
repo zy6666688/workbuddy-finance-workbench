@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { FilePicker, FileSnapshotList } from "./file-picker.js";
+import { CalculationReturn } from "./calculation.js";
 const roles: any = {
   owner: "负责人",
   reviewer: "主管 / 复核",
@@ -527,7 +528,7 @@ function RunActions({ run, detail, api, onRefresh }: any) {
             },
             mode === "cancel"
               ? "任务已取消，原记录仍保留"
-              : "已建立修订任务，请下载新任务包重新处理",
+              : "已建立修订任务并自动排队，请查看新任务进度",
           );
         }}
       >
@@ -729,12 +730,25 @@ export function WorkBuddyHandoff({
   workflows,
 }: any) {
   const action = useAction(),
+    [workflowId, setWorkflowId] = useState(workflows[0]?.id || ""),
+    [executionMode, setExecutionMode] = useState(
+      workflows[0]?.embedded?.executor || "workbuddy",
+    ),
+    [pollKey, setPollKey] = useState(0),
     [jobs, setJobs] = useState<any[]>([]),
     [jobError, setJobError] = useState(""),
     [sourceIds, setSourceIds] = useState<string[]>([]),
     request = useRef({ key: crypto.randomUUID(), body: "" });
   useEffect(() => {
+    if (!workflowId && workflows.length) {
+      setWorkflowId(workflows[0].id);
+      setExecutionMode(workflows[0].embedded?.executor || "workbuddy");
+    }
+  }, [workflows, workflowId]);
+  useEffect(() => {
     let alive = true;
+    let attempts = 0,
+      timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
       try {
         const data = await api(`/jobs?orderId=${detail.id}`);
@@ -745,14 +759,14 @@ export function WorkBuddyHandoff({
       } catch (e: any) {
         if (alive) setJobError("任务包状态暂时无法刷新：" + e.message);
       }
+      if (alive && ++attempts < 12) timer = setTimeout(poll, 5000);
     };
     void poll();
-    const t = setInterval(poll, 4000);
     return () => {
       alive = false;
-      clearInterval(t);
+      clearTimeout(timer);
     };
-  }, [detail.id]);
+  }, [detail.id, detail.version, pollKey]);
   async function pack(id: string) {
     const j = await api("/jobs", {
       kind: "run_export",
@@ -767,13 +781,20 @@ export function WorkBuddyHandoff({
     <section className="ops-handoff">
       <div className="ops-title">
         <div>
-          <h3>WorkBuddy 任务交接</h3>
+          <h3>内嵌工作流与 WorkBuddy</h3>
           <p>
-            ① 选择输入并打包　② 下载到 WorkBuddy 处理　③ 上传成果并回传　④
+            ① 固定输入版本　② 后台计算或 WorkBuddy 处理　③ 回传成果与说明　④
             提交独立复核
           </p>
         </div>
       </div>
+      <button
+        type="button"
+        className="ghost"
+        onClick={() => setPollKey((x) => x + 1)}
+      >
+        刷新任务进度
+      </button>
       {write && detail.status === "processing" && (
         <details
           open={
@@ -792,6 +813,7 @@ export function WorkBuddyHandoff({
               const b = new FormData(e.currentTarget);
               const body = {
                 workflowId: b.get("workflowId"),
+                executionMode,
                 fileIds: sourceIds,
                 taskBrief: { requirements: String(b.get("brief") || "") },
               };
@@ -804,24 +826,73 @@ export function WorkBuddyHandoff({
               void action.act(async () => {
                 if (!body.fileIds.length)
                   throw Error("请至少选择一份本次输入资料");
-                const r = await api(`/orders/${detail.id}/runs`, {
+                await api(`/orders/${detail.id}/workflow-tasks`, {
                   ...body,
                   version: detail.version,
                   key: request.current.key,
                 });
                 await onRefresh();
-                await pack(r.id);
-              }, "任务已建立，任务包生成中，可在下方直接下载");
+              }, "任务已建立并排队，可在下方跟踪进度");
             }}
           >
             <label>
               工作流
-              <select name="workflowId">
+              <select
+                name="workflowId"
+                value={workflowId}
+                disabled={action.busy}
+                onChange={(e) => {
+                  setWorkflowId(e.currentTarget.value);
+                  setExecutionMode(
+                    workflows.find((w: any) => w.id === e.currentTarget.value)
+                      ?.embedded?.executor || "workbuddy",
+                  );
+                }}
+              >
                 {workflows.map((w: any) => (
                   <option value={w.id}>{w.title}</option>
                 ))}
               </select>
             </label>
+            <label>
+              执行方式
+              <select
+                value={executionMode}
+                disabled={action.busy}
+                onChange={(e) => setExecutionMode(e.currentTarget.value)}
+              >
+                <option value="workbuddy">WorkBuddy 处理资料</option>
+                {workflows.find((w: any) => w.id === workflowId)?.embedded && (
+                  <option
+                    value={
+                      workflows.find((w: any) => w.id === workflowId)?.embedded
+                        .executor
+                    }
+                  >
+                    程序内处理（按工作流标准模板）
+                  </option>
+                )}
+              </select>
+            </label>
+            {executionMode !== "workbuddy" && (
+              <p className="ops-wide">
+                {
+                  workflows.find((w: any) => w.id === workflowId)?.embedded
+                    .scope
+                }
+                <br />
+                请按工作流专用模板整理，未知字段不猜测。{" "}
+                <a
+                  href={
+                    executionMode === "embedded_accounting"
+                      ? "/api/v1/accounting/template"
+                      : `/api/v1/workflows/${workflowId}/template`
+                  }
+                >
+                  下载本工作流模板
+                </a>
+              </p>
+            )}
             <label className="ops-wide">
               处理要求
               <textarea
@@ -847,7 +918,7 @@ export function WorkBuddyHandoff({
               />
             </div>
             <button disabled={action.busy || !sourceIds.length}>
-              建立任务并生成任务包
+              建立任务并开始处理
             </button>
           </form>
         </details>
@@ -866,7 +937,10 @@ export function WorkBuddyHandoff({
       )}
       {detail.runs.map((r: any) => {
         const job = jobs.find(
-          (j) => j.kind === "run_export" && j.run_id === r.id,
+          (j) =>
+            ["run_export", "embedded_accounting", "embedded_rules"].includes(
+              j.kind,
+            ) && j.run_id === r.id,
         );
         const current =
           r.active !== false &&
@@ -889,7 +963,10 @@ export function WorkBuddyHandoff({
                 {
                   (
                     {
-                      external: "外部处理中",
+                      external:
+                        r.execution_mode !== "workbuddy"
+                          ? "程序内处理中"
+                          : "WorkBuddy 处理中",
                       returned: "成果已回传",
                       stale: "输入已失效",
                       cancelled: "已取消",
@@ -914,7 +991,7 @@ export function WorkBuddyHandoff({
             {write && current && (
               <>
                 <div className="ops-inline">
-                  {!job && (
+                  {!job && r.execution_mode === "workbuddy" && (
                     <button
                       className="secondary"
                       disabled={action.busy}
@@ -933,7 +1010,12 @@ export function WorkBuddyHandoff({
                             {
                               pending: "等待打包",
                               running: "正在打包",
-                              completed: "任务包已就绪",
+                              completed: [
+                                "embedded_accounting",
+                                "embedded_rules",
+                              ].includes(job.kind)
+                                ? "计算已完成，待核实回传"
+                                : "任务包已就绪",
                               failed: "打包失败",
                             } as any
                           )[job.status]
@@ -961,19 +1043,28 @@ export function WorkBuddyHandoff({
                               }, "已重新排队")
                             }
                           >
-                            重新打包
+                            重试原任务
                           </button>
                         </>
                       )}
                     </>
                   )}
                 </div>
-                <ReturnForm
-                  run={r}
-                  detail={detail}
-                  api={api}
-                  onRefresh={onRefresh}
-                />
+                {r.execution_mode !== "workbuddy" ? (
+                  <CalculationReturn
+                    api={api}
+                    run={r}
+                    onRefresh={onRefresh}
+                    canReturn={job?.status === "completed"}
+                  />
+                ) : (
+                  <ReturnForm
+                    run={r}
+                    detail={detail}
+                    api={api}
+                    onRefresh={onRefresh}
+                  />
+                )}
               </>
             )}
             {write && !current && job?.status === "completed" && (
@@ -995,6 +1086,12 @@ export function WorkBuddyHandoff({
                   title="回传时的固定成果版本"
                 />
                 <p>{r.check_result?.summary}</p>
+                {r.check_result?.unresolvedIssues > 0 && (
+                  <p className="ops-error">
+                    仍有 {r.check_result.unresolvedIssues}{" "}
+                    项计算异常，请修订重算后送审。
+                  </p>
+                )}
                 <small>结构检查完成，财务判断以独立复核为准。</small>
               </div>
             )}

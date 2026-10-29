@@ -7,6 +7,8 @@ if (process.env.TEAM_TEST_ACCEPT !== "1")
 const db = new Pool({ connectionString: process.env.ADMIN_DATABASE_URL });
 try {
   const files = (await db.query("SELECT storage_key,sha256 FROM files")).rows;
+  const hasDossier = (await db.query("SELECT to_regclass('public.client_dossier_documents') AS t")).rows[0].t;
+  if (hasDossier) files.push(...(await db.query('SELECT storage_key,sha256 FROM client_dossier_documents')).rows);
   for (const f of files) {
     const bytes = await readFile("/data/files/" + f.storage_key);
     assert.equal(createHash("sha256").update(bytes).digest("hex"), f.sha256);
@@ -26,6 +28,7 @@ try {
     "jobs",
     "finance_workspaces",
     "user_preferences",
+    ...(hasDossier ? ['client_dossier_documents', 'client_dossier_revisions', 'client_dossier_drafts', 'client_dossier_bindings'] : []),
   ])
     report[table] = (
       await db.query(

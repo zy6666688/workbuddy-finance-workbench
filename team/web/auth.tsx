@@ -1,9 +1,59 @@
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 
+// These are the two configured local entry points, not an authentication check.
+// Unknown hosts/ports must not silently inherit a production label.
+export function loginEnvironment(location = window.location) {
+  const local = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(
+    location.hostname,
+  );
+  const port = location.port || (location.protocol === "https:" ? "443" : "80");
+  const kind =
+    local && port === "8096"
+      ? "production"
+      : local && port === "8081"
+        ? "test"
+        : "unknown";
+  return {
+    kind,
+    port,
+    address: location.origin,
+    title:
+      kind === "production"
+        ? "正式工作台"
+        : kind === "test"
+          ? "测试环境"
+          : "环境待确认",
+    purpose:
+      kind === "production"
+        ? "用于日常客户业务、资料管理、人工复核与正式交付。"
+        : kind === "test"
+          ? "仅用于虚构样本和功能验证，不用于正式客户业务。"
+          : "当前地址不在已标记的本机入口中，请先向负责人确认用途。",
+    accountNote:
+      kind === "test"
+        ? "测试环境使用独立数据库和账号密码。正式账号的密码在这里可能无法登录；日常工作请前往 8096 正式工作台。"
+        : kind === "production"
+          ? "请使用正式团队账号。8081 测试环境的账号、密码与资料独立。"
+          : "确认环境后再使用对应账号，不能仅凭页面外观判断是正式工作台。",
+    officialUrl:
+      local && kind !== "production" ? "http://localhost:8096/" : null,
+    loginLabel:
+      kind === "production"
+        ? "登录正式工作台"
+        : kind === "test"
+          ? "登录测试环境"
+          : "登录当前工作台",
+  };
+}
+
 export function AuthLayout({ children }: { children: ComponentChildren }) {
+  const environment = loginEnvironment();
+  useEffect(() => {
+    document.title = `${environment.title} · ${environment.port} | ZY 财务工作台`;
+  }, [environment.title, environment.port]);
   return (
-    <main className="zyAuth">
+    <main className="zyAuth" data-environment={environment.kind}>
       <header className="zyAuth-brand">
         <span className="zyAuth-mark">ZY</span>
         <div>
@@ -11,6 +61,22 @@ export function AuthLayout({ children }: { children: ComponentChildren }) {
           <span>代账团队协作平台</span>
         </div>
       </header>
+      <section className="zyAuth-environment" aria-label="当前工作台环境">
+        <div className="zyAuth-environmentHeading">
+          <strong>{environment.title}</strong>
+          <span>端口 {environment.port}</span>
+        </div>
+        <p>{environment.purpose}</p>
+        <p>{environment.accountNote}</p>
+        <p className="zyAuth-environmentAddress">
+          当前地址：{environment.address}
+        </p>
+        {environment.officialUrl && (
+          <a className="zyAuth-officialLink" href={environment.officialUrl}>
+            前往正式工作台 · 8096
+          </a>
+        )}
+      </section>
       <div className="zyAuth-layout">
         <section className="zyAuth-story" aria-label="工作台介绍">
           <span className="zyAuth-kicker">FINANCE, IN ORDER.</span>

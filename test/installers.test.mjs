@@ -42,6 +42,8 @@ test('updates preserve unrelated config, custom finance settings and distinct re
   assert.equal(installed.marker, 'keep')
   assert.deepEqual(installed.mcpServers.other, config.mcpServers.other)
   assert.equal(installed.mcpServers['finance-workbench'].env.USER_SETTING, 'keep')
+  if (process.platform === 'win32' && process.env.LOCALAPPDATA)
+    assert.equal(installed.mcpServers['finance-workbench'].env.LOCALAPPDATA, process.env.LOCALAPPDATA)
   const backups = (await readdir(join(f.home, 'apps'))).filter(name => name.startsWith('finance-workbench.backup-'))
   assert.equal(backups.length, 2)
   const retained = await Promise.all(backups.map(name => readFile(join(f.home, 'apps', name, 'user-note.txt'), 'utf8').catch(() => '')))

@@ -71,6 +71,67 @@ body:has(.zyAuth) {
   overflow: hidden;
   box-shadow: 0 20px 65px #2437600c;
 }
+.zyAuth-environment {
+  border: 1px solid #bccaf1;
+  border-left: 5px solid #4859d4;
+  border-radius: 14px;
+  background: #eef2ff;
+  color: #253766;
+  padding: 18px 22px;
+  font-size: 14px;
+}
+.zyAuth[data-environment="test"] .zyAuth-environment {
+  border-color: #e5bc83;
+  border-left-color: #a75508;
+  background: #fff6e8;
+  color: #743c0a;
+}
+.zyAuth[data-environment="unknown"] .zyAuth-environment {
+  border-color: #b8c2d2;
+  border-left-color: #5c687e;
+  background: #edf0f5;
+  color: #35445c;
+}
+.zyAuth-environmentHeading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 8px;
+}
+.zyAuth-environmentHeading strong {
+  font-size: 21px;
+}
+.zyAuth-environmentHeading span {
+  font-weight: 650;
+}
+.zyAuth-environment p + p {
+  margin-top: 5px;
+}
+.zyAuth-environmentAddress {
+  overflow-wrap: anywhere;
+}
+.zyAuth-officialLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 8px 14px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  background: #fff;
+  color: #263c83;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.zyAuth-officialLink:hover {
+  background: #edf1ff;
+}
+.zyAuth-officialLink:focus-visible {
+  outline: 3px solid #4859d4;
+  outline-offset: 3px;
+}
 .zyAuth-story {
   background:
     radial-gradient(ellipse at 100% 0%, #364b85, transparent 75%), #1c2e52;
