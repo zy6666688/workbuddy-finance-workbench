@@ -665,12 +665,12 @@ SHA-256: 46be567b1dec7a66730dcb0b7504ebc71748b53d514b4fd23f333647b6dce5d3
 
 ## agents/finance-workbench/SKILL.md
 
-SHA-256: bdf38004e7748949893409cdafd3da3d20c5d70ae955a6a045b8d617ed1beddd
+SHA-256: 4afe586989a46a3855d72e3bbdebc784523576e18e1155e1960986bf2babc304
 
 ~~~~~~text
 ---
 name: finance-workbench
-description: 面向财务人员的受控自动化工作流。用于收入、应收应付、报销、资金预算、资产、税务发票、工资、对账、成本、报表分析、投资、月结、审计与财务归档；要求字段口径、异常清单、结果校验、人工复核和处理留痕。
+description: 财税工作台客户开票批次一句话续办、补件、缺项反馈、驳回后接着办、账务草稿进度与交接成果回传。优先沿用已有资料，只问缺项，用简明业务语言回复。也支持收入、应收应付、报销、预算、对账、月结与财务归档；保留人工复核。
 license: MIT
 metadata:
   version: "2.7.1"
@@ -11665,7 +11665,7 @@ export const VERSION = '2.7.1'
 
 ## src/workbuddy-mcp-server.mjs
 
-SHA-256: 198df201662c7925d50835fa35b728818a0cc648dc6ecb84671b2ad1a3c23d32
+SHA-256: 5baf35d64329aee2109ea836509f690e4edf401a1dbc97299e4639063a23d542
 
 ~~~~~~text
 import { readFileSync } from 'node:fs'
@@ -11688,13 +11688,18 @@ const server = new McpServer({ name: 'workbuddy-finance-workbench', version: VER
 // Calls go through the existing employee session and the normal team API.
 // Deliberately do not expose an arbitrary HTTP tool or review/approval actions.
 const teamTool = (name, description, inputSchema, command, readOnlyHint = true) => {
+  const invoiceTool = /invoice|invoicing/.test(name)
+  if (invoiceTool && command !== 'resume-invoice-work') description = '普通用户询问开票批次续办、补件、缺项、驳回后接着办或成果回传时，首先使用 team_resume_invoice_work；本工具用于该入口未覆盖的明细操作。不要向用户复述内部字段、编号和接口。' + description
   server.registerTool(name, {
     description, inputSchema,
     annotations: { readOnlyHint, destructiveHint: false, openWorldHint: true },
   }, async args => {
     try {
       const data = await executeTeamCommand(await teamClientFromEnvironment(), command, args)
-      return { content: [{ type: 'text', text: JSON.stringify(data) }] }
+      return { content: [
+        { type: 'text', text: JSON.stringify(data) },
+        ...(invoiceTool ? [{ type: 'text', text: '答复要求：仅简短说明当前办理结果、真正缺少的资料或待谁复核，以及实际下载成功的文件链接。已有资料概括为“已沿用”，不要列出字段名、内部编号、版本、授权范围或技术标记。待补件不能称为办理完成；不要另外索取已保存的资料。' }] : []),
+      ] }
     } catch (error) {
       if (error.outcomeUnknown && command === 'resume-invoice-work') return { isError: true, content: [{ type: 'text', text: '本次结果还在核实，填写已保留。下次说“继续办理”即可找回结果，不需要重填，也不会另建重复申请。' }] }
       if (error.outcomeUnknown) return { isError: true, content: [{ type: 'text', text: JSON.stringify({
@@ -11708,7 +11713,7 @@ const teamTool = (name, description, inputSchema, command, readOnlyHint = true) 
 }
 const orderId = z.string().uuid().describe('团队版月度工作单编号')
 const runId = z.string().uuid().describe('团队版工作流执行编号')
-const registerInvoiceAssistant = () => teamTool('team_resume_invoice_work', '普通用户的一句话入口。按客户全称和月份查进度、沿用原资料继续办理或取回已复核成果；内部自动查编号、版本并保存未确认请求，重启后也能继续。用户说接着办就用 continue，说进度用 progress，说取成果用 download。歧义返回批次/业务供用户选择，只问缺项，不输出内部参数。corrections/context 只填写用户本次明确补充的字段，不重造已有资料；不会代替人工复核。', {
+const registerInvoiceAssistant = () => teamTool('team_resume_invoice_work', '开票批次一句话续办、补件、缺项反馈、驳回后接着办、账务草稿进度和交接成果回传的首选入口（invoice batch resume）。按客户全称和月份查进度、沿用原资料继续办理或取回已复核成果；内部自动查编号、版本并保存未确认请求，重启后也能继续。用户说接着办就用 continue，说进度用 progress，说取成果用 download。歧义返回批次/业务供用户选择，只问缺项，不输出内部参数。corrections/context 只填写用户本次明确补充的字段，不重造已有资料；不会代替人工复核。', {
   customer: z.string().trim().min(1).max(200).describe('客户全称或客户编码'),
   period: z.string().regex(/^20\d{2}-(0[1-9]|1[0-2])$/),
   operation: z.enum(['progress','continue','download']),

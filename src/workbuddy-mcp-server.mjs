@@ -18,13 +18,18 @@ const server = new McpServer({ name: 'workbuddy-finance-workbench', version: VER
 // Calls go through the existing employee session and the normal team API.
 // Deliberately do not expose an arbitrary HTTP tool or review/approval actions.
 const teamTool = (name, description, inputSchema, command, readOnlyHint = true) => {
+  const invoiceTool = /invoice|invoicing/.test(name)
+  if (invoiceTool && command !== 'resume-invoice-work') description = '普通用户询问开票批次续办、补件、缺项、驳回后接着办或成果回传时，首先使用 team_resume_invoice_work；本工具用于该入口未覆盖的明细操作。不要向用户复述内部字段、编号和接口。' + description
   server.registerTool(name, {
     description, inputSchema,
     annotations: { readOnlyHint, destructiveHint: false, openWorldHint: true },
   }, async args => {
     try {
       const data = await executeTeamCommand(await teamClientFromEnvironment(), command, args)
-      return { content: [{ type: 'text', text: JSON.stringify(data) }] }
+      return { content: [
+        { type: 'text', text: JSON.stringify(data) },
+        ...(invoiceTool ? [{ type: 'text', text: '答复要求：仅简短说明当前办理结果、真正缺少的资料或待谁复核，以及实际下载成功的文件链接。已有资料概括为“已沿用”，不要列出字段名、内部编号、版本、授权范围或技术标记。待补件不能称为办理完成；不要另外索取已保存的资料。' }] : []),
+      ] }
     } catch (error) {
       if (error.outcomeUnknown && command === 'resume-invoice-work') return { isError: true, content: [{ type: 'text', text: '本次结果还在核实，填写已保留。下次说“继续办理”即可找回结果，不需要重填，也不会另建重复申请。' }] }
       if (error.outcomeUnknown) return { isError: true, content: [{ type: 'text', text: JSON.stringify({
@@ -38,7 +43,7 @@ const teamTool = (name, description, inputSchema, command, readOnlyHint = true) 
 }
 const orderId = z.string().uuid().describe('团队版月度工作单编号')
 const runId = z.string().uuid().describe('团队版工作流执行编号')
-const registerInvoiceAssistant = () => teamTool('team_resume_invoice_work', '普通用户的一句话入口。按客户全称和月份查进度、沿用原资料继续办理或取回已复核成果；内部自动查编号、版本并保存未确认请求，重启后也能继续。用户说接着办就用 continue，说进度用 progress，说取成果用 download。歧义返回批次/业务供用户选择，只问缺项，不输出内部参数。corrections/context 只填写用户本次明确补充的字段，不重造已有资料；不会代替人工复核。', {
+const registerInvoiceAssistant = () => teamTool('team_resume_invoice_work', '开票批次一句话续办、补件、缺项反馈、驳回后接着办、账务草稿进度和交接成果回传的首选入口（invoice batch resume）。按客户全称和月份查进度、沿用原资料继续办理或取回已复核成果；内部自动查编号、版本并保存未确认请求，重启后也能继续。用户说接着办就用 continue，说进度用 progress，说取成果用 download。歧义返回批次/业务供用户选择，只问缺项，不输出内部参数。corrections/context 只填写用户本次明确补充的字段，不重造已有资料；不会代替人工复核。', {
   customer: z.string().trim().min(1).max(200).describe('客户全称或客户编码'),
   period: z.string().regex(/^20\d{2}-(0[1-9]|1[0-2])$/),
   operation: z.enum(['progress','continue','download']),

@@ -60,7 +60,7 @@
     },
     {
       "path": "agents/finance-workbench/SKILL.md",
-      "sha256": "bdf38004e7748949893409cdafd3da3d20c5d70ae955a6a045b8d617ed1beddd"
+      "sha256": "4afe586989a46a3855d72e3bbdebc784523576e18e1155e1960986bf2babc304"
     },
     {
       "path": "agents/finance-workbench/references/prompts/01-excel-cleaning.md",
@@ -404,7 +404,7 @@
     },
     {
       "path": "src/workbuddy-mcp-server.mjs",
-      "sha256": "198df201662c7925d50835fa35b728818a0cc648dc6ecb84671b2ad1a3c23d32"
+      "sha256": "5baf35d64329aee2109ea836509f690e4edf401a1dbc97299e4639063a23d542"
     },
     {
       "path": "src/workbuddy-widget.jsx",
