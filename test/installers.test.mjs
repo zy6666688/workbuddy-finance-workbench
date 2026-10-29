@@ -42,6 +42,8 @@ test('updates preserve unrelated config, custom finance settings and distinct re
   assert.equal(installed.marker, 'keep')
   assert.deepEqual(installed.mcpServers.other, config.mcpServers.other)
   assert.equal(installed.mcpServers['finance-workbench'].env.USER_SETTING, 'keep')
+  if (process.platform === 'win32' && process.env.LOCALAPPDATA)
+    assert.equal(installed.mcpServers['finance-workbench'].env.LOCALAPPDATA, process.env.LOCALAPPDATA)
   const backups = (await readdir(join(f.home, 'apps'))).filter(name => name.startsWith('finance-workbench.backup-'))
   assert.equal(backups.length, 2)
   const retained = await Promise.all(backups.map(name => readFile(join(f.home, 'apps', name, 'user-note.txt'), 'utf8').catch(() => '')))
@@ -63,4 +65,26 @@ test('native Shell or PowerShell wrapper invokes the shared installer and propag
   assert.match((await run(command, args, { env })).stdout, /预检通过/)
   await writeFile(f.config, '{broken')
   await assert.rejects(run(command, args, { env }))
+})
+
+test('desktop MCP config is preserved, updated and restored independently of CLI config', async t => {
+  const f = await fixture(t), desktop = join(f.home, 'mcp.json')
+  const original = { marker: 'desktop', mcpServers: { unrelated: { type: 'stdio', command: 'example' } } }
+  await writeFile(desktop, JSON.stringify(original))
+  await f.execute('install')
+  const configured = JSON.parse(await readFile(desktop, 'utf8'))
+  assert.deepEqual(configured.mcpServers.unrelated, original.mcpServers.unrelated)
+  assert.equal(configured.mcpServers['finance-workbench'].type, 'stdio')
+  assert.equal(await readFile(join(f.app, 'team-cli.mjs'), 'utf8').then(x => x.length > 0), true)
+  await f.execute('uninstall')
+  assert.deepEqual(JSON.parse(await readFile(desktop, 'utf8')), original)
+})
+
+test('invalid desktop config aborts installation without changing CLI config', async t => {
+  const f = await fixture(t), desktop = join(f.home, 'mcp.json')
+  await writeFile(f.config, '{"mcpServers":{"other":{"command":"keep"}}}')
+  await writeFile(desktop, '{broken')
+  await assert.rejects(f.execute('install'), /配置/)
+  assert.equal(await readFile(desktop, 'utf8'), '{broken')
+  assert.equal(JSON.parse(await readFile(f.config, 'utf8')).mcpServers.other.command, 'keep')
 })

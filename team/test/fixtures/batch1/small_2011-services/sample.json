@@ -1,0 +1,856 @@
+{
+  "synthetic": true,
+  "unit": "CNY cents",
+  "profile": {
+    "legalName": "虚构苏州验收客户-small_2011-services",
+    "creditCode": "",
+    "industry": "services",
+    "reportingBasis": "small_2011",
+    "taxpayerType": "general",
+    "activationPeriod": "2026-01",
+    "taxRegion": "江苏省苏州市",
+    "contactName": "虚构联系人",
+    "contactPhone": "测试不拨打",
+    "services": [
+      "记账",
+      "月度交付"
+    ],
+    "bankStatus": "listed",
+    "bankNote": "虚构银行",
+    "banks": [
+      {
+        "bankName": "虚构银行",
+        "accountName": "虚构账户",
+        "accountNumber": "TEST000001"
+      }
+    ]
+  },
+  "opening": {
+    "bank": 1000000,
+    "prepaid_services": 200000,
+    "fixed_assets": 240000,
+    "equity": -1440000
+  },
+  "priorComparison": {
+    "period": "2025-12",
+    "assets": 1440000,
+    "liabilities": 0,
+    "equity": 1440000
+  },
+  "journals": [
+    {
+      "id": "small_2011-services-01-purchase",
+      "date": "2026-01-28",
+      "source": "small_2011-services-01-purchase",
+      "debit": "prepaid_services",
+      "credit": "payables",
+      "amount": 50000
+    },
+    {
+      "id": "small_2011-services-01-sale",
+      "date": "2026-01-28",
+      "source": "small_2011-services-01-sale",
+      "debit": "receivables",
+      "credit": "revenue",
+      "amount": 120000
+    },
+    {
+      "id": "small_2011-services-01-receipt",
+      "date": "2026-01-28",
+      "source": "small_2011-services-01-receipt",
+      "debit": "bank",
+      "credit": "receivables",
+      "amount": 100000
+    },
+    {
+      "id": "small_2011-services-01-payment",
+      "date": "2026-01-28",
+      "source": "small_2011-services-01-payment",
+      "debit": "payables",
+      "credit": "bank",
+      "amount": 45000
+    },
+    {
+      "id": "small_2011-services-01-payroll",
+      "date": "2026-01-28",
+      "source": "small_2011-services-01-payroll",
+      "debit": "salary",
+      "credit": "bank",
+      "amount": 10000
+    },
+    {
+      "id": "small_2011-services-01-depreciation",
+      "date": "2026-01-28",
+      "source": "small_2011-services-01-depreciation",
+      "debit": "depreciation",
+      "credit": "accumulated_depreciation",
+      "amount": 2000
+    },
+    {
+      "id": "small_2011-services-01-cost",
+      "date": "2026-01-28",
+      "source": "small_2011-services-01-cost",
+      "debit": "cost",
+      "credit": "prepaid_services",
+      "amount": 40000
+    },
+    {
+      "id": "small_2011-services-02-purchase",
+      "date": "2026-02-28",
+      "source": "small_2011-services-02-purchase",
+      "debit": "prepaid_services",
+      "credit": "payables",
+      "amount": 50000
+    },
+    {
+      "id": "small_2011-services-02-sale",
+      "date": "2026-02-28",
+      "source": "small_2011-services-02-sale",
+      "debit": "receivables",
+      "credit": "revenue",
+      "amount": 120000
+    },
+    {
+      "id": "small_2011-services-02-receipt",
+      "date": "2026-02-28",
+      "source": "small_2011-services-02-receipt",
+      "debit": "bank",
+      "credit": "receivables",
+      "amount": 100000
+    },
+    {
+      "id": "small_2011-services-02-payment",
+      "date": "2026-02-28",
+      "source": "small_2011-services-02-payment",
+      "debit": "payables",
+      "credit": "bank",
+      "amount": 45000
+    },
+    {
+      "id": "small_2011-services-02-payroll",
+      "date": "2026-02-28",
+      "source": "small_2011-services-02-payroll",
+      "debit": "salary",
+      "credit": "bank",
+      "amount": 10000
+    },
+    {
+      "id": "small_2011-services-02-depreciation",
+      "date": "2026-02-28",
+      "source": "small_2011-services-02-depreciation",
+      "debit": "depreciation",
+      "credit": "accumulated_depreciation",
+      "amount": 2000
+    },
+    {
+      "id": "small_2011-services-02-cost",
+      "date": "2026-02-28",
+      "source": "small_2011-services-02-cost",
+      "debit": "cost",
+      "credit": "prepaid_services",
+      "amount": 40000
+    },
+    {
+      "id": "small_2011-services-03-purchase",
+      "date": "2026-03-28",
+      "source": "small_2011-services-03-purchase",
+      "debit": "prepaid_services",
+      "credit": "payables",
+      "amount": 50000
+    },
+    {
+      "id": "small_2011-services-03-sale",
+      "date": "2026-03-28",
+      "source": "small_2011-services-03-sale",
+      "debit": "receivables",
+      "credit": "revenue",
+      "amount": 120000
+    },
+    {
+      "id": "small_2011-services-03-receipt",
+      "date": "2026-03-28",
+      "source": "small_2011-services-03-receipt",
+      "debit": "bank",
+      "credit": "receivables",
+      "amount": 100000
+    },
+    {
+      "id": "small_2011-services-03-payment",
+      "date": "2026-03-28",
+      "source": "small_2011-services-03-payment",
+      "debit": "payables",
+      "credit": "bank",
+      "amount": 45000
+    },
+    {
+      "id": "small_2011-services-03-payroll",
+      "date": "2026-03-28",
+      "source": "small_2011-services-03-payroll",
+      "debit": "salary",
+      "credit": "bank",
+      "amount": 10000
+    },
+    {
+      "id": "small_2011-services-03-depreciation",
+      "date": "2026-03-28",
+      "source": "small_2011-services-03-depreciation",
+      "debit": "depreciation",
+      "credit": "accumulated_depreciation",
+      "amount": 2000
+    },
+    {
+      "id": "small_2011-services-03-cost",
+      "date": "2026-03-28",
+      "source": "small_2011-services-03-cost",
+      "debit": "cost",
+      "credit": "prepaid_services",
+      "amount": 40000
+    },
+    {
+      "id": "small_2011-services-04-purchase",
+      "date": "2026-04-28",
+      "source": "small_2011-services-04-purchase",
+      "debit": "prepaid_services",
+      "credit": "payables",
+      "amount": 50000
+    },
+    {
+      "id": "small_2011-services-04-sale",
+      "date": "2026-04-28",
+      "source": "small_2011-services-04-sale",
+      "debit": "receivables",
+      "credit": "revenue",
+      "amount": 120000
+    },
+    {
+      "id": "small_2011-services-04-receipt",
+      "date": "2026-04-28",
+      "source": "small_2011-services-04-receipt",
+      "debit": "bank",
+      "credit": "receivables",
+      "amount": 100000
+    },
+    {
+      "id": "small_2011-services-04-payment",
+      "date": "2026-04-28",
+      "source": "small_2011-services-04-payment",
+      "debit": "payables",
+      "credit": "bank",
+      "amount": 45000
+    },
+    {
+      "id": "small_2011-services-04-payroll",
+      "date": "2026-04-28",
+      "source": "small_2011-services-04-payroll",
+      "debit": "salary",
+      "credit": "bank",
+      "amount": 10000
+    },
+    {
+      "id": "small_2011-services-04-depreciation",
+      "date": "2026-04-28",
+      "source": "small_2011-services-04-depreciation",
+      "debit": "depreciation",
+      "credit": "accumulated_depreciation",
+      "amount": 2000
+    },
+    {
+      "id": "small_2011-services-04-cost",
+      "date": "2026-04-28",
+      "source": "small_2011-services-04-cost",
+      "debit": "cost",
+      "credit": "prepaid_services",
+      "amount": 40000
+    },
+    {
+      "id": "small_2011-services-05-purchase",
+      "date": "2026-05-28",
+      "source": "small_2011-services-05-purchase",
+      "debit": "prepaid_services",
+      "credit": "payables",
+      "amount": 50000
+    },
+    {
+      "id": "small_2011-services-05-sale",
+      "date": "2026-05-28",
+      "source": "small_2011-services-05-sale",
+      "debit": "receivables",
+      "credit": "revenue",
+      "amount": 120000
+    },
+    {
+      "id": "small_2011-services-05-receipt",
+      "date": "2026-05-28",
+      "source": "small_2011-services-05-receipt",
+      "debit": "bank",
+      "credit": "receivables",
+      "amount": 100000
+    },
+    {
+      "id": "small_2011-services-05-payment",
+      "date": "2026-05-28",
+      "source": "small_2011-services-05-payment",
+      "debit": "payables",
+      "credit": "bank",
+      "amount": 45000
+    },
+    {
+      "id": "small_2011-services-05-payroll",
+      "date": "2026-05-28",
+      "source": "small_2011-services-05-payroll",
+      "debit": "salary",
+      "credit": "bank",
+      "amount": 10000
+    },
+    {
+      "id": "small_2011-services-05-depreciation",
+      "date": "2026-05-28",
+      "source": "small_2011-services-05-depreciation",
+      "debit": "depreciation",
+      "credit": "accumulated_depreciation",
+      "amount": 2000
+    },
+    {
+      "id": "small_2011-services-05-cost",
+      "date": "2026-05-28",
+      "source": "small_2011-services-05-cost",
+      "debit": "cost",
+      "credit": "prepaid_services",
+      "amount": 40000
+    },
+    {
+      "id": "small_2011-services-06-purchase",
+      "date": "2026-06-28",
+      "source": "small_2011-services-06-purchase",
+      "debit": "prepaid_services",
+      "credit": "payables",
+      "amount": 50000
+    },
+    {
+      "id": "small_2011-services-06-sale",
+      "date": "2026-06-28",
+      "source": "small_2011-services-06-sale",
+      "debit": "receivables",
+      "credit": "revenue",
+      "amount": 120000
+    },
+    {
+      "id": "small_2011-services-06-receipt",
+      "date": "2026-06-28",
+      "source": "small_2011-services-06-receipt",
+      "debit": "bank",
+      "credit": "receivables",
+      "amount": 100000
+    },
+    {
+      "id": "small_2011-services-06-payment",
+      "date": "2026-06-28",
+      "source": "small_2011-services-06-payment",
+      "debit": "payables",
+      "credit": "bank",
+      "amount": 45000
+    },
+    {
+      "id": "small_2011-services-06-payroll",
+      "date": "2026-06-28",
+      "source": "small_2011-services-06-payroll",
+      "debit": "salary",
+      "credit": "bank",
+      "amount": 10000
+    },
+    {
+      "id": "small_2011-services-06-depreciation",
+      "date": "2026-06-28",
+      "source": "small_2011-services-06-depreciation",
+      "debit": "depreciation",
+      "credit": "accumulated_depreciation",
+      "amount": 2000
+    },
+    {
+      "id": "small_2011-services-06-cost",
+      "date": "2026-06-28",
+      "source": "small_2011-services-06-cost",
+      "debit": "cost",
+      "credit": "prepaid_services",
+      "amount": 40000
+    },
+    {
+      "id": "small_2011-services-07-purchase",
+      "date": "2026-07-28",
+      "source": "small_2011-services-07-purchase",
+      "debit": "prepaid_services",
+      "credit": "payables",
+      "amount": 50000
+    },
+    {
+      "id": "small_2011-services-07-sale",
+      "date": "2026-07-28",
+      "source": "small_2011-services-07-sale",
+      "debit": "receivables",
+      "credit": "revenue",
+      "amount": 120000
+    },
+    {
+      "id": "small_2011-services-07-receipt",
+      "date": "2026-07-28",
+      "source": "small_2011-services-07-receipt",
+      "debit": "bank",
+      "credit": "receivables",
+      "amount": 100000
+    },
+    {
+      "id": "small_2011-services-07-payment",
+      "date": "2026-07-28",
+      "source": "small_2011-services-07-payment",
+      "debit": "payables",
+      "credit": "bank",
+      "amount": 45000
+    },
+    {
+      "id": "small_2011-services-07-payroll",
+      "date": "2026-07-28",
+      "source": "small_2011-services-07-payroll",
+      "debit": "salary",
+      "credit": "bank",
+      "amount": 10000
+    },
+    {
+      "id": "small_2011-services-07-depreciation",
+      "date": "2026-07-28",
+      "source": "small_2011-services-07-depreciation",
+      "debit": "depreciation",
+      "credit": "accumulated_depreciation",
+      "amount": 2000
+    },
+    {
+      "id": "small_2011-services-07-cost",
+      "date": "2026-07-28",
+      "source": "small_2011-services-07-cost",
+      "debit": "cost",
+      "credit": "prepaid_services",
+      "amount": 40000
+    },
+    {
+      "id": "small_2011-services-08-purchase",
+      "date": "2026-08-28",
+      "source": "small_2011-services-08-purchase",
+      "debit": "prepaid_services",
+      "credit": "payables",
+      "amount": 50000
+    },
+    {
+      "id": "small_2011-services-08-sale",
+      "date": "2026-08-28",
+      "source": "small_2011-services-08-sale",
+      "debit": "receivables",
+      "credit": "revenue",
+      "amount": 120000
+    },
+    {
+      "id": "small_2011-services-08-receipt",
+      "date": "2026-08-28",
+      "source": "small_2011-services-08-receipt",
+      "debit": "bank",
+      "credit": "receivables",
+      "amount": 100000
+    },
+    {
+      "id": "small_2011-services-08-payment",
+      "date": "2026-08-28",
+      "source": "small_2011-services-08-payment",
+      "debit": "payables",
+      "credit": "bank",
+      "amount": 45000
+    },
+    {
+      "id": "small_2011-services-08-payroll",
+      "date": "2026-08-28",
+      "source": "small_2011-services-08-payroll",
+      "debit": "salary",
+      "credit": "bank",
+      "amount": 10000
+    },
+    {
+      "id": "small_2011-services-08-depreciation",
+      "date": "2026-08-28",
+      "source": "small_2011-services-08-depreciation",
+      "debit": "depreciation",
+      "credit": "accumulated_depreciation",
+      "amount": 2000
+    },
+    {
+      "id": "small_2011-services-08-cost",
+      "date": "2026-08-28",
+      "source": "small_2011-services-08-cost",
+      "debit": "cost",
+      "credit": "prepaid_services",
+      "amount": 40000
+    },
+    {
+      "id": "small_2011-services-09-purchase",
+      "date": "2026-09-28",
+      "source": "small_2011-services-09-purchase",
+      "debit": "prepaid_services",
+      "credit": "payables",
+      "amount": 50000
+    },
+    {
+      "id": "small_2011-services-09-sale",
+      "date": "2026-09-28",
+      "source": "small_2011-services-09-sale",
+      "debit": "receivables",
+      "credit": "revenue",
+      "amount": 120000
+    },
+    {
+      "id": "small_2011-services-09-receipt",
+      "date": "2026-09-28",
+      "source": "small_2011-services-09-receipt",
+      "debit": "bank",
+      "credit": "receivables",
+      "amount": 100000
+    },
+    {
+      "id": "small_2011-services-09-payment",
+      "date": "2026-09-28",
+      "source": "small_2011-services-09-payment",
+      "debit": "payables",
+      "credit": "bank",
+      "amount": 45000
+    },
+    {
+      "id": "small_2011-services-09-payroll",
+      "date": "2026-09-28",
+      "source": "small_2011-services-09-payroll",
+      "debit": "salary",
+      "credit": "bank",
+      "amount": 10000
+    },
+    {
+      "id": "small_2011-services-09-depreciation",
+      "date": "2026-09-28",
+      "source": "small_2011-services-09-depreciation",
+      "debit": "depreciation",
+      "credit": "accumulated_depreciation",
+      "amount": 2000
+    },
+    {
+      "id": "small_2011-services-09-cost",
+      "date": "2026-09-28",
+      "source": "small_2011-services-09-cost",
+      "debit": "cost",
+      "credit": "prepaid_services",
+      "amount": 40000
+    },
+    {
+      "id": "small_2011-services-10-purchase",
+      "date": "2026-10-28",
+      "source": "small_2011-services-10-purchase",
+      "debit": "prepaid_services",
+      "credit": "payables",
+      "amount": 50000
+    },
+    {
+      "id": "small_2011-services-10-sale",
+      "date": "2026-10-28",
+      "source": "small_2011-services-10-sale",
+      "debit": "receivables",
+      "credit": "revenue",
+      "amount": 120000
+    },
+    {
+      "id": "small_2011-services-10-receipt",
+      "date": "2026-10-28",
+      "source": "small_2011-services-10-receipt",
+      "debit": "bank",
+      "credit": "receivables",
+      "amount": 100000
+    },
+    {
+      "id": "small_2011-services-10-payment",
+      "date": "2026-10-28",
+      "source": "small_2011-services-10-payment",
+      "debit": "payables",
+      "credit": "bank",
+      "amount": 45000
+    },
+    {
+      "id": "small_2011-services-10-payroll",
+      "date": "2026-10-28",
+      "source": "small_2011-services-10-payroll",
+      "debit": "salary",
+      "credit": "bank",
+      "amount": 10000
+    },
+    {
+      "id": "small_2011-services-10-depreciation",
+      "date": "2026-10-28",
+      "source": "small_2011-services-10-depreciation",
+      "debit": "depreciation",
+      "credit": "accumulated_depreciation",
+      "amount": 2000
+    },
+    {
+      "id": "small_2011-services-10-cost",
+      "date": "2026-10-28",
+      "source": "small_2011-services-10-cost",
+      "debit": "cost",
+      "credit": "prepaid_services",
+      "amount": 40000
+    },
+    {
+      "id": "small_2011-services-11-purchase",
+      "date": "2026-11-28",
+      "source": "small_2011-services-11-purchase",
+      "debit": "prepaid_services",
+      "credit": "payables",
+      "amount": 50000
+    },
+    {
+      "id": "small_2011-services-11-sale",
+      "date": "2026-11-28",
+      "source": "small_2011-services-11-sale",
+      "debit": "receivables",
+      "credit": "revenue",
+      "amount": 120000
+    },
+    {
+      "id": "small_2011-services-11-receipt",
+      "date": "2026-11-28",
+      "source": "small_2011-services-11-receipt",
+      "debit": "bank",
+      "credit": "receivables",
+      "amount": 100000
+    },
+    {
+      "id": "small_2011-services-11-payment",
+      "date": "2026-11-28",
+      "source": "small_2011-services-11-payment",
+      "debit": "payables",
+      "credit": "bank",
+      "amount": 45000
+    },
+    {
+      "id": "small_2011-services-11-payroll",
+      "date": "2026-11-28",
+      "source": "small_2011-services-11-payroll",
+      "debit": "salary",
+      "credit": "bank",
+      "amount": 10000
+    },
+    {
+      "id": "small_2011-services-11-depreciation",
+      "date": "2026-11-28",
+      "source": "small_2011-services-11-depreciation",
+      "debit": "depreciation",
+      "credit": "accumulated_depreciation",
+      "amount": 2000
+    },
+    {
+      "id": "small_2011-services-11-cost",
+      "date": "2026-11-28",
+      "source": "small_2011-services-11-cost",
+      "debit": "cost",
+      "credit": "prepaid_services",
+      "amount": 40000
+    },
+    {
+      "id": "small_2011-services-12-purchase",
+      "date": "2026-12-28",
+      "source": "small_2011-services-12-purchase",
+      "debit": "prepaid_services",
+      "credit": "payables",
+      "amount": 50000
+    },
+    {
+      "id": "small_2011-services-12-sale",
+      "date": "2026-12-28",
+      "source": "small_2011-services-12-sale",
+      "debit": "receivables",
+      "credit": "revenue",
+      "amount": 120000
+    },
+    {
+      "id": "small_2011-services-12-receipt",
+      "date": "2026-12-28",
+      "source": "small_2011-services-12-receipt",
+      "debit": "bank",
+      "credit": "receivables",
+      "amount": 100000
+    },
+    {
+      "id": "small_2011-services-12-payment",
+      "date": "2026-12-28",
+      "source": "small_2011-services-12-payment",
+      "debit": "payables",
+      "credit": "bank",
+      "amount": 45000
+    },
+    {
+      "id": "small_2011-services-12-payroll",
+      "date": "2026-12-28",
+      "source": "small_2011-services-12-payroll",
+      "debit": "salary",
+      "credit": "bank",
+      "amount": 10000
+    },
+    {
+      "id": "small_2011-services-12-depreciation",
+      "date": "2026-12-28",
+      "source": "small_2011-services-12-depreciation",
+      "debit": "depreciation",
+      "credit": "accumulated_depreciation",
+      "amount": 2000
+    },
+    {
+      "id": "small_2011-services-12-cost",
+      "date": "2026-12-28",
+      "source": "small_2011-services-12-cost",
+      "debit": "cost",
+      "credit": "prepaid_services",
+      "amount": 40000
+    },
+    {
+      "id": "small_2011-services-06-red_invoice",
+      "date": "2026-06-28",
+      "source": "small_2011-services-06-red_invoice",
+      "debit": "revenue",
+      "credit": "receivables",
+      "amount": 10000
+    },
+    {
+      "id": "small_2011-services-07-correction_reverse",
+      "date": "2026-07-28",
+      "source": "small_2011-services-07-correction_reverse",
+      "debit": "revenue",
+      "credit": "receivables",
+      "amount": 5000
+    },
+    {
+      "id": "small_2011-services-08-correction_rebook",
+      "date": "2026-08-28",
+      "source": "small_2011-services-08-correction_rebook",
+      "debit": "receivables",
+      "credit": "revenue",
+      "amount": 5000
+    },
+    {
+      "id": "small_2011-services-12-cross_period_accrual",
+      "date": "2026-12-28",
+      "source": "small_2011-services-12-cross_period_accrual",
+      "debit": "accrued_expense",
+      "credit": "payables",
+      "amount": 3000
+    }
+  ],
+  "expected": {
+    "bank": 1540000,
+    "receivables": 230000,
+    "prepaid_services": 320000,
+    "fixed_assets": 240000,
+    "accumulated_depreciation": -24000,
+    "payables": -63000,
+    "equity": -1440000,
+    "revenue": -1430000,
+    "cost": 480000,
+    "salary": 120000,
+    "depreciation": 24000,
+    "accrued_expense": 3000
+  },
+  "statements": {
+    "assets": 2306000,
+    "liabilities": 63000,
+    "equityAfterProfit": 2243000,
+    "profit": 803000,
+    "netCashIncrease": 540000
+  },
+  "negativeCases": [
+    {
+      "kind": "missing_source",
+      "removeSourceId": "small_2011-services-01-purchase"
+    },
+    {
+      "kind": "duplicate_record",
+      "duplicateId": "small_2011-services-01-sale"
+    },
+    {
+      "kind": "amount_mismatch",
+      "changeSourceId": "small_2011-services-01-receipt",
+      "delta": 1
+    }
+  ],
+  "expectedMonthEnds": [
+    {
+      "period": "2026-01",
+      "bank": 1045000,
+      "receivables": 20000,
+      "cumulativeProfit": 68000
+    },
+    {
+      "period": "2026-02",
+      "bank": 1090000,
+      "receivables": 40000,
+      "cumulativeProfit": 136000
+    },
+    {
+      "period": "2026-03",
+      "bank": 1135000,
+      "receivables": 60000,
+      "cumulativeProfit": 204000
+    },
+    {
+      "period": "2026-04",
+      "bank": 1180000,
+      "receivables": 80000,
+      "cumulativeProfit": 272000
+    },
+    {
+      "period": "2026-05",
+      "bank": 1225000,
+      "receivables": 100000,
+      "cumulativeProfit": 340000
+    },
+    {
+      "period": "2026-06",
+      "bank": 1270000,
+      "receivables": 110000,
+      "cumulativeProfit": 398000
+    },
+    {
+      "period": "2026-07",
+      "bank": 1315000,
+      "receivables": 125000,
+      "cumulativeProfit": 461000
+    },
+    {
+      "period": "2026-08",
+      "bank": 1360000,
+      "receivables": 150000,
+      "cumulativeProfit": 534000
+    },
+    {
+      "period": "2026-09",
+      "bank": 1405000,
+      "receivables": 170000,
+      "cumulativeProfit": 602000
+    },
+    {
+      "period": "2026-10",
+      "bank": 1450000,
+      "receivables": 190000,
+      "cumulativeProfit": 670000
+    },
+    {
+      "period": "2026-11",
+      "bank": 1495000,
+      "receivables": 210000,
+      "cumulativeProfit": 738000
+    },
+    {
+      "period": "2026-12",
+      "bank": 1540000,
+      "receivables": 230000,
+      "cumulativeProfit": 803000
+    }
+  ]
+}

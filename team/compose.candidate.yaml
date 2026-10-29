@@ -1,0 +1,12 @@
+# Apply only to the isolated zy-finance-test project, after compose.test.yaml.
+services:
+  app:
+    image: zy-finance-candidate:local
+  worker:
+    image: zy-finance-candidate:local
+  migrate:
+    image: zy-finance-candidate:local
+  acceptance:
+    image: zy-finance-candidate:local
+  test-prepare:
+    image: zy-finance-candidate:local

@@ -19,6 +19,10 @@
       "sha256": "d3f6358fc1716dfe4c8cce3a9a14b20c32fa6e6b814bb56cda7791f67e42d39f"
     },
     {
+      "path": ".github/workflows/team.yml",
+      "sha256": "ba11f7bea963fad6ee39c32413607d3c074dc1e533ef15591879a2f97f786ead"
+    },
+    {
       "path": ".gitignore",
       "sha256": "afe72bf33f41ad5979aad4274502e3c6d08b7ef0dc4811d9c674383f5ae249ca"
     },
@@ -39,12 +43,16 @@
       "sha256": "7b5894eb59b918d252d691eefa7a735bc334d3e47c465778071865a17c3a954a"
     },
     {
+      "path": "HANDOVER.md",
+      "sha256": "a32d612eadc7a0a8c31bbd7f8a036fdfad99306dbb3ad39cd6d16738d44df648"
+    },
+    {
       "path": "LICENSE",
       "sha256": "109706a22980f1411c87fa4bc5a3b76830b42facd7ed0058f9116dce95f33026"
     },
     {
       "path": "README.md",
-      "sha256": "e63b759011d6d0b6d85ea8d0004a96b4f07a8b963d3ab465e0fe670e10852151"
+      "sha256": "742877c594495f4156858d5a46a84bc5b3c46292606e9332736bba23a3bae20e"
     },
     {
       "path": "SECURITY.md",
@@ -52,7 +60,7 @@
     },
     {
       "path": "agents/finance-workbench/SKILL.md",
-      "sha256": "2451a75db2080599e30aa4b25d7d2ecfeb3cba070217490fc37121e1dc69e097"
+      "sha256": "4afe586989a46a3855d72e3bbdebc784523576e18e1155e1960986bf2babc304"
     },
     {
       "path": "agents/finance-workbench/references/prompts/01-excel-cleaning.md",
@@ -244,15 +252,15 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "70e3e1fe0f164742e32f66a051762533dcb91a384daee79c053d80898f8674e4"
+      "sha256": "973d548bcb75582802649092aca9eebb2d51b274b30aeab93c24aff64c480252"
     },
     {
       "path": "package.json",
-      "sha256": "4b0adcc0907ec086ed236ea06d0dd76e96982d4b3115b1baffcc3c4fe29505d7"
+      "sha256": "acc543620347074be77b5f57e819b2caab24aeabfd612205c402e25395ecb671"
     },
     {
       "path": "scripts/build-workbuddy-app.mjs",
-      "sha256": "bc689c4e98ec415c0b884f04d4f27ac431b15f40915217cf2099429d95266776"
+      "sha256": "47463748feae3514c40c223aae9a4a3c32f37aaf0b17db4a6797d11ee24bcd9a"
     },
     {
       "path": "scripts/generate-agent-catalog.mjs",
@@ -268,11 +276,11 @@
     },
     {
       "path": "scripts/install-agent.sh",
-      "sha256": "65fb4811c87e0e18f22cca5ed38f16f360a6e2ebd77ad1d93590b7d1d90a9407"
+      "sha256": "e428eb8b6a168aba8b47c6d6e82088fa58651fd219ebed50ea0d241e6ca75e50"
     },
     {
       "path": "scripts/install-dsh.sh",
-      "sha256": "d151f58db071d1f78667424cd76d93a0065f0de40dd09643cb17c3f9043dc353"
+      "sha256": "1be66a030b93f8284eb05f27b8ba10018e0bc2ab9c3fbfe10c60236be2afecfa"
     },
     {
       "path": "scripts/install-workbuddy-app.ps1",
@@ -280,11 +288,11 @@
     },
     {
       "path": "scripts/install-workbuddy-app.sh",
-      "sha256": "0ebb6d48368924da84be05d744843ecb152c62af7ccc149db059860af037dded"
+      "sha256": "0a8296b0db4a3ff8db3063a02a0355fb0c0c5dbb21dda7131b2da4e1b343e404"
     },
     {
       "path": "scripts/package-release.sh",
-      "sha256": "d1e10dadcfe73b2704447394d56eb642b8031f8315854c921a7a15d62faa5c7d"
+      "sha256": "98aa7b8612150e13927310121c1d52fb89b259875587af53cb04314d1fa21b47"
     },
     {
       "path": "scripts/preview.mjs",
@@ -292,7 +300,7 @@
     },
     {
       "path": "scripts/security-scan.mjs",
-      "sha256": "e7fa000d89920020be49c639d1b536d5cf010b5fbbfb5b8cef34b67714fe0a94"
+      "sha256": "5b839b68be012578e560abf115611f6e4242bb2edc2076ee2e882cc093a0abeb"
     },
     {
       "path": "scripts/sync-version.mjs",
@@ -300,7 +308,7 @@
     },
     {
       "path": "scripts/uninstall-agent.sh",
-      "sha256": "735e7976cc75c8b8db39c7acddc7f70e007fd550ba9db018e51bd4c319faa7e7"
+      "sha256": "faf2efa9195942d4814e03f624c96d98a8da084574e571d1d633396dbb152b14"
     },
     {
       "path": "scripts/uninstall-workbuddy-app.ps1",
@@ -308,15 +316,15 @@
     },
     {
       "path": "scripts/uninstall-workbuddy-app.sh",
-      "sha256": "02dac6ac5acb4654fccb09f57a38a7ef1c673d82ca209a441dd987db5a14dfaa"
+      "sha256": "0a37999c980b3234150ff747077c0530be8f606a7be11d7d49717d1725f52225"
     },
     {
       "path": "scripts/verify-release.sh",
-      "sha256": "ffd4117cfbfd839fd4bce2cee182609f9c4bb3c0cd9dfd7f39e06f4a4bf02576"
+      "sha256": "8b3c68ac5b064f1db48cd95607a34fd9dab7b3f9fce933fe68040a6c1699c779"
     },
     {
       "path": "scripts/workbuddy-install.mjs",
-      "sha256": "3fa1f8be11c47bb47a19ed15c09f25e3ec5fe0b1214a7fd62e649a8474cd512a"
+      "sha256": "8f6e2120b076799b420ba40f11c9e3f662edef8480bd1df707142e01af2c5a7a"
     },
     {
       "path": "src/client.jsx",
@@ -332,19 +340,23 @@
     },
     {
       "path": "src/finance-dashboard-helpers.js",
-      "sha256": "9147ddb0a0fa7c0230018346f130da4c8f4e42307dc8d1de29f8aa1682edd83b"
+      "sha256": "5e83646555f00988c21e3831ffb6710baf811e61588270c9698e26e6904179ae"
     },
     {
       "path": "src/finance-dashboard-styles.js",
-      "sha256": "f45cb95b7571fcab5e434bfe1372bbfe58656e17f160e3560ce253c49c09d5ad"
+      "sha256": "0937ddb8716878ac1f5ecea294d2b77a3d17aba9e6142cd4688bbfb4db13793e"
     },
     {
       "path": "src/finance-dashboard.jsx",
-      "sha256": "07ec50035d0e4aefcd54978b819b846ce6d3845e228f4cf64fa5e5565e95281a"
+      "sha256": "7c9f49d76f7c6dc00bd76da715f7459d06b9953015777f2023f8e7acf46576c3"
     },
     {
       "path": "src/finance-data.js",
-      "sha256": "810d43dd0c7d1551af9090444f494299ab470c23d3d7aa832328a827f58041f1"
+      "sha256": "91ce3bcce86db9783ef544c4c4e9ee1179776bf35b16041181a7393ed30e7ae6"
+    },
+    {
+      "path": "src/finance-files.jsx",
+      "sha256": "4b9d02396e6fb567846d78482bf01727d0f57134c2c28e55a5f8d030e127d88e"
     },
     {
       "path": "src/finance-storage.js",
@@ -355,8 +367,32 @@
       "sha256": "dbebc88d6df2bd698f3a861acf31244d2520427cdca81559d7335d94eb93f29c"
     },
     {
+      "path": "src/invoice-assistant.mjs",
+      "sha256": "e4d9810673a819e2a7bf8797fd6728490946ca802a8f7bfd088810492ee245d6"
+    },
+    {
+      "path": "src/sidebar-icons.jsx",
+      "sha256": "001c81a0cd48cc6fe8d67866c429512f5da0670705fbae677fa3ca3791ca58d6"
+    },
+    {
       "path": "src/task-prompt.js",
       "sha256": "6b568497be581dffcebd9c22dfb1a73f7cfe631bcfdc529aa5a40b522123c340"
+    },
+    {
+      "path": "src/team-adapter.mjs",
+      "sha256": "7eb2b6a183d628bb8354cb3f880e71f453f2c895ed5c1579fbbc349af506a130"
+    },
+    {
+      "path": "src/team-api-client.mjs",
+      "sha256": "49ef0c587282f50270399258723025b532cc5669081345fdf04f9dd34f4f73da"
+    },
+    {
+      "path": "src/team-cli.mjs",
+      "sha256": "416e0d4819555a95c9be66ff45b8c044cab096587dd71fae6832c66b738cec33"
+    },
+    {
+      "path": "src/team-credentials.mjs",
+      "sha256": "5eab14286632f9f3cf9823060b1500fd75df65557c6a2a1fc9692c95a9ea17ee"
     },
     {
       "path": "src/ui-helpers.js",
@@ -368,7 +404,7 @@
     },
     {
       "path": "src/workbuddy-mcp-server.mjs",
-      "sha256": "30b35cebab3e6e63ed12c5bbe89308cb7a7e2de00e3443ba152e0f7de8bc2de8"
+      "sha256": "5baf35d64329aee2109ea836509f690e4edf401a1dbc97299e4639063a23d542"
     },
     {
       "path": "src/workbuddy-widget.jsx",
@@ -392,7 +428,7 @@
     },
     {
       "path": "test/finance-dashboard-helpers.test.mjs",
-      "sha256": "1da8f4ab3ccd9a7af97e0c741cf651e42521adb069e1efb70041a9c3fb0dd9d5"
+      "sha256": "c2c5308a884440f79693324fefbdf49f4f6992eb85b834f761d2c89636f41d08"
     },
     {
       "path": "test/finance-data.test.mjs",
@@ -408,7 +444,11 @@
     },
     {
       "path": "test/installers.test.mjs",
-      "sha256": "8b8d73b6d88180480d358501b0dc3ae8a83424fbde4a7e7b86f8481d3191f922"
+      "sha256": "e92017ab859fa60fdc5713e1c2f55531552af2f189f25f896daed3549c427861"
+    },
+    {
+      "path": "test/invoice-assistant.test.mjs",
+      "sha256": "9b3b79edde17240f6dd9c0136a0a269dde63bf7727c316b7d3d37ab4408435f8"
     },
     {
       "path": "test/public-release.test.mjs",
@@ -423,6 +463,10 @@
       "sha256": "7e224883a6dc152906144c426ccbcc854ac4866088a6f386af91aafd89a72b27"
     },
     {
+      "path": "test/team-api-client.test.mjs",
+      "sha256": "6fa08c18b4922aff873703ac6f854c59b7c39873448c23734821b75820e2deab"
+    },
+    {
       "path": "test/ui-helpers.test.mjs",
       "sha256": "ad340d1efbc27198ee766735f31345d9b117e56edae20c40bacf786e259831f9"
     },
@@ -432,7 +476,7 @@
     },
     {
       "path": "test/workbuddy-app.test.mjs",
-      "sha256": "538231d0663d310c3101c63b8b4b822b050427bcd5227064dedd4a2809b191e8"
+      "sha256": "ab5416aacdab069e65d81b63af3c1f27b2e4cbde0bc9d8bb943ebaf3d5c21cdf"
     },
     {
       "path": "test/workflow-snapshot.test.mjs",
@@ -444,11 +488,11 @@
     },
     {
       "path": "卸载 WorkBuddy 财务工作台.command",
-      "sha256": "2eba84eb063f3abc3046c87c271268d924ce68bf60583265b9af94f11c0de74d"
+      "sha256": "7a886994bae7cd0fd3e13a495e21a266edabfec4223078710defd6c0f32054d8"
     },
     {
       "path": "安装 WorkBuddy 财务工作台.command",
-      "sha256": "7390aa9b89d1c3e7caf7cdbeb35e772818cb37f063656425d41b4931426b0bf3"
+      "sha256": "56c17c1fe9a7633e1585794e16bc511a5c4f798b2b925571e0b9c3f53e940982"
     }
   ]
 }

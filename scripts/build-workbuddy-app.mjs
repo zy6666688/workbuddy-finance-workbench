@@ -48,5 +48,14 @@ await esbuild.build({
   target: ['node20'],
 })
 
+await esbuild.build({
+  entryPoints: [fileURLToPath(new URL('./src/team-cli.mjs', root))],
+  bundle: true,
+  outfile: fileURLToPath(new URL('./team-cli.mjs', output)),
+  platform: 'node',
+  format: 'esm',
+  target: ['node20'],
+})
+
 const serverSize = Buffer.byteLength(await readFile(new URL('./server.mjs', output)))
 console.log(`built WorkBuddy MCP App · widget ${bytes} B packed (${Buffer.byteLength(widgetCode)} B JS raw) · server ${serverSize} B`)

@@ -242,6 +242,14 @@ export function snapshotProfit(snapshot) {
   return (Math.round(income * 100) - Math.round(expense * 100)) / 100
 }
 
+// A comparison of manually entered totals, not an accounting budget ledger.
+export function snapshotBudgetDifference(snapshot) {
+  if (snapshot?.expense === '' || snapshot?.expense == null || snapshot?.budget === '' || snapshot?.budget == null) return null
+  const expense = Number(snapshot.expense), budget = Number(snapshot.budget)
+  if (!Number.isFinite(expense) || !Number.isFinite(budget)) return null
+  return (Math.round(expense * 100) - Math.round(budget * 100)) / 100
+}
+
 export function normalizeFinanceSnapshot(snapshot, fallbackPeriod = localDateKey().slice(0, 7)) {
   const result = emptyFinanceSnapshot(isValidPeriod(snapshot?.period) ? snapshot.period : fallbackPeriod)
   for (const key of ['income', 'expense', 'cash', 'receivable', 'payable', 'budget']) {

@@ -1,0 +1,92 @@
+name: zy-finance-team
+x-app: &app
+  build:
+    context: ..
+    dockerfile: team/Dockerfile
+  image: zy-finance-team:3.0.0
+  init: true
+  environment: &env
+    DATABASE_URL: postgresql://zy_app:${APP_DB_PASSWORD:?Run setup first}@db:5432/zy
+    QUEUE_DATABASE_URL: postgresql://zy_queue:${QUEUE_DB_PASSWORD:?Run setup first}@db:5432/zy
+    FILES_DIR: /data/files
+    BACKUP_DIR: /backups
+    WEB_DIR: /app/team/dist/web
+    APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8080}
+    COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    TZ: Asia/Shanghai
+  volumes:
+    - files:/data/files
+    - ${BACKUP_PATH:-./.data/backups}:/backups:ro
+  restart: unless-stopped
+services:
+  db:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: zy
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Run setup first}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Run setup first}
+      QUEUE_DB_PASSWORD: ${QUEUE_DB_PASSWORD:?Run setup first}
+      TZ: Asia/Shanghai
+    volumes:
+      - database:/var/lib/postgresql/data
+      - ./ops/init-db.sh:/docker-entrypoint-initdb.d/10-team.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U postgres -d zy']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  migrate:
+    <<: *app
+    user: root
+    environment:
+      <<: *env
+      ADMIN_DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@db:5432/zy
+      BOOTSTRAP_USER: ${BOOTSTRAP_USER:-owner}
+      BOOTSTRAP_PASSWORD: ${BOOTSTRAP_PASSWORD:?Run setup first}
+      ORG_NAME: ${ORG_NAME:-ZY代账团队}
+    command: [sh, -c, 'mkdir -p /data/files && chown 1000:1000 /data/files && node dist/admin.js migrate && node dist/admin.js bootstrap --if-empty']
+    depends_on:
+      db: {condition: service_healthy}
+    restart: "no"
+  app:
+    <<: *app
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, node, -e, 'fetch("http://localhost:3000/health").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))']
+      interval: 10s
+      timeout: 4s
+      retries: 12
+  worker:
+    <<: *app
+    command: [node, dist/worker.js]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  gateway:
+    image: caddy:2-alpine
+    ports:
+      - '${BIND_ADDRESS:-127.0.0.1}:${PORT:-8080}:80'
+    volumes:
+      - ./ops/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      app: {condition: service_healthy}
+    restart: unless-stopped
+  backup:
+    image: postgres:17-bookworm
+    environment:
+      PGHOST: db
+      PGDATABASE: zy
+      PGUSER: postgres
+      PGPASSWORD: ${DB_PASSWORD}
+    volumes:
+      - files:/files:ro
+      - ${BACKUP_PATH:-./.data/backups}:/backups
+      - ./ops/backup.sh:/backup.sh:ro
+    command: [bash, -c, 'while true; do bash /backup.sh; sleep 86400; done']
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    restart: unless-stopped
+volumes:
+  database:
+  files:
